@@ -1,4 +1,4 @@
-const CACHE_NAME = 'docentkit-v7';
+const CACHE_NAME = 'docentkit-v8';
 const ASSETS = [
   './',
   './index.html',

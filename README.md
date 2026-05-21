@@ -2,11 +2,11 @@
 
 Versió 0.7 de la PWA educativa en català per a docents.
 
-## Objectiu de la v0.7
+## Objectiu de la v0.8
 
 Aquesta versió deixa l'app preparada per evolucionar cap a una eina més completa amb més plantilles, importació documental millorada i mode d'IA assistida, sense fer obligatòria cap API externa.
 
-## Novetats v0.7
+## Novetats v0.8
 
 - Selector de plantilles integrat.
 - Biblioteca inicial de plantilles ampliada:
@@ -54,3 +54,9 @@ Puja aquests fitxers a la branca configurada per Pages:
 - `sw.js`
 
 Després obre la URL de GitHub Pages i força una recàrrega o reinstal·la la PWA si el navegador conserva una versió antiga.
+
+
+## v0.8
+- Correcció del selector de plantilles: ara es carreguen correctament les opcions del desplegable.
+- Preparada la configuració IA amb camp de clau API local al navegador.
+- Cache actualitzada a docentkit-v8.
