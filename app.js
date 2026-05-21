@@ -337,7 +337,7 @@ function buildSimplePdf(text, title) {
   const addObject = value => { objects.push(value); return objects.length; };
   const catalogId = addObject('');
   const pagesId = addObject('');
-  const fontId = addObject('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+  const fontId = addObject('<< /Type /Font /Subtype /Type1 /BaseFont /Times-Roman >>');
   const pageIds = [];
 
   pages.forEach(pageLines => {
@@ -409,16 +409,16 @@ function buildStandaloneHtml(data, reportHtml) {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtml(data.title)} · DocentKit</title>
   <style>
-    body { margin: 0; font-family: Arial, sans-serif; color: #172033; background: #f7f8fb; }
+    body { margin: 0; font-family: Verdana, Geneva, Arial, sans-serif; color: #172033; background: #f7f8fb; }
     main { max-width: 900px; margin: 0 auto; padding: 32px 18px; }
     article { background: white; border: 1px solid #e4e7ec; border-radius: 18px; padding: 28px; line-height: 1.6; }
-    h1 { margin-top: 0; letter-spacing: -0.03em; }
-    h2 { margin-top: 1.4rem; border-top: 1px solid #e4e7ec; padding-top: 1rem; }
+    h1 { margin-top: 0; letter-spacing: -0.015em; font-weight: 700; }
+    h2 { margin-top: 1.4rem; border-top: 1px solid #e4e7ec; padding-top: 1rem; font-weight: 700; }
     ul { padding-left: 1.3rem; }
     .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
     button { border: 0; border-radius: 999px; padding: 12px 16px; font-weight: 700; background: #2563eb; color: white; }
     .secondary { background: #eef2f7; color: #172033; }
-    @media print { body { background: white; } main { max-width: none; padding: 0; } article { border: 0; border-radius: 0; padding: 0; } .actions { display: none; } }
+    @media print { body { background: white; font-family: Verdana, Geneva, Arial, sans-serif; } h1, h2, h3, strong, b { font-weight: 700; letter-spacing: normal; } main { max-width: none; padding: 0; } article { border: 0; border-radius: 0; padding: 0; } .actions { display: none; } }
   </style>
 </head>
 <body>
