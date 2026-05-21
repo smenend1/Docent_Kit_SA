@@ -1,6 +1,6 @@
-const APP_KEY = 'docentkit.resources.v8';
-const SETTINGS_KEY = 'docentkit.settings.v8';
-const OLD_KEYS = ['docentkit.resources.v7', 'docentkit.resources.v6', 'docentkit.resources.v5', 'docentkit.resources.v4', 'docentkit.resources.v3', 'docentkit.resources.v2', 'docentkit.resources.v1'];
+const APP_KEY = 'docentkit.resources.v12';
+const SETTINGS_KEY = 'docentkit.settings.v12';
+const OLD_KEYS = ['docentkit.resources.v11', 'docentkit.resources.v10', 'docentkit.resources.v9', 'docentkit.resources.v8', 'docentkit.resources.v7', 'docentkit.resources.v6', 'docentkit.resources.v5', 'docentkit.resources.v4', 'docentkit.resources.v3', 'docentkit.resources.v2', 'docentkit.resources.v1'];
 
 const MODULES = [
   { id: 'sa', label: 'Crear SA', type: 'Situació d’aprenentatge', intro: 'Dissenya una situació d’aprenentatge competencial amb repte, sabers, criteris, seqüència, inclusió i evidències.' },
@@ -155,7 +155,8 @@ const els = {
   aiModel: document.getElementById('aiModel'), aiModeStatus: document.getElementById('aiModeStatus'), aiContext: document.getElementById('aiContext'), aiOutput: document.getElementById('aiOutput'),
   aiCourse: document.getElementById('aiCourse'), aiSubject: document.getElementById('aiSubject'), aiTopic: document.getElementById('aiTopic'), aiProduct: document.getElementById('aiProduct'),
   aiDuration: document.getElementById('aiDuration'), aiTools: document.getElementById('aiTools'), aiKnowledge: document.getElementById('aiKnowledge'), aiCriteria: document.getElementById('aiCriteria'),
-  aiInclTdah: document.getElementById('aiInclTdah'), aiInclTea: document.getElementById('aiInclTea'), aiInclDislexia: document.getElementById('aiInclDislexia'), aiInclTdl: document.getElementById('aiInclTdl')
+  aiInclTdah: document.getElementById('aiInclTdah'), aiInclTea: document.getElementById('aiInclTea'), aiInclDislexia: document.getElementById('aiInclDislexia'), aiInclTdl: document.getElementById('aiInclTdl'),
+  aiValidationPanel: document.getElementById('aiValidationPanel'), importStatus: document.getElementById('importStatus')
 };
 
 function init() {
@@ -199,6 +200,16 @@ function bindEvents() {
   });
   loadAiWizardSettings();
   document.getElementById('aiApplyBtn').addEventListener('click', applyAiDraftToForm);
+  const aiValidateBtn = document.getElementById('aiValidateBtn');
+  if (aiValidateBtn) aiValidateBtn.addEventListener('click', () => renderAiValidation(validateSaQuality(getFormData())));
+  const aiCompleteMissingBtn = document.getElementById('aiCompleteMissingBtn');
+  if (aiCompleteMissingBtn) aiCompleteMissingBtn.addEventListener('click', () => generatePartialAiDraft('missing'));
+  const aiKnowledgeBtn = document.getElementById('aiKnowledgeBtn');
+  if (aiKnowledgeBtn) aiKnowledgeBtn.addEventListener('click', () => generatePartialAiDraft('knowledge'));
+  const aiInclusionBtn = document.getElementById('aiInclusionBtn');
+  if (aiInclusionBtn) aiInclusionBtn.addEventListener('click', () => generatePartialAiDraft('inclusion'));
+  const aiRubricBtn = document.getElementById('aiRubricBtn');
+  if (aiRubricBtn) aiRubricBtn.addEventListener('click', () => generatePartialAiDraft('rubric'));
   els.aiProvider.addEventListener('change', updateAiStatus);
   els.aiProvider.addEventListener('input', updateAiStatus);
   els.aiKey.value = loadSettings().googleApiKey || '';
@@ -811,16 +822,41 @@ async function extractPdfText(file) { const buffer = await file.arrayBuffer(); c
 function decodePdfLiteral(value) { return value.replace(/\\([nrtbf()\\])/g, (_, c) => ({n:'\n', r:'\r', t:'\t', b:'\b', f:'\f', '(':'(', ')':')', '\\':'\\'}[c] || c)); }
 function applyImportedText(filename, text, kind) { els.title.value = filename.replace(/\.[^.]+$/, ''); const mapped = mapImportedTemplateText(text); if (mapped.title) els.title.value = mapped.title; if (mapped.level) els.level.value = mapped.level; if (mapped.subject) els.subject.value = mapped.subject; if (mapped.duration) els.duration.value = mapped.duration; if (mapped.challenge) els.challenge.value = mapped.challenge; if (mapped.knowledge) els.knowledge.value = mapped.knowledge; if (mapped.competences) els.competences.value = mapped.competences; if (mapped.sequence) els.sequence.value = mapped.sequence; if (mapped.inclusion) els.inclusion.value = mapped.inclusion; if (mapped.assessment) els.assessment.value = mapped.assessment; if (!mapped.challenge && text) els.challenge.value = `${kind} importat: ${filename}\n\n${text.slice(0, 3000)}`; renderReport(getFormData()); }
 function mapImportedTemplateText(text) {
-  const labels = 'TÍTOL|TITOL|CURS|MATÈRIA|MATERIA|DURADA|DOCENT|CONTEXT|REPTE|JUSTIFICACIÓ|JUSTIFICACIO|PRODUCTE FINAL|COMPETÈNCIES ESPECÍFIQUES|COMPETENCIES ESPECIFIQUES|CRITERIS D’AVALUACIÓ|CRITERIS D.AVALUACIÓ|CRITERIS D.AVALUACIO|BLOCS DE SABERS|SABERS CONCRETS|METODOLOGIA|ORGANITZACIÓ DE L.AULA|ORGANITZACIO DE L.AULA|RECURSOS|MESURES I SUPORTS|INICIALS|DESENVOLUPAMENT|ESTRUCTURACIÓ|ESTRUCTURACIO|APLICACIÓ|APLICACIO|EVIDÈNCIES|EVIDENCIES|INSTRUMENTS|RETORN I MILLORA|APRENENTATGES COMPETENCIALS|PERSPECTIVA DE GÈNERE|PERSPECTIVA DE GENERE|UNIVERSALITAT|QUALITAT|CIUTADANIA|BENESTAR|Ítem d.avaluació|Item d.avaluacio|Annex|CE|CA|BLOCS';
-  const get = (...aliases) => { for (const label of aliases) { const re = new RegExp(`${escapeRegExp(label)}\\s*:?\\s*\\n+([\\s\\S]*?)(?=\\n\\s*(?:${labels})\\b|$)`, 'i'); const m = text.match(re); if (m && cleanImportedValue(m[1])) return cleanImportedValue(m[1]); } return ''; };
+  const labels = 'TÍTOL|TITOL|CURS|MATÈRIA|MATERIA|DURADA|DOCENT|CONTEXT|REPTE|JUSTIFICACIÓ|JUSTIFICACIO|PRODUCTE FINAL|COMPETÈNCIES ESPECÍFIQUES|COMPETENCIES ESPECIFIQUES|CRITERIS D’AVALUACIÓ|CRITERIS D.AVALUACIÓ|CRITERIS D.AVALUACIO|OBJECTIUS D.APRENENTATGE|BLOCS DE SABERS|SABERS CONCRETS|METODOLOGIA|ORGANITZACIÓ DE L.AULA|ORGANITZACIO DE L.AULA|RECURSOS|MESURES I SUPORTS|ADAPTACIONS TDAH|ADAPTACIONS TEA|ADAPTACIONS DISLÈXIA|ADAPTACIONS DISLEXIA|ADAPTACIONS TDL|INICIALS|DESENVOLUPAMENT|ESTRUCTURACIÓ|ESTRUCTURACIO|APLICACIÓ|APLICACIO|EVIDÈNCIES|EVIDENCIES|INSTRUMENTS|RETORN I MILLORA|RÚBRICA|RUBRICA|APRENENTATGES COMPETENCIALS|PERSPECTIVA DE GÈNERE|PERSPECTIVA DE GENERE|UNIVERSALITAT|QUALITAT|CIUTADANIA|BENESTAR|Ítem d.avaluació|Item d.avaluacio|Annex|CE|CA|BLOCS';
+  const get = (...aliases) => {
+    for (const label of aliases) {
+      const re = new RegExp(`${escapeRegExp(label)}\s*:?\s*\n+([\s\S]*?)(?=\n\s*(?:${labels})\b|$)`, 'i');
+      const m = text.match(re);
+      if (m && cleanImportedValue(m[1])) return cleanImportedValue(m[1]);
+    }
+    return '';
+  };
   const title=get('TÍTOL','TITOL'), level=normalizeLevel(get('CURS')), subject=get('MATÈRIA','MATERIA'), duration=get('DURADA');
   const context=get('CONTEXT'), repte=get('REPTE'), justificacio=get('JUSTIFICACIÓ','JUSTIFICACIO'), producte=get('PRODUCTE FINAL');
   const ce=get('COMPETÈNCIES ESPECÍFIQUES','COMPETENCIES ESPECIFIQUES','CE'), ca=get('CRITERIS D’AVALUACIÓ','CRITERIS D AVALUACIÓ','CA');
+  const objectius=get('OBJECTIUS D’APRENENTATGE','OBJECTIUS D APRENENTATGE');
   const blocs=get('BLOCS DE SABERS','BLOCS'), sabers=get('SABERS CONCRETS');
   const metodologia=get('METODOLOGIA'), organitzacio=get('ORGANITZACIÓ DE L’AULA','ORGANITZACIO DE L AULA'), recursos=get('RECURSOS'), mesures=get('MESURES I SUPORTS');
+  const tdah=get('ADAPTACIONS TDAH'), tea=get('ADAPTACIONS TEA'), dislexia=get('ADAPTACIONS DISLÈXIA','ADAPTACIONS DISLEXIA'), tdl=get('ADAPTACIONS TDL');
   const inicials=get('INICIALS: QUÈ EN SABEM?','INICIALS'), desenvolupament=get('DESENVOLUPAMENT: APRENEM NOUS CONTINGUTS','DESENVOLUPAMENT'), estructuracio=get('ESTRUCTURACIÓ: QUÈ HEM APRÈS?','ESTRUCTURACIO'), aplicacio=get('APLICACIÓ: APLIQUEM EL QUE HEM APRÈS','APLICACIO');
-  const evidencies=get('EVIDÈNCIES','EVIDENCIES'), instruments=get('INSTRUMENTS'), retorn=get('RETORN I MILLORA');
-  return { title, level, subject, duration, challenge: joinNonEmpty([context && `Context: ${context}`, repte && `Repte: ${repte}`, justificacio && `Justificació: ${justificacio}`, producte && `Producte final: ${producte}`]), competences: joinNonEmpty([ce && `Competències específiques: ${ce}`, ca && `Criteris d’avaluació: ${ca}`]), knowledge: joinNonEmpty([blocs && `Blocs de sabers: ${blocs}`, sabers && `Sabers concrets: ${sabers}`]), sequence: joinNonEmpty([metodologia && `Metodologia: ${metodologia}`, organitzacio && `Organització de l’aula: ${organitzacio}`, recursos && `Recursos: ${recursos}`, inicials && `Inicials: ${inicials}`, desenvolupament && `Desenvolupament: ${desenvolupament}`, estructuracio && `Estructuració: ${estructuracio}`, aplicacio && `Aplicació: ${aplicacio}`]), inclusion: mesures, assessment: joinNonEmpty([evidencies && `Evidències: ${evidencies}`, instruments && `Instruments: ${instruments}`, retorn && `Retorn i millora: ${retorn}`]) };
+  const evidencies=get('EVIDÈNCIES','EVIDENCIES'), instruments=get('INSTRUMENTS'), retorn=get('RETORN I MILLORA'), rubrica=get('RÚBRICA','RUBRICA');
+  const vectors = joinNonEmpty([
+    get('APRENENTATGES COMPETENCIALS') && `Aprenentatges competencials: ${get('APRENENTATGES COMPETENCIALS')}`,
+    get('PERSPECTIVA DE GÈNERE','PERSPECTIVA DE GENERE') && `Perspectiva de gènere: ${get('PERSPECTIVA DE GÈNERE','PERSPECTIVA DE GENERE')}`,
+    get('UNIVERSALITAT') && `Universalitat del currículum: ${get('UNIVERSALITAT')}`,
+    get('QUALITAT') && `Qualitat de les llengües: ${get('QUALITAT')}`,
+    get('CIUTADANIA') && `Ciutadania democràtica i consciència global: ${get('CIUTADANIA')}`,
+    get('BENESTAR') && `Benestar emocional: ${get('BENESTAR')}`
+  ]);
+  return {
+    title, level, subject, duration,
+    challenge: joinNonEmpty([context && `Context: ${context}`, repte && `Repte: ${repte}`, justificacio && `Justificació: ${justificacio}`, producte && `Producte final: ${producte}`]),
+    competences: joinNonEmpty([ce && `Competències específiques: ${ce}`, ca && `Criteris d’avaluació: ${ca}`, objectius && `Objectius d’aprenentatge: ${objectius}`]),
+    knowledge: joinNonEmpty([blocs && `Blocs de sabers: ${blocs}`, sabers && `Sabers concrets: ${sabers}`]),
+    sequence: joinNonEmpty([metodologia && `Metodologia: ${metodologia}`, organitzacio && `Organització de l’aula: ${organitzacio}`, recursos && `Recursos: ${recursos}`, inicials && `Inicials: ${inicials}`, desenvolupament && `Desenvolupament: ${desenvolupament}`, estructuracio && `Estructuració: ${estructuracio}`, aplicacio && `Aplicació: ${aplicacio}`]),
+    inclusion: joinNonEmpty([mesures && `Mesures i suports: ${mesures}`, tdah && `TDAH: ${tdah}`, tea && `TEA: ${tea}`, dislexia && `Dislèxia: ${dislexia}`, tdl && `TDL: ${tdl}`]),
+    assessment: joinNonEmpty([evidencies && `Evidències: ${evidencies}`, instruments && `Instruments: ${instruments}`, retorn && `Retorn i millora: ${retorn}`, vectors && `Vectors: ${vectors}`, rubrica && `Rúbrica: ${rubrica}`])
+  };
 }
 function cleanImportedValue(value) { return String(value || '').replace(/\[[^\]]*\]/g, '').replace(/\n{3,}/g, '\n\n').trim(); }
 function normalizeLevel(value) { const v = String(value || '').toLowerCase(); if (v.includes('1r') || v.includes('eso1')) return '1r ESO'; if (v.includes('2n') || v.includes('eso2')) return '2n ESO'; if (v.includes('3r') || v.includes('eso3')) return '3r ESO'; if (v.includes('4t') || v.includes('eso4')) return '4t ESO'; return value || ''; }
@@ -1204,6 +1240,174 @@ function applyAiDraftToForm() {
   const text = els.aiOutput.textContent.trim();
   if (!text || text === 'Encara no hi ha cap esborrany.') return alert('Primer genera o enganxa un esborrany.');
   applyImportedText('esborrany-ia.txt', text, els.aiProvider.value === 'google' ? 'IA Google' : 'IA local');
+  renderAiValidation(validateSaQuality(getFormData()));
+}
+
+function validateSaQuality(data) {
+  const competenceParts = extractCompetenceParts(data.competences || '');
+  const criteriaCodes = competenceParts.criteriaCodes || [];
+  const knowledgeText = (data.knowledge || '').trim();
+  const inclusionText = (data.inclusion || '').trim();
+  const assessmentText = (data.assessment || '').trim();
+  const seqText = (data.sequence || '').trim();
+  const rubricRows = buildRubricRows(data, criteriaCodes);
+  const checks = [
+    { id: 'knowledge', label: 'Sabers', ok: knowledgeText.length > 140 && /saber|contingut|programaci|proc[eé]s|recerca|disseny|compet[eè]ncia|bloc/i.test(knowledgeText), reason: 'Falten blocs de sabers o sabers concrets prou desenvolupats.' },
+    { id: 'criteria', label: 'Criteris LOMLOE', ok: criteriaCodes.length >= 2 || /criteri|avaluaci[oó]|CE\d/i.test(data.competences || ''), reason: 'Falten criteris numerats o competències específiques vinculades.' },
+    { id: 'sequence', label: 'Seqüència', ok: /inicial|desenvolupament|estructuraci[oó]|aplicaci[oó]/i.test(seqText) && seqText.length > 220, reason: 'La seqüència ha d’incloure inicials, desenvolupament, estructuració i aplicació.' },
+    { id: 'inclusion', label: 'Adaptacions', ok: inclusionText.length > 220 && /TDAH/i.test(inclusionText) && /TEA/i.test(inclusionText) && /disl[eè]xia/i.test(inclusionText) && /TDL/i.test(inclusionText), reason: 'Falten adaptacions concretes per TDAH, TEA, dislèxia i TDL.' },
+    { id: 'assessment', label: 'Avaluació', ok: /evid[eè]nc|instrument|retorn|millora/i.test(assessmentText), reason: 'Falten evidències, instruments o retorn i millora.' },
+    { id: 'rubric', label: 'Rúbrica', ok: rubricRows.length >= 5 && /NA/i.test(assessmentText) && /AS/i.test(assessmentText) && /AN/i.test(assessmentText) && /AE/i.test(assessmentText), reason: 'La rúbrica ha de tenir almenys 5 ítems amb NA, AS, AN i AE.' }
+  ];
+  const missing = checks.filter(c => !c.ok);
+  return { checks, missing, score: checks.length - missing.length, total: checks.length };
+}
+
+function renderAiValidation(result) {
+  if (!els.aiValidationPanel) return;
+  const chips = result.checks.map(c => `<span class="validation-chip ${c.ok ? 'ok' : 'missing'}">${c.ok ? '✓' : '!' } ${escapeHtml(c.label)}</span>`).join('');
+  if (!result.missing.length) {
+    els.aiValidationPanel.innerHTML = `<p class="ok">Validació correcta: ${result.score}/${result.total} blocs essencials detectats.</p><div class="validation-chip-row">${chips}</div>`;
+    return;
+  }
+  els.aiValidationPanel.innerHTML = `<p class="warn">Validació parcial: ${result.score}/${result.total} blocs complets.</p><div class="validation-chip-row">${chips}</div><ul>${result.missing.map(m => `<li><span class="missing">${escapeHtml(m.label)}:</span> ${escapeHtml(m.reason)}</li>`).join('')}</ul>`;
+}
+
+function buildPartialPrompt(kind) {
+  const data = getFormData();
+  const w = getAiWizardData();
+  const validation = validateSaQuality(data);
+  const missingIds = validation.missing.map(m => m.id);
+  const context = els.aiContext.value.trim() || buildGuidedInstructionText();
+  const common = `Ets un assistent docent expert en situacions d’aprenentatge LOMLOE a Catalunya. Escriu en català i dona contingut directament aprofitable.
+
+Context de la SA:
+Títol: ${data.title}
+Curs: ${w.course || data.level}
+Matèria: ${w.subject || data.subject}
+Repte o tema: ${w.topic || data.challenge}
+Producte final: ${w.product || 'producte final competencial'}
+Criteris o competències coneguts: ${w.criteria || data.competences || 'pendent'}
+Instruccions de l’usuari:
+${context}`;
+
+  if (kind === 'knowledge') return `${common}
+
+Genera només els sabers de la SA. Respon amb aquestes etiquetes exactes:
+BLOCS DE SABERS
+SABERS CONCRETS
+
+Els sabers han de ser concrets, curriculars, vinculats al repte i separats en llista.`;
+  if (kind === 'inclusion') return `${common}
+
+Genera només la part d’inclusió. Respon amb aquestes etiquetes exactes:
+MESURES I SUPORTS
+ADAPTACIONS TDAH
+ADAPTACIONS TEA
+ADAPTACIONS DISLÈXIA
+ADAPTACIONS TDL
+
+Les adaptacions han de ser concretes, aplicables a l’aula i no han de rebaixar els objectius essencials.`;
+  if (kind === 'rubric') return `${common}
+
+Genera només una rúbrica completa en format textual però estructurat. Respon amb aquesta etiqueta exacta:
+RÚBRICA
+
+Cada fila ha de seguir aquest format:
+Criteri LOMLOE | Ítem d’avaluació | NA | AS | AN | AE
+
+Inclou almenys 6 files i usa criteris numerats quan sigui possible.`;
+  const needKnowledge = missingIds.includes('knowledge') || !data.knowledge.trim();
+  const needInclusion = missingIds.includes('inclusion') || !data.inclusion.trim();
+  const needRubric = missingIds.includes('rubric') || !/NA/i.test(data.assessment || '');
+  const needCriteria = missingIds.includes('criteria');
+  const blocks = [];
+  if (needCriteria) blocks.push('COMPETÈNCIES ESPECÍFIQUES\nCRITERIS D’AVALUACIÓ');
+  if (needKnowledge) blocks.push('BLOCS DE SABERS\nSABERS CONCRETS');
+  if (needInclusion) blocks.push('MESURES I SUPORTS\nADAPTACIONS TDAH\nADAPTACIONS TEA\nADAPTACIONS DISLÈXIA\nADAPTACIONS TDL');
+  if (needRubric) blocks.push('RÚBRICA');
+  return `${common}
+
+Completa només els apartats que falten o són febles. No repeteixis tota la SA. Respon només amb aquestes etiquetes exactes, segons calgui:
+${blocks.join('\n')}
+
+No deixis cap apartat buit.`;
+}
+
+function buildLocalPartialDraft(kind) {
+  const data = getFormData();
+  const subject = els.aiSubject?.value || data.subject || 'la matèria';
+  const topic = els.aiTopic?.value || firstSentence(data.challenge) || 'el repte plantejat';
+  if (kind === 'knowledge') {
+    return `BLOCS DE SABERS
+- Procés de resolució de problemes i projectes.
+- Recerca, selecció i organització d’informació.
+- Comunicació tècnica, oral, escrita i multimodal.
+- Ús d’eines digitals i recursos propis de ${subject}.
+- Revisió, prova, millora i reflexió sobre el procés.
+
+SABERS CONCRETS
+- Anàlisi del context i formulació del problema relacionat amb ${topic}.
+- Identificació de requisits, limitacions i criteris de qualitat.
+- Planificació de fases de treball, rols, materials i temps.
+- Elaboració de propostes, esquemes, prototips, càlculs o produccions segons la matèria.
+- Documentació del procés i justificació de decisions.
+- Comunicació del producte final i valoració de l’impacte, la sostenibilitat i la millora.`;
+  }
+  if (kind === 'inclusion') {
+    return `MESURES I SUPORTS
+- Objectius i criteris d’èxit visibles des de l’inici.
+- Instruccions fragmentades, exemples model i checklist de seguiment.
+- Opcions diverses d’accés a la informació: text breu, esquema, imatge, demostració i explicació oral.
+- Rols cooperatius clars, temps flexible i retorn formatiu durant el procés.
+
+ADAPTACIONS TDAH
+Tasques curtes amb temporització, pauses funcionals, recordatoris visuals, objectius de sessió i validació freqüent del progrés.
+
+ADAPTACIONS TEA
+Anticipació de fases, estructura estable, consignes literals, reducció d’ambigüitats, suport visual i possibilitat de preparar la intervenció oral.
+
+ADAPTACIONS DISLÈXIA
+Tipografia clara, textos breus, lectura assistida, menys còpia mecànica, plantilles amb frases iniciades i opcions de resposta oral o visual.
+
+ADAPTACIONS TDL
+Vocabulari previ, frases curtes, pictogrames o esquemes, temps addicional per elaborar respostes i models lingüístics per explicar el procés.`;
+  }
+  if (kind === 'rubric' || kind === 'missing') {
+    const criteria = extractCompetenceParts(data.competences || '').criteriaCodes;
+    const c = (i) => criteria[i] || `${i+1}.1`;
+    return `RÚBRICA
+${c(0)} | Comprensió del repte i identificació de necessitats | Identifica el repte de manera confusa o incompleta. | Identifica el repte amb ajuda i recull alguna necessitat. | Explica el repte i relaciona necessitats amb dades o observacions. | Analitza el repte amb profunditat i justifica prioritats amb evidències.
+${c(1)} | Aplicació de sabers i procediments | Aplica procediments amb molts errors o sense autonomia. | Aplica alguns procediments amb suport. | Aplica sabers i procediments adequats de manera autònoma. | Transfereix sabers a situacions noves i justifica decisions.
+${c(2)} | Planificació i gestió del procés | No planifica o no segueix les fases. | Planifica parcialment i necessita recordatoris. | Organitza fases, materials i rols amb coherència. | Revisa la planificació i introdueix millores justificades.
+${c(3)} | Producte final o solució | El producte és incomplet o poc funcional. | El producte respon parcialment al repte. | El producte és funcional, coherent i ben justificat. | El producte és complet, creatiu, millorat i transferible.
+${c(4)} | Comunicació i documentació | Comunica amb poca claredat i amb evidències insuficients. | Comunica les idees principals amb suport. | Documenta i comunica el procés amb ordre i vocabulari adequat. | Comunica de manera rigorosa, visual i argumentada.
+${c(5)} | Reflexió, autoavaluació i millora | No identifica aprenentatges ni millores. | Identifica algun aprenentatge amb ajuda. | Valora el procés i proposa millores realistes. | Fa una reflexió crítica i concreta sobre aprenentatges, dificultats i millores.`;
+  }
+  return buildLocalPartialDraft('knowledge') + '\n\n' + buildLocalPartialDraft('inclusion') + '\n\n' + buildLocalPartialDraft('rubric');
+}
+
+async function generatePartialAiDraft(kind) {
+  renderAiValidation(validateSaQuality(getFormData()));
+  const label = kind === 'knowledge' ? 'sabers' : kind === 'inclusion' ? 'adaptacions' : kind === 'rubric' ? 'rúbrica' : 'camps buits o febles';
+  els.aiOutput.textContent = `Generant ${label}...`;
+  const provider = els.aiProvider.value;
+  if (provider !== 'google' || !els.aiKey.value.trim()) {
+    els.aiOutput.textContent = buildLocalPartialDraft(kind);
+    return;
+  }
+  try {
+    els.aiOutput.textContent = await callGeminiText(buildPartialPrompt(kind));
+  } catch (error) {
+    console.error(error);
+    els.aiOutput.textContent = `No he pogut obtenir resposta de la API per completar ${label}.
+
+${error.message}
+
+Et deixo una proposta local:
+
+${buildLocalPartialDraft(kind)}`;
+  }
 }
 
 async function extractDocxText(file) {
@@ -1262,21 +1466,33 @@ function docxXmlToText(xml) {
 }
 
 function applyImportedText(filename, text, kind) {
-  els.title.value = filename.replace(/\.[^.]+$/, '');
   const mapped = mapImportedTemplateText(text);
+  const isAi = String(kind || '').toLowerCase().includes('ia');
+  const isPartialAi = isAi && !mapped.title && !mapped.challenge && (mapped.knowledge || mapped.inclusion || mapped.assessment || mapped.competences);
   if (mapped.title) els.title.value = mapped.title;
+  else if (!isAi && filename) els.title.value = filename.replace(/\.[^.]+$/, '');
   if (mapped.level) els.level.value = mapped.level;
   if (mapped.subject) els.subject.value = mapped.subject;
   if (mapped.duration) els.duration.value = mapped.duration;
   if (mapped.challenge) els.challenge.value = mapped.challenge;
   if (mapped.knowledge) els.knowledge.value = mapped.knowledge;
-  if (mapped.competences) els.competences.value = mapped.competences;
+  if (mapped.competences) {
+    if (isPartialAi && els.competences.value.trim()) els.competences.value = joinNonEmpty([els.competences.value, mapped.competences]);
+    else els.competences.value = mapped.competences;
+  }
   if (mapped.sequence) els.sequence.value = mapped.sequence;
   if (mapped.inclusion) els.inclusion.value = mapped.inclusion;
-  if (mapped.assessment) els.assessment.value = mapped.assessment;
-  if (!mapped.challenge && text) els.challenge.value = `${kind} importat: ${filename}\n\n${text.slice(0, 5000)}`;
+  if (mapped.assessment) {
+    if (isPartialAi && els.assessment.value.trim() && !/evid[eè]nc|instrument|retorn/i.test(mapped.assessment)) {
+      els.assessment.value = joinNonEmpty([els.assessment.value, mapped.assessment]);
+    } else {
+      els.assessment.value = mapped.assessment;
+    }
+  }
+  if (!mapped.challenge && text && !isPartialAi) els.challenge.value = `${kind} importat: ${filename}\n\n${text.slice(0, 5000)}`;
   if (els.importStatus) els.importStatus.textContent = `${kind} importat: ${filename}. Text recuperat: ${text.length.toLocaleString('ca-ES')} caràcters. Camps detectats: ${Object.values(mapped).filter(Boolean).length}.`;
   renderReport(getFormData());
+  renderAiValidation(validateSaQuality(getFormData()));
 }
 
 init();

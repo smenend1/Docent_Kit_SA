@@ -1,31 +1,37 @@
 # DocentKit · Generador de situacions i recursos
 
-Versió 1.1 de la PWA educativa en català per a docents.
+Versió 1.2 de la PWA educativa en català per a docents.
 
-## Objectiu de la v1.1
+## Objectiu de la v1.2
 
-Aquesta versió fa un pas més en el mode d'IA assistida: l'usuari ja no ha d'escriure necessàriament una descripció llarga. L'app incorpora un assistent guiat que construeix automàticament unes instruccions completes per generar una situació d'aprenentatge sencera.
+Aquesta versió millora la fiabilitat del mode d'IA assistida. Ja no depèn només d'una única resposta llarga de Gemini: incorpora validació de camps obligatoris i botons per completar apartats concrets quan han quedat buits o massa febles.
 
-## Novetats v1.1
+## Novetats v1.2
 
-- Nou bloc **Assistent guiat** dins el mode IA.
-- Camps específics per construir una SA completa:
-  - curs;
-  - matèria;
-  - tema o repte;
-  - producte final;
-  - durada;
-  - materials, eines i recursos;
-  - sabers o continguts clau;
-  - criteris LOMLOE o competències;
-  - adaptacions per TDAH, TEA, dislèxia i TDL.
-- Botó **Construeix instruccions**: crea automàticament un prompt complet a partir dels camps guiats.
-- Botó **Genera SA completa assistida**: envia les instruccions a Gemini si hi ha API key o genera un esborrany local si no n'hi ha.
-- Prompt de Gemini millorat per demanar una SA completa, amb objectius, criteris, sabers, seqüència, vectors, evidències i rúbrica.
-- Rúbrica demanada en format: criteri LOMLOE | ítem d'avaluació | NA | AS | AN | AE.
-- Més marge de resposta de Gemini (`maxOutputTokens` ampliat) per evitar esborranys massa curts.
-- Es guarden localment les preferències de l'assistent guiat en aquest navegador.
-- Service worker actualitzat a `docentkit-v11`.
+- Nou bloc **Control de qualitat** dins el mode IA.
+- Botó **Valida camps obligatoris** per comprovar:
+  - sabers;
+  - criteris LOMLOE;
+  - seqüència didàctica;
+  - adaptacions TDAH, TEA, dislèxia i TDL;
+  - avaluació;
+  - rúbrica.
+- Botó **Completa camps buits** per regenerar només els blocs febles.
+- Botó **Genera només sabers**.
+- Botó **Genera només adaptacions**.
+- Botó **Genera només rúbrica**.
+- Les generacions parcials responen amb etiquetes interpretables per l'app.
+- El mapatge d'importació IA ara reconeix millor:
+  - `BLOCS DE SABERS`;
+  - `SABERS CONCRETS`;
+  - `MESURES I SUPORTS`;
+  - `ADAPTACIONS TDAH`;
+  - `ADAPTACIONS TEA`;
+  - `ADAPTACIONS DISLÈXIA`;
+  - `ADAPTACIONS TDL`;
+  - `RÚBRICA`.
+- Quan s'aplica un esborrany parcial, l'app evita sobreescriure el títol i intenta conservar el contingut existent.
+- Service worker actualitzat a `docentkit-v12`.
 
 ## Es manté
 
@@ -34,6 +40,7 @@ Aquesta versió fa un pas més en el mode d'IA assistida: l'usuari ja no ha d'es
 - Mode experimental Google API / Gemini.
 - Selector de model Gemini.
 - Prova de connexió API.
+- Assistent guiat per construir instruccions completes.
 - Plantilles internes.
 - Importació TXT, Markdown, JSON, DOCX i PDF amb text seleccionable.
 - Exportació PDF visual descarregable sense pop-up.
@@ -43,6 +50,7 @@ Aquesta versió fa un pas més en el mode d'IA assistida: l'usuari ja no ha d'es
 
 ## Notes honestes
 
+- El validador no substitueix la revisió docent: detecta absències o apartats febles, però no garanteix que el contingut sigui curricularment perfecte.
 - El mode Gemini depèn de la clau API, permisos, quota, restriccions de domini i models disponibles.
 - La clau API es desa només al navegador amb `localStorage`; no s'ha de posar mai dins el codi del repositori.
 - La importació PDF no fa OCR en documents escanejats.

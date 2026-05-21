@@ -277,3 +277,41 @@ button.small {
   .wizard-head { flex-direction: column; }
   .check-grid { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
 }
+
+/* v1.2 · Control de qualitat IA */
+.ai-quality-card {
+  margin-top: 16px;
+  border: 1px solid #d8ead9;
+  background: #fbfffc;
+  border-radius: 18px;
+  padding: 16px;
+}
+.quality-head h3 { margin: 0.15rem 0 0.25rem; }
+.compact-actions { gap: 8px; flex-wrap: wrap; }
+.validation-panel {
+  margin-top: 12px;
+  border: 1px solid #e4e7ec;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+.validation-panel ul { margin: 8px 0 0; padding-left: 1.2rem; }
+.validation-panel .ok { color: #166534; font-weight: 700; }
+.validation-panel .warn { color: #9a3412; font-weight: 700; }
+.validation-panel .missing { color: #991b1b; font-weight: 700; }
+.validation-chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.validation-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid #d0d5dd;
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: #fff;
+  font-size: 0.82rem;
+}
+.validation-chip.ok { border-color: #bbf7d0; background: #f0fdf4; color: #166534; }
+.validation-chip.missing { border-color: #fecaca; background: #fef2f2; color: #991b1b; }
+.validation-chip.warn { border-color: #fed7aa; background: #fff7ed; color: #9a3412; }

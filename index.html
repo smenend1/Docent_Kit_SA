@@ -269,6 +269,23 @@
           <button id="aiTestBtn" class="secondary" type="button">Prova connexió API</button>
           <button id="aiApplyBtn" class="secondary" type="button">Aplica l’esborrany al formulari</button>
         </div>
+        <section class="ai-quality-card" aria-label="Validació de camps obligatoris">
+          <div class="quality-head">
+            <div>
+              <p class="eyebrow">Control de qualitat</p>
+              <h3>Revisa i completa els apartats febles</h3>
+              <p class="hint">L’app comprova si falten sabers, adaptacions, criteris o rúbrica, i pot regenerar només aquell bloc.</p>
+            </div>
+          </div>
+          <div class="actions-row compact-actions">
+            <button id="aiValidateBtn" class="secondary small" type="button">Valida camps obligatoris</button>
+            <button id="aiCompleteMissingBtn" class="secondary small" type="button">Completa camps buits</button>
+            <button id="aiKnowledgeBtn" class="secondary small" type="button">Genera només sabers</button>
+            <button id="aiInclusionBtn" class="secondary small" type="button">Genera només adaptacions</button>
+            <button id="aiRubricBtn" class="secondary small" type="button">Genera només rúbrica</button>
+          </div>
+          <div id="aiValidationPanel" class="validation-panel">Encara no s’ha validat cap esborrany.</div>
+        </section>
         <pre id="aiOutput" class="ai-output" aria-live="polite">Encara no hi ha cap esborrany.</pre>
       </section>
 
