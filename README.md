@@ -1,23 +1,22 @@
 # DocentKit · Generador de situacions i recursos
 
-Versió 0.4 de la PWA educativa en català per a docents.
+Versió 0.5 de la PWA educativa en català per a docents.
 
-## Novetats v0.4
+## Novetats v0.5
 
-- Nova línia independent de les PWA de Matemàtiques i Tecnologia.
-- Botó **Crea des de plantilla** amb plantilla de situació d'aprenentatge de Tecnologia ESO integrada.
-- Exportació a **PDF real descarregable** des del navegador, sense finestres emergents.
-- Tipografia canviada a **Verdana/Geneva/Arial** per evitar artefactes en imprimir des de mòbil.
-- Pesos de lletra ajustats en mode impressió perquè la lletra L no aparegui com una barra massa fosca.
-- Es manté la vista d'exportació neta, la impressió i l'exportació HTML.
-- Biblioteca local amb `localStorage`.
-- Exportació/importació JSON.
-- Funcionament offline bàsic amb service worker `docentkit-v4`.
+- Sortida específica per a **situacions d’aprenentatge** amb estil d’informe de programació.
+- Estructura d’impressió inspirada en la plantilla de suport de programació de SA: identificació, descripció, competències, objectius, sabers, desenvolupament, activitats, mesures, evidències, vectors i rúbrica.
+- Rúbrica ampliada en format de **quadre** amb columnes: criteri LOMLOE, ítem d’avaluació, NA, AS, AN i AE.
+- Detecció automàtica de codis de criteris com `1.1`, `2.1`, `4.2` per omplir la columna de criteris de la rúbrica.
+- Millora de la vista d’impressió A4 amb `@page`, taules i blocs que eviten salts dolents quan és possible.
+- Es manté l’exportació a **PDF real descarregable** sense finestres emergents.
+- Es manté l’exportació HTML neta i la impressió des de la mateixa pàgina.
+- Service worker actualitzat a `docentkit-v5`.
 
 ## Limitacions conegudes
 
+- El botó **Descarrega PDF** genera un PDF textual robust i descarregable. La vista d’impressió/HTML és la que conserva millor la maquetació visual de plantilla.
 - La lectura completa de DOCX/PDF encara no està activada. La importació accepta el fitxer com a base i en registra el nom, però per extreure contingut caldrà afegir una fase amb `mammoth.js` per DOCX i `pdf.js` per PDF.
-- El PDF integrat és deliberadament simple i robust: genera text net en format A4 amb Times-Roman. Manté millor la compatibilitat mòbil que `window.print()`, però no reprodueix tota la maquetació visual HTML.
 
 ## Publicació a GitHub Pages
 

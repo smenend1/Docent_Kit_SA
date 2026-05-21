@@ -1,5 +1,5 @@
-const APP_KEY = 'docentkit.resources.v3';
-const OLD_KEYS = ['docentkit.resources.v1', 'docentkit.resources.v2'];
+const APP_KEY = 'docentkit.resources.v5';
+const OLD_KEYS = ['docentkit.resources.v1', 'docentkit.resources.v2', 'docentkit.resources.v3'];
 
 const MODULES = [
   { id: 'sa', label: 'Crear SA', type: 'Situació d’aprenentatge', intro: 'Dissenya una situació d’aprenentatge competencial amb repte, sabers, criteris, seqüència, inclusió i evidències.' },
@@ -151,7 +151,7 @@ function setModule(id) {
   document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.id === id));
   els.formTitle.textContent = currentModule.label;
   els.type.value = currentModule.type;
-  const templateHint = currentModule.id === 'sa' ? 'Inclou la plantilla oficial de SA de Tecnologia ESO integrada.' : 'Inclou una plantilla inicial editable.';
+  const templateHint = currentModule.id === 'sa' ? "Inclou una sortida d'informe segons pauta de programació de SA, amb rúbrica LOMLOE completa." : 'Inclou una plantilla inicial editable.';
   els.intro.innerHTML = `<p class="eyebrow">${escapeHtml(currentModule.type)}</p><h2>${escapeHtml(currentModule.label)}</h2><p>${escapeHtml(currentModule.intro)}</p><p class="hint">${escapeHtml(templateHint)}</p>`;
   if (id === 'biblioteca') document.querySelector('.library-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -185,6 +185,7 @@ function renderReport(data) {
 }
 
 function buildReportHtml(data) {
+  if (isSituation(data)) return buildSaReportHtml(data);
   return `
     <h1>${escapeHtml(data.title)}</h1>
     <p><strong>Tipus:</strong> ${escapeHtml(data.type)} · <strong>Nivell:</strong> ${escapeHtml(data.level)}${data.subject ? ` · <strong>Matèria:</strong> ${escapeHtml(data.subject)}` : ''}${data.duration ? ` · <strong>Durada:</strong> ${escapeHtml(data.duration)}` : ''}</p>
@@ -198,20 +199,208 @@ function buildReportHtml(data) {
   `;
 }
 
+function isSituation(data) {
+  return String(data.type || '').toLowerCase().includes('situació');
+}
+
+function buildSaReportHtml(data) {
+  const challengeParts = extractSaParts(data.challenge);
+  const competenceParts = extractCompetenceParts(data.competences);
+  const sequenceParts = extractSequenceParts(data.sequence);
+  const assessmentParts = extractAssessmentParts(data.assessment);
+  const inclusionParts = extractInclusionParts(data.inclusion);
+  const rubric = buildRubricRows(data, competenceParts.criteriaCodes);
+  return `
+    <article class="sa-report">
+      <header class="sa-cover">
+        <p class="sa-kicker">Programació de la situació d’aprenentatge</p>
+        <h1>${escapeHtml(data.title)}</h1>
+        <p class="sa-question">${escapeHtml(challengeParts.repte || firstSentence(data.challenge) || 'Repte pendent de concretar.')}</p>
+      </header>
+
+      <section class="sa-meta-grid">
+        ${metaBox('Curs', data.level)}
+        ${metaBox('Àrea / matèria / àmbit', data.subject || '—')}
+        ${metaBox('Durada', data.duration || '—')}
+        ${metaBox('Tipus', data.type || 'Situació d’aprenentatge')}
+      </section>
+
+      <section class="sa-block">
+        <h2>Descripció</h2>
+        ${definition('Context', challengeParts.context)}
+        ${definition('Repte', challengeParts.repte)}
+        ${definition('Justificació', challengeParts.justificacio)}
+        ${definition('Producte final', challengeParts.producte)}
+      </section>
+
+      <section class="sa-block">
+        <h2>Competències específiques i criteris d’avaluació</h2>
+        <div class="sa-two-cols">
+          <div>${definition('Competències específiques', competenceParts.competencies || data.competences)}</div>
+          <div>${definition('Criteris d’avaluació', competenceParts.criteria || (competenceParts.criteriaCodes.join(', ') || 'Criteris pendents de concretar'))}</div>
+        </div>
+        ${definition('Competències transversals', competenceParts.transversals)}
+      </section>
+
+      <section class="sa-block">
+        <h2>Objectius d’aprenentatge</h2>
+        ${buildObjectivesList(data)}
+      </section>
+
+      <section class="sa-block">
+        <h2>Sabers</h2>
+        ${formatText(data.knowledge)}
+      </section>
+
+      <section class="sa-block">
+        <h2>Desenvolupament de la situació d’aprenentatge</h2>
+        ${definition('Metodologia, recursos i organització', joinNonEmpty([sequenceParts.metodologia, inclusionParts.universals]))}
+        <table class="sa-sequence-table">
+          <thead><tr><th>Moment</th><th>Finalitat</th><th>Activitats principals</th></tr></thead>
+          <tbody>
+            ${sequenceRow('Inicials', 'Què en sabem?', sequenceParts.inicials)}
+            ${sequenceRow('Desenvolupament', 'Aprenem nous continguts', sequenceParts.desenvolupament)}
+            ${sequenceRow('Estructuració', 'Què hem après?', sequenceParts.estructuracio)}
+            ${sequenceRow('Aplicació', 'Apliquem el que hem après', sequenceParts.aplicacio)}
+          </tbody>
+        </table>
+      </section>
+
+      <section class="sa-block">
+        <h2>Mesures i suports</h2>
+        ${definition('Disseny universal i suports generals', inclusionParts.universals || data.inclusion)}
+        <div class="sa-support-grid">
+          ${supportCard('TDAH', inclusionParts.tdah)}
+          ${supportCard('TEA', inclusionParts.tea)}
+          ${supportCard('Dislèxia', inclusionParts.dislexia)}
+          ${supportCard('TDL', inclusionParts.tdl)}
+        </div>
+      </section>
+
+      <section class="sa-block">
+        <h2>Evidències, instruments i retorn</h2>
+        <div class="sa-three-cols">
+          ${definition('Evidències', assessmentParts.evidencies)}
+          ${definition('Instruments', assessmentParts.instruments)}
+          ${definition('Retorn i millora', assessmentParts.retorn)}
+        </div>
+      </section>
+
+      <section class="sa-block">
+        <h2>Rúbrica de la situació d’aprenentatge</h2>
+        <table class="rubric-table">
+          <thead><tr><th>Criteri LOMLOE</th><th>Ítem d’avaluació</th><th>NA</th><th>AS</th><th>AN</th><th>AE</th></tr></thead>
+          <tbody>${rubric.map(row => rubricRow(row)).join('')}</tbody>
+        </table>
+      </section>
+
+      <section class="sa-block">
+        <h2>Vectors</h2>
+        <div class="vectors-grid">
+          ${vectorCard('Aprenentatges competencials', 'Repte autèntic, producte final i aplicació funcional dels sabers.')}
+          ${vectorCard('Perspectiva de gènere', 'Referents diversos, participació equitativa i revisió d’estereotips en rols i tasques.')}
+          ${vectorCard('Universalitat del currículum', 'Opcions d’accés, expressió i participació per reduir barreres.')}
+          ${vectorCard('Qualitat de les llengües', 'Ús de llenguatge tècnic, comunicació oral/escrita i suport multimodal.')}
+          ${vectorCard('Ciutadania democràtica i consciència global', 'Connexió amb necessitats del centre, sostenibilitat i impacte comunitari.')}
+          ${vectorCard('Benestar emocional', 'Clima segur, rols clars, feedback formatiu i confiança en la millora.')}
+        </div>
+      </section>
+    </article>
+  `;
+}
+
 function section(title, text) {
   if (!text) return '';
   return `<h2>${escapeHtml(title)}</h2>${formatText(text)}`;
 }
 
 function formatText(text) {
-  const paragraphs = String(text).split(/\n{2,}/).map(block => block.trim()).filter(Boolean);
+  const paragraphs = String(text || '').split(/\n{2,}/).map(block => block.trim()).filter(Boolean);
   return paragraphs.map(block => {
     const lines = block.split('\n').map(line => line.trim()).filter(Boolean);
     if (lines.length > 1 || lines.some(line => /^[-•*]|^\d+[.)]/.test(line))) {
       return `<ul>${lines.map(line => `<li>${escapeHtml(line.replace(/^[-•*]\s*/, ''))}</li>`).join('')}</ul>`;
     }
     return `<p>${escapeHtml(block)}</p>`;
-  }).join('');
+  }).join('') || '<p>—</p>';
+}
+
+function metaBox(label, value) { return `<div class="sa-meta"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value || '—')}</strong></div>`; }
+function definition(label, value) { return `<div class="definition"><h3>${escapeHtml(label)}</h3>${formatText(value || '—')}</div>`; }
+function supportCard(label, value) { return `<div class="support-card"><h3>${escapeHtml(label)}</h3>${formatText(value || 'Mesures pendents de concretar.')}</div>`; }
+function vectorCard(label, value) { return `<div class="vector-card"><h3>${escapeHtml(label)}</h3><p>${escapeHtml(value)}</p></div>`; }
+function sequenceRow(moment, purpose, value) { return `<tr><td><strong>${escapeHtml(moment)}</strong></td><td>${escapeHtml(purpose)}</td><td>${formatText(value || 'Activitats pendents de concretar.')}</td></tr>`; }
+function rubricRow(row) { return `<tr><td>${escapeHtml(row.criteri)}</td><td>${escapeHtml(row.item)}</td><td>${escapeHtml(row.na)}</td><td>${escapeHtml(row.as)}</td><td>${escapeHtml(row.an)}</td><td>${escapeHtml(row.ae)}</td></tr>`; }
+function joinNonEmpty(values) { return values.filter(Boolean).join('\n\n'); }
+function firstSentence(text) { return String(text || '').replace(/\n/g, ' ').split(/[.!?]/).map(s => s.trim()).find(Boolean) || ''; }
+
+function extractSaParts(text) {
+  return extractLabeled(text, {
+    context: ['Context'], repte: ['Repte'], justificacio: ['Justificació', 'Justificacio'], producte: ['Producte final']
+  });
+}
+function extractCompetenceParts(text) {
+  const parts = extractLabeled(text, {
+    competencies: ['Competències específiques', 'Competencies especifiques'], criteria: ['Criteris d’avaluació', "Criteris d'avaluació", 'Criteris'], transversals: ['Competències transversals', 'Competencies transversals']
+  });
+  parts.criteriaCodes = extractCriteriaCodes(parts.criteria || text);
+  return parts;
+}
+function extractSequenceParts(text) {
+  const parts = extractLabeled(text, {
+    inicials: ['Inicials', 'Activitats inicials'], desenvolupament: ['Desenvolupament'], estructuracio: ['Estructuració', 'Estructuracio'], aplicacio: ['Aplicació', 'Aplicacio'], metodologia: ['Metodologia']
+  });
+  if (!parts.inicials && !parts.desenvolupament && !parts.estructuracio && !parts.aplicacio) parts.inicials = text;
+  return parts;
+}
+function extractAssessmentParts(text) {
+  return extractLabeled(text, { evidencies: ['Evidències', 'Evidencies'], instruments: ['Instruments'], retorn: ['Retorn i millora', 'Retorn'] });
+}
+function extractInclusionParts(text) {
+  return extractLabeled(text, { universals: ['Mesures i suports universals', 'Suports universals'], tdah: ['TDAH'], tea: ['TEA'], dislexia: ['Dislèxia', 'Dislexia'], tdl: ['TDL'] });
+}
+function extractLabeled(text, labels) {
+  const source = String(text || '');
+  const allLabels = Object.values(labels).flat().map(escapeRegExp);
+  const result = {};
+  Object.entries(labels).forEach(([key, aliases]) => {
+    for (const alias of aliases) {
+      const regex = new RegExp(`${escapeRegExp(alias)}\\s*:?\\s*([\\s\\S]*?)(?=\\n\\s*(?:${allLabels.join('|')})\\s*:?|$)`, 'i');
+      const match = source.match(regex);
+      if (match && match[1].trim()) { result[key] = match[1].trim(); break; }
+    }
+  });
+  return result;
+}
+function extractCriteriaCodes(text) {
+  const matches = String(text || '').match(/\b\d+\.\d+\b/g) || [];
+  return [...new Set(matches)];
+}
+function escapeRegExp(value) { return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+function buildObjectivesList(data) {
+  const challenge = extractSaParts(data.challenge);
+  const product = challenge.producte || 'un producte final contextualitzat';
+  const subject = data.subject || 'la matèria';
+  const objectives = [
+    `Analitzar una necessitat propera per formular un repte tecnològic o competencial rellevant en ${subject}.`,
+    `Dissenyar i planificar ${product} utilitzant sabers, criteris de viabilitat i presa de decisions justificada.`,
+    `Aplicar procediments de recerca, prototipatge, comunicació i revisió per millorar la proposta durant el procés.`,
+    `Comunicar el resultat final amb evidències clares i vocabulari adequat al context.`,
+    `Reflexionar sobre el propi aprenentatge, el treball cooperatiu i les millores incorporades.`
+  ];
+  return `<ol>${objectives.map(o => `<li>${escapeHtml(o)}</li>`).join('')}</ol>`;
+}
+
+function buildRubricRows(data, criteriaCodes) {
+  const codes = criteriaCodes.length ? criteriaCodes : ['1.1', '2.1', '4.2', '6.1'];
+  const base = [
+    ['Identificació del problema i recerca', 'identifica el problema de manera molt guiada i aporta informació escassa o poc contrastada', 'identifica el problema i recull informació bàsica amb algun suport', 'analitza el problema i selecciona informació pertinent per justificar decisions', 'formula el problema amb precisió, contrasta fonts i justifica decisions amb criteris tècnics i socials'],
+    ['Disseny, planificació i justificació tècnica', 'presenta una proposta incompleta, poc viable o sense planificació clara', 'proposa una solució senzilla amb fases bàsiques i justificació parcial', 'dissenya una solució viable amb planificació, materials i justificació coherent', 'dissenya una solució ben fonamentada, sostenible i optimitzada amb alternatives justificades'],
+    ['Construcció, simulació, prova o millora', 'executa parcialment la proposta i incorpora poques comprovacions', 'desenvolupa la proposta amb suport i fa proves bàsiques', 'prova, revisa i millora la solució a partir d’evidències', 'itera la solució amb autonomia, dades de prova i millores ben justificades'],
+    ['Comunicació, documentació i reflexió final', 'comunica el resultat amb poca estructura i reflexió limitada', 'presenta el resultat amb estructura bàsica i explica algunes decisions', 'documenta i comunica el procés i el producte amb claredat, vocabulari adequat i reflexió', 'comunica amb rigor, evidències visuals o tècniques i reflexiona sobre impacte, aprenentatge i millores']
+  ];
+  return base.map((row, i) => ({ criteri: codes[i] || codes[codes.length - 1] || '—', item: row[0], na: row[1], as: row[2], an: row[3], ae: row[4] }));
 }
 
 function saveCurrentResource() {
@@ -296,6 +485,7 @@ function downloadCurrentHtml() {
 }
 
 function buildPlainReport(data) {
+  if (isSituation(data)) return buildSaPlainReport(data);
   const parts = [
     data.title,
     `Tipus: ${data.type}`,
@@ -312,6 +502,38 @@ function buildPlainReport(data) {
     data.tags.length ? `Etiquetes: ${data.tags.join(', ')}` : ''
   ];
   return parts.filter(Boolean).join('\n');
+}
+
+function buildSaPlainReport(data) {
+  const c = extractCompetenceParts(data.competences);
+  const parts = [
+    'PROGRAMACIÓ DE LA SITUACIÓ D’APRENENTATGE',
+    data.title,
+    `Curs: ${data.level}`,
+    `Àrea / matèria / àmbit: ${data.subject || '—'}`,
+    `Durada: ${data.duration || '—'}`,
+    '',
+    plainSection('DESCRIPCIÓ', data.challenge),
+    plainSection('COMPETÈNCIES ESPECÍFIQUES I CRITERIS D’AVALUACIÓ', data.competences),
+    plainSection('OBJECTIUS D’APRENENTATGE', stripHtml(buildObjectivesList(data))),
+    plainSection('SABERS', data.knowledge),
+    plainSection('DESENVOLUPAMENT DE LA SITUACIÓ D’APRENENTATGE', data.sequence),
+    plainSection('MESURES I SUPORTS', data.inclusion),
+    plainSection('EVIDÈNCIES, INSTRUMENTS I RETORN', data.assessment),
+    'RÚBRICA DE LA SITUACIÓ D’APRENENTATGE',
+    'Criteri LOMLOE | Ítem | NA | AS | AN | AE',
+    ...buildRubricRows(data, c.criteriaCodes).map(r => `${r.criteri} | ${r.item} | ${r.na} | ${r.as} | ${r.an} | ${r.ae}`),
+    '',
+    'VECTORS',
+    'Aprenentatges competencials; perspectiva de gènere; universalitat del currículum; qualitat de les llengües; ciutadania democràtica i consciència global; benestar emocional.'
+  ];
+  return parts.filter(Boolean).join('\n');
+}
+
+function stripHtml(html) {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  return div.innerText;
 }
 
 function plainSection(title, text) { return text ? `${title}\n${text}\n` : ''; }
@@ -414,7 +636,17 @@ function buildStandaloneHtml(data, reportHtml) {
     article { background: white; border: 1px solid #e4e7ec; border-radius: 18px; padding: 28px; line-height: 1.6; }
     h1 { margin-top: 0; letter-spacing: -0.015em; font-weight: 700; }
     h2 { margin-top: 1.4rem; border-top: 1px solid #e4e7ec; padding-top: 1rem; font-weight: 700; }
-    ul { padding-left: 1.3rem; }
+    h3 { margin: .35rem 0; }
+    ul, ol { padding-left: 1.3rem; }
+    .sa-cover { background: linear-gradient(135deg, #f0fdf4, #ffffff); border-bottom: 2px solid #d8ead9; margin: -28px -28px 22px; padding: 30px 32px; }
+    .sa-kicker { text-transform: uppercase; color: #155b32; letter-spacing: .14em; font-weight: 700; }
+    .sa-meta-grid, .sa-support-grid, .vectors-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .sa-meta, .definition, .support-card, .vector-card { border: 1px solid #d8ead9; border-radius: 14px; padding: 14px; background: #fbfffc; }
+    .sa-meta span { display: block; text-transform: uppercase; color: #155b32; font-weight: 700; font-size: .8rem; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: .88rem; }
+    th, td { border: 1px solid #cfd8cf; padding: 8px; vertical-align: top; }
+    th { background: #eaf7ef; color: #155b32; }
+    .rubric-table th:nth-child(1) { width: 11%; } .rubric-table th:nth-child(2) { width: 19%; }
     .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
     button { border: 0; border-radius: 999px; padding: 12px 16px; font-weight: 700; background: #2563eb; color: white; }
     .secondary { background: #eef2f7; color: #172033; }

@@ -150,3 +150,58 @@ body.export-mode .export-mode-shell {
   .app-header { align-items: flex-start; flex-direction: column; }
   .resource-item { align-items: flex-start; flex-direction: column; }
 }
+
+/* v0.5 · Sortida específica de Situació d'aprenentatge */
+.sa-report { font-family: var(--font-main); color: #172017; }
+.sa-cover {
+  background: linear-gradient(135deg, #eefaf1 0%, #ffffff 70%);
+  border-bottom: 2px solid #d6e6d4;
+  margin: -1.5rem -1.5rem 1.25rem;
+  padding: 1.8rem 2rem;
+}
+.sa-kicker { margin: 0 0 .7rem; color: #155b32; text-transform: uppercase; letter-spacing: .14em; font-weight: 700; font-size: .82rem; }
+.sa-cover h1 { margin: 0; color: #101b12; font-size: clamp(1.9rem, 4vw, 3rem); letter-spacing: -.025em; font-weight: 700; }
+.sa-question { font-size: 1.25rem; line-height: 1.45; max-width: 70ch; }
+.sa-meta-grid, .sa-support-grid, .vectors-grid, .sa-two-cols, .sa-three-cols { display: grid; gap: .9rem; margin: 1rem 0; }
+.sa-meta-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.sa-two-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.sa-three-cols { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.sa-support-grid, .vectors-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.sa-meta, .definition, .support-card, .vector-card {
+  border: 1px solid #d6e6d4;
+  border-radius: 16px;
+  background: #fbfffc;
+  padding: 1rem;
+}
+.sa-meta span { display: block; color: #155b32; text-transform: uppercase; letter-spacing: .05em; font-size: .78rem; font-weight: 700; margin-bottom: .3rem; }
+.sa-meta strong { font-size: 1.05rem; }
+.sa-block { margin-top: 1.35rem; break-inside: avoid; page-break-inside: avoid; }
+.sa-block h2 { color: #155b32; border-top: 1px solid #d6e6d4; padding-top: 1rem; margin-bottom: .75rem; font-weight: 700; }
+.definition h3, .support-card h3, .vector-card h3 { color: #155b32; margin: 0 0 .35rem; font-size: 1rem; }
+.sa-report table { width: 100%; border-collapse: collapse; margin-top: .8rem; font-size: .9rem; }
+.sa-report th, .sa-report td { border: 1px solid #cad8c8; padding: .55rem; vertical-align: top; }
+.sa-report th { background: #eaf7ef; color: #155b32; text-align: left; font-weight: 700; }
+.rubric-table th:nth-child(1), .rubric-table td:nth-child(1) { width: 10%; }
+.rubric-table th:nth-child(2), .rubric-table td:nth-child(2) { width: 18%; }
+.rubric-table th:nth-child(n+3), .rubric-table td:nth-child(n+3) { width: 18%; }
+
+@page { size: A4; margin: 12mm; }
+@media print {
+  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .report-preview { font-size: 10.5pt; line-height: 1.42; }
+  .sa-cover { margin: 0 0 10mm; padding: 10mm; border: 1px solid #d6e6d4; border-radius: 0; }
+  .sa-cover h1 { font-size: 23pt; }
+  .sa-question { font-size: 13pt; }
+  .sa-meta-grid { grid-template-columns: repeat(2, 1fr); }
+  .sa-two-cols, .sa-three-cols, .sa-support-grid, .vectors-grid { grid-template-columns: repeat(2, 1fr); }
+  .sa-meta, .definition, .support-card, .vector-card { border-radius: 6px; padding: 7pt; }
+  .sa-block { break-inside: avoid; page-break-inside: avoid; margin-top: 9mm; }
+  .sa-report th, .sa-report td { padding: 5pt; font-size: 8.2pt; }
+  .rubric-table { page-break-inside: auto; }
+  .rubric-table tr { break-inside: avoid; page-break-inside: avoid; }
+}
+
+@media (max-width: 900px) {
+  .sa-meta-grid, .sa-two-cols, .sa-three-cols, .sa-support-grid, .vectors-grid { grid-template-columns: 1fr; }
+  .sa-report table { display: block; overflow-x: auto; }
+}
