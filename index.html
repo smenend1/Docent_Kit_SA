@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="ca">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#2563eb" />
+  <title>DocentKit · Generador de situacions i recursos</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <p class="eyebrow">PWA educativa · català · offline</p>
+      <h1>DocentKit</h1>
+      <p class="subtitle">Generador de situacions d’aprenentatge, projectes, rúbriques i recursos docents.</p>
+    </div>
+    <div class="header-actions">
+      <button id="installBtn" class="secondary hidden">Instal·la</button>
+      <button id="newResourceBtn" class="primary">Nou recurs</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="sidebar" aria-label="Mòduls de l'aplicació">
+      <nav id="moduleNav"></nav>
+      <section class="status-card">
+        <h2>Estat</h2>
+        <p id="storageStatus">Carregant biblioteca local...</p>
+        <p id="offlineStatus">Mode connexió: comprovant...</p>
+      </section>
+    </aside>
+
+    <section class="workspace">
+      <div class="toolbar">
+        <label class="field search-field">
+          <span>Cerca a la biblioteca</span>
+          <input id="searchInput" type="search" placeholder="Títol, tipus, nivell, etiqueta..." />
+        </label>
+        <label class="field compact">
+          <span>Nivell</span>
+          <select id="levelFilter">
+            <option value="">Tots</option>
+            <option>1r ESO</option>
+            <option>2n ESO</option>
+            <option>3r ESO</option>
+            <option>4t ESO</option>
+            <option>Batxillerat</option>
+            <option>Altres</option>
+          </select>
+        </label>
+      </div>
+
+      <section class="hero-card" id="moduleIntro"></section>
+
+      <section class="generator-card">
+        <div class="card-title-row">
+          <div>
+            <p class="eyebrow">Formulari guiat</p>
+            <h2 id="formTitle">Crear SA</h2>
+          </div>
+          <button id="loadTemplateBtn" class="secondary">Omple amb plantilla</button>
+        </div>
+
+        <form id="resourceForm" class="form-grid">
+          <label class="field full">
+            <span>Títol</span>
+            <input id="title" required placeholder="Ex. Dissenyem una solució sostenible per al pati" />
+          </label>
+
+          <label class="field">
+            <span>Etapa / nivell</span>
+            <select id="level">
+              <option>1r ESO</option>
+              <option>2n ESO</option>
+              <option>3r ESO</option>
+              <option>4t ESO</option>
+              <option>Batxillerat</option>
+              <option>Altres</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Àmbit / matèria</span>
+            <input id="subject" placeholder="Tecnologia, Matemàtiques, Àmbit STEAM..." />
+          </label>
+
+          <label class="field">
+            <span>Durada</span>
+            <input id="duration" placeholder="Ex. 6 sessions, 3 setmanes..." />
+          </label>
+
+          <label class="field">
+            <span>Tipus</span>
+            <select id="type"></select>
+          </label>
+
+          <label class="field full">
+            <span>Repte o necessitat</span>
+            <textarea id="challenge" rows="3" placeholder="Quin problema real o context dona sentit al recurs?"></textarea>
+          </label>
+
+          <label class="field full">
+            <span>Sabers / continguts clau</span>
+            <textarea id="knowledge" rows="3" placeholder="Sabers, conceptes i procediments que es treballaran..."></textarea>
+          </label>
+
+          <label class="field full">
+            <span>Competències i criteris d’avaluació</span>
+            <textarea id="competences" rows="3" placeholder="Competències específiques, criteris, indicadors observables..."></textarea>
+          </label>
+
+          <label class="field full">
+            <span>Seqüència d’activitats</span>
+            <textarea id="sequence" rows="5" placeholder="Inici, desenvolupament, aplicació, síntesi i transferència..."></textarea>
+          </label>
+
+          <label class="field full">
+            <span>Atenció a la diversitat</span>
+            <textarea id="inclusion" rows="4" placeholder="Mesures per TDAH, TEA, dislèxia, TDL, bastides, opcions de resposta..."></textarea>
+          </label>
+
+          <label class="field full">
+            <span>Avaluació i evidències</span>
+            <textarea id="assessment" rows="4" placeholder="Rúbrica, prova competencial, producte final, coavaluació..."></textarea>
+          </label>
+
+          <label class="field full">
+            <span>Etiquetes</span>
+            <input id="tags" placeholder="STEAM, cooperatiu, inclusió, sostenibilitat..." />
+          </label>
+        </form>
+
+        <div class="actions-row">
+          <button id="generateBtn" class="primary">Genera proposta</button>
+          <button id="saveBtn" class="secondary">Desa a la biblioteca</button>
+          <button id="exportPdfBtn" class="secondary">Prepara exportació</button>
+          <button id="exportJsonBtn" class="secondary">Exporta JSON</button>
+        </div>
+      </section>
+
+      <section class="output-card">
+        <div class="card-title-row">
+          <div>
+            <p class="eyebrow">Vista d’informe</p>
+            <h2>Document net per exportar</h2>
+          </div>
+          <button id="copyBtn" class="secondary">Copia text</button>
+        </div>
+        <article id="reportPreview" class="report-preview" aria-live="polite"></article>
+      </section>
+
+      <section class="import-card">
+        <div>
+          <p class="eyebrow">Importació</p>
+          <h2>Documents i recursos</h2>
+          <p>Importa TXT o JSON. La lectura directa de DOCX/PDF queda preparada com a mòdul futur, perquè en navegador pur requereix llibreries addicionals.</p>
+        </div>
+        <div class="import-actions">
+          <input id="fileInput" type="file" accept=".txt,.json,.docx,.pdf" />
+          <button id="importBtn" class="secondary">Importa base</button>
+        </div>
+      </section>
+
+      <section class="library-card">
+        <div class="card-title-row">
+          <div>
+            <p class="eyebrow">Biblioteca local</p>
+            <h2>Recursos desats</h2>
+          </div>
+          <button id="clearLibraryBtn" class="danger">Buida biblioteca</button>
+        </div>
+        <div id="libraryList" class="library-list"></div>
+      </section>
+    </section>
+  </main>
+
+  <section id="exportMode" class="export-mode-shell" aria-label="Vista d’exportació">
+    <div class="export-toolbar">
+      <div>
+        <p class="eyebrow">Exportació neta</p>
+        <h2 id="exportTitle">Document per exportar</h2>
+      </div>
+      <div class="export-actions">
+        <button id="printSamePageBtn" class="primary">Imprimeix / desa PDF</button>
+        <button id="downloadHtmlBtn" class="secondary">Descarrega HTML</button>
+        <button id="closeExportModeBtn" class="secondary">Torna a editar</button>
+      </div>
+    </div>
+    <p class="export-help">En mòbil, si la prèvia PDF no s’obre bé, descarrega l’HTML i obre’l amb el navegador o comparteix-lo. Aquesta vista no usa finestres emergents.</p>
+  </section>
+
+  <template id="resourceItemTemplate">
+    <article class="resource-item">
+      <div>
+        <p class="resource-meta"></p>
+        <h3></h3>
+        <p class="resource-summary"></p>
+      </div>
+      <div class="item-actions">
+        <button class="secondary load-item">Obre</button>
+        <button class="danger delete-item">Elimina</button>
+      </div>
+    </article>
+  </template>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
