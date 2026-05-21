@@ -224,3 +224,56 @@ body.export-mode .export-mode-shell {
 body.export-mode .ai-card { display: none !important; }
 @media print { .ai-card { display: none !important; } }
 @media (max-width: 900px) { .ai-grid { grid-template-columns: 1fr; } .template-actions { justify-content: stretch; } .template-actions button, .template-select-field { width: 100%; } }
+
+/* v1.1 · Assistent guiat IA */
+.ai-wizard {
+  margin: 18px 0;
+  padding: 18px;
+  border: 1px solid #dbe7dd;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #f7fbf8, #ffffff);
+}
+.wizard-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+.wizard-head h3 {
+  margin: 0 0 6px;
+  font-size: 1.25rem;
+  color: #152033;
+}
+.ai-grid.compact {
+  gap: 12px 16px;
+}
+button.small {
+  padding: 10px 14px;
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+.check-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid #dbe1ea;
+  border-radius: 16px;
+  background: #fff;
+}
+.check-grid label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  color: #334155;
+}
+.check-grid input {
+  width: 18px;
+  height: 18px;
+}
+@media (max-width: 760px) {
+  .wizard-head { flex-direction: column; }
+  .check-grid { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
+}

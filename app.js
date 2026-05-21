@@ -152,7 +152,10 @@ const els = {
   report: document.getElementById('reportPreview'), library: document.getElementById('libraryList'), storageStatus: document.getElementById('storageStatus'), offlineStatus: document.getElementById('offlineStatus'),
   search: document.getElementById('searchInput'), levelFilter: document.getElementById('levelFilter'), fileInput: document.getElementById('fileInput'), installBtn: document.getElementById('installBtn'),
   templateSelect: document.getElementById('templateSelect'), aiProvider: document.getElementById('aiProvider'), aiKey: document.getElementById('aiKey'),
-  aiModel: document.getElementById('aiModel'), aiModeStatus: document.getElementById('aiModeStatus'), aiContext: document.getElementById('aiContext'), aiOutput: document.getElementById('aiOutput')
+  aiModel: document.getElementById('aiModel'), aiModeStatus: document.getElementById('aiModeStatus'), aiContext: document.getElementById('aiContext'), aiOutput: document.getElementById('aiOutput'),
+  aiCourse: document.getElementById('aiCourse'), aiSubject: document.getElementById('aiSubject'), aiTopic: document.getElementById('aiTopic'), aiProduct: document.getElementById('aiProduct'),
+  aiDuration: document.getElementById('aiDuration'), aiTools: document.getElementById('aiTools'), aiKnowledge: document.getElementById('aiKnowledge'), aiCriteria: document.getElementById('aiCriteria'),
+  aiInclTdah: document.getElementById('aiInclTdah'), aiInclTea: document.getElementById('aiInclTea'), aiInclDislexia: document.getElementById('aiInclDislexia'), aiInclTdl: document.getElementById('aiInclTdl')
 };
 
 function init() {
@@ -184,6 +187,17 @@ function bindEvents() {
   document.getElementById('aiDraftBtn').addEventListener('click', generateAiDraft);
   const aiTestBtn = document.getElementById('aiTestBtn');
   if (aiTestBtn) aiTestBtn.addEventListener('click', testGeminiConnection);
+  const aiBuildPromptBtn = document.getElementById('aiBuildPromptBtn');
+  if (aiBuildPromptBtn) aiBuildPromptBtn.addEventListener('click', fillAiContextFromWizard);
+  ['aiCourse','aiSubject','aiTopic','aiProduct','aiDuration','aiTools','aiKnowledge','aiCriteria'].forEach(id => {
+    const node = document.getElementById(id);
+    if (node) node.addEventListener('change', saveAiWizardSettings);
+  });
+  ['aiInclTdah','aiInclTea','aiInclDislexia','aiInclTdl'].forEach(id => {
+    const node = document.getElementById(id);
+    if (node) node.addEventListener('change', saveAiWizardSettings);
+  });
+  loadAiWizardSettings();
   document.getElementById('aiApplyBtn').addEventListener('click', applyAiDraftToForm);
   els.aiProvider.addEventListener('change', updateAiStatus);
   els.aiProvider.addEventListener('input', updateAiStatus);
@@ -951,20 +965,157 @@ function updateAiStatus() {
   els.aiModeStatus.style.color = isGoogle ? '#9a3412' : '#155b32';
 }
 
+function getElValue(node, fallback = '') {
+  return node && typeof node.value === 'string' ? node.value.trim() : fallback;
+}
+
+function getAiWizardData() {
+  return {
+    course: getElValue(els.aiCourse, els.level.value || '3r ESO'),
+    subject: getElValue(els.aiSubject, els.subject.value || 'Tecnologia i Digitalització'),
+    topic: getElValue(els.aiTopic, els.challenge.value || ''),
+    product: getElValue(els.aiProduct, 'producte final competencial'),
+    duration: getElValue(els.aiDuration, els.duration.value || '8 sessions'),
+    tools: getElValue(els.aiTools, ''),
+    knowledge: getElValue(els.aiKnowledge, els.knowledge.value || ''),
+    criteria: getElValue(els.aiCriteria, els.competences.value || ''),
+    inclusion: [
+      els.aiInclTdah?.checked ? 'TDAH' : '',
+      els.aiInclTea?.checked ? 'TEA' : '',
+      els.aiInclDislexia?.checked ? 'dislèxia' : '',
+      els.aiInclTdl?.checked ? 'TDL' : ''
+    ].filter(Boolean)
+  };
+}
+
+function saveAiWizardSettings() {
+  saveSettings({ aiWizard: getAiWizardData() });
+}
+
+function loadAiWizardSettings() {
+  const data = loadSettings().aiWizard || {};
+  if (els.aiCourse && data.course) els.aiCourse.value = data.course;
+  if (els.aiSubject && data.subject) els.aiSubject.value = data.subject;
+  if (els.aiTopic && data.topic) els.aiTopic.value = data.topic;
+  if (els.aiProduct && data.product) els.aiProduct.value = data.product;
+  if (els.aiDuration && data.duration) els.aiDuration.value = data.duration;
+  if (els.aiTools && data.tools) els.aiTools.value = data.tools;
+  if (els.aiKnowledge && data.knowledge) els.aiKnowledge.value = data.knowledge;
+  if (els.aiCriteria && data.criteria) els.aiCriteria.value = data.criteria;
+  if (els.aiInclTdah && data.inclusion) els.aiInclTdah.checked = data.inclusion.includes('TDAH');
+  if (els.aiInclTea && data.inclusion) els.aiInclTea.checked = data.inclusion.includes('TEA');
+  if (els.aiInclDislexia && data.inclusion) els.aiInclDislexia.checked = data.inclusion.includes('dislèxia');
+  if (els.aiInclTdl && data.inclusion) els.aiInclTdl.checked = data.inclusion.includes('TDL');
+}
+
+function buildGuidedInstructionText() {
+  const w = getAiWizardData();
+  const inclusion = w.inclusion.length ? w.inclusion.join(', ') : 'mesures universals i adaptacions inclusives';
+  return `Vull una situació d’aprenentatge completa per a ${w.course} de ${w.subject}.
+
+Tema o repte:
+${w.topic || 'Defineix un repte proper, significatiu i competencial per a l’alumnat.'}
+
+Producte final:
+${w.product || 'Proposta, producte o evidència final vinculada al repte.'}
+
+Durada:
+${w.duration || '8 sessions'}.
+
+Materials, eines i recursos:
+${w.tools || 'Materials de l’aula, eines digitals i recursos adaptats al context.'}
+
+Sabers o continguts clau:
+${w.knowledge || 'Selecciona sabers conceptuals, procedimentals i actitudinals coherents amb el repte.'}
+
+Competències específiques i criteris LOMLOE:
+${w.criteria || 'Selecciona competències i criteris adequats al curs i a la matèria, amb numeració LOMLOE.'}
+
+Condicions d’avaluació:
+Vull una rúbrica completa en format quadre amb les columnes Criteri LOMLOE, Ítem d’avaluació, NA, AS, AN i AE. Inclou evidències, instruments, autoavaluació, coavaluació, retorn i millora.
+
+Inclusió:
+Inclou mesures universals i adaptacions específiques per a ${inclusion}.
+
+Format de sortida:
+Genera tota la programació de la SA amb llenguatge docent, complet i directament aprofitable. No deixis apartats buits.`;
+}
+
+function fillAiContextFromWizard() {
+  saveAiWizardSettings();
+  els.aiContext.value = buildGuidedInstructionText();
+  els.aiOutput.textContent = 'He construït unes instruccions completes. Ara pots prémer “Genera SA completa assistida”.';
+}
+
 function buildAiPrompt() {
   const data = getFormData();
-  const context = els.aiContext.value.trim();
-  return `Ets un assistent docent en català. Genera un esborrany de recurs docent per a ESO seguint una estructura clara i importable per DocentKit.\n\nTipus: ${data.type}\nTítol provisional: ${data.title}\nNivell: ${data.level}\nMatèria: ${data.subject || 'pendent'}\nDurada: ${data.duration || 'pendent'}\nInstruccions o base: ${context || data.challenge || 'crear una proposta completa'}\n\nRespon només amb aquests apartats i etiquetes:\nTÍTOL\nCURS\nMATÈRIA\nDURADA\nCONTEXT\nREPTE\nJUSTIFICACIÓ\nPRODUCTE FINAL\nCOMPETÈNCIES ESPECÍFIQUES\nCRITERIS D’AVALUACIÓ\nBLOCS DE SABERS\nSABERS CONCRETS\nMETODOLOGIA\nINICIALS\nDESENVOLUPAMENT\nESTRUCTURACIÓ\nAPLICACIÓ\nMESURES I SUPORTS\nEVIDÈNCIES\nINSTRUMENTS\nRETORN I MILLORA\nRÚBRICA`; 
+  const guided = buildGuidedInstructionText();
+  const manualContext = els.aiContext.value.trim();
+  const context = manualContext || guided;
+  return `Ets un assistent docent expert en currículum LOMLOE a Catalunya. Escriu en català formal, clar i útil per a docents d’ESO.
+
+Objectiu: generar una situació d’aprenentatge completa, coherent i importable per DocentKit. No facis una resposta breu. Desenvolupa tots els apartats amb detall suficient per portar-la a l’aula.
+
+Dades del formulari actual:
+Tipus: ${data.type}
+Títol provisional: ${data.title}
+Nivell: ${data.level}
+Matèria: ${data.subject || 'pendent'}
+Durada: ${data.duration || 'pendent'}
+
+Instruccions guiades de l’usuari:
+${context}
+
+Requisits obligatoris:
+- Inclou context, justificació, repte i producte final.
+- Formula objectius d’aprenentatge amb CAPACITAT + SABER + FINALITAT.
+- Inclou competències específiques i criteris d’avaluació amb numeració LOMLOE quan sigui possible.
+- Inclou sabers, metodologia, organització, recursos, mesures i suports.
+- Organitza les activitats en inicials, desenvolupament, estructuració i aplicació.
+- Inclou evidències, instruments, retorn i millora.
+- Inclou els sis vectors del currículum.
+- Inclou adaptacions per TDAH, TEA, dislèxia i TDL si l’usuari les ha demanat.
+- La rúbrica ha de tenir com a mínim 5 files i aquest format: criteri LOMLOE | ítem d’avaluació | NA | AS | AN | AE.
+
+Respon només amb aquests apartats i etiquetes exactes, perquè l’app ho pugui interpretar:
+TÍTOL
+CURS
+MATÈRIA
+DURADA
+CONTEXT
+REPTE
+JUSTIFICACIÓ
+PRODUCTE FINAL
+COMPETÈNCIES ESPECÍFIQUES
+CRITERIS D’AVALUACIÓ
+OBJECTIUS D’APRENENTATGE
+BLOCS DE SABERS
+SABERS CONCRETS
+METODOLOGIA
+ORGANITZACIÓ DE L’AULA
+RECURSOS
+INICIALS
+DESENVOLUPAMENT
+ESTRUCTURACIÓ
+APLICACIÓ
+MESURES I SUPORTS
+EVIDÈNCIES
+INSTRUMENTS
+RETORN I MILLORA
+VECTORS
+RÚBRICA`;
 }
 
 function buildLocalAIDraft() {
   const data = getFormData();
-  const context = els.aiContext.value.trim() || data.challenge || 'necessitat propera de l’alumnat';
-  const subject = data.subject || 'Matèria o àmbit';
-  const level = data.level || 'ESO';
+  const w = getAiWizardData();
+  const context = els.aiContext.value.trim() || w.topic || data.challenge || 'necessitat propera de l’alumnat';
+  const subject = w.subject || data.subject || 'Matèria o àmbit';
+  const level = w.course || data.level || 'ESO';
   const title = data.title && data.title !== 'Recurs sense títol' ? data.title : `Situació d’aprenentatge sobre ${subject}`;
-  const product = isSituation(data) ? 'producte final competencial amb evidències, presentació i reflexió' : 'producte o evidència final vinculada al repte';
-  return `TÍTOL\n${title}\n\nCURS\n${level}\n\nMATÈRIA\n${subject}\n\nDURADA\n${data.duration || '6 sessions'}\n\nCONTEXT\n${context}\n\nREPTE\nCom podem donar resposta a aquesta necessitat aplicant sabers de ${subject} i comunicant una proposta justificada?\n\nJUSTIFICACIÓ\nLa proposta parteix d’un context proper i permet treballar aprenentatges funcionals, presa de decisions, cooperació i comunicació d’evidències.\n\nPRODUCTE FINAL\n${product}.\n\nCOMPETÈNCIES ESPECÍFIQUES\nCE1, CE2, CE3. Ajusta-les segons el currículum de la matèria.\n\nCRITERIS D’AVALUACIÓ\n1.1, 2.1, 3.1. Revisa la numeració LOMLOE de la matèria i el curs.\n\nBLOCS DE SABERS\nSabers conceptuals, procedimentals i actitudinals vinculats al repte.\n\nSABERS CONCRETS\n- Comprensió del context i formulació del problema.\n- Recerca i selecció d’informació.\n- Aplicació de procediments propis de la matèria.\n- Comunicació clara del procés i dels resultats.\n\nMETODOLOGIA\nAprenentatge basat en reptes, treball cooperatiu, bastides, revisió entre iguals i feedback formatiu.\n\nINICIALS\nActivació de coneixements previs, presentació del repte i construcció compartida dels criteris d’èxit.\n\nDESENVOLUPAMENT\nRecerca, pràctica guiada, resolució de tasques parcials i revisió del procés.\n\nESTRUCTURACIÓ\nSíntesi dels aprenentatges, organització d’evidències i preparació del producte final.\n\nAPLICACIÓ\nPresentació del producte final, transferència a un context proper i reflexió individual.\n\nMESURES I SUPORTS\nDisseny universal: instruccions fragmentades, exemples, checklist, rols i opcions de resposta. TDAH: temporització i tasques curtes. TEA: anticipació i estructura visual. Dislèxia: suport oral i reducció de càrrega lectora. TDL: vocabulari previ i frases model.\n\nEVIDÈNCIES\nProcés de treball, producte final, presentació i reflexió final.\n\nINSTRUMENTS\nRúbrica NA/AS/AN/AE, llista de control, coavaluació i autoavaluació.\n\nRETORN I MILLORA\nFeedback durant el procés, revisió entre iguals i millora abans del lliurament.\n\nRÚBRICA\n1.1 | Comprensió del repte | NA: identifica parcialment | AS: identifica els elements bàsics | AN: analitza i justifica | AE: analitza amb profunditat i transfereix\n2.1 | Aplicació de sabers | NA: aplica amb moltes ajudes | AS: aplica procediments bàsics | AN: aplica de manera coherent | AE: aplica amb autonomia i criteri\n3.1 | Comunicació i reflexió | NA: comunica amb poca claredat | AS: comunica la idea principal | AN: comunica amb evidències | AE: comunica amb rigor i proposa millores`; 
+  const product = w.product || (isSituation(data) ? 'producte final competencial amb evidències, presentació i reflexió' : 'producte o evidència final vinculada al repte');
+  return `TÍTOL\n${title}\n\nCURS\n${level}\n\nMATÈRIA\n${subject}\n\nDURADA\n${w.duration || data.duration || '8 sessions'}\n\nCONTEXT\n${context}\n\nREPTE\nCom podem donar resposta a aquesta necessitat aplicant sabers de ${subject} i comunicant una proposta justificada?\n\nJUSTIFICACIÓ\nLa proposta parteix d’un context proper i permet treballar aprenentatges funcionals, presa de decisions, cooperació i comunicació d’evidències.\n\nPRODUCTE FINAL\n${product}.\n\nCOMPETÈNCIES ESPECÍFIQUES\n${w.criteria || 'CE1, CE2, CE3. Ajusta-les segons el currículum de la matèria.'}\n\nCRITERIS D’AVALUACIÓ\n${w.criteria || '1.1, 2.1, 3.1. Revisa la numeració LOMLOE de la matèria i el curs.'}\n\nBLOCS DE SABERS\n${w.knowledge || 'Sabers conceptuals, procedimentals i actitudinals vinculats al repte.'}\n\nSABERS CONCRETS\n- Comprensió del context i formulació del problema.\n- Recerca i selecció d’informació.\n- Aplicació de procediments propis de la matèria.
+- Ús de recursos i eines: ${w.tools || 'materials i eines adequades al repte.'}\n- Comunicació clara del procés i dels resultats.\n\nMETODOLOGIA\nAprenentatge basat en reptes, treball cooperatiu, bastides, revisió entre iguals i feedback formatiu.\n\nINICIALS\nActivació de coneixements previs, presentació del repte i construcció compartida dels criteris d’èxit.\n\nDESENVOLUPAMENT\nRecerca, pràctica guiada, resolució de tasques parcials i revisió del procés.\n\nESTRUCTURACIÓ\nSíntesi dels aprenentatges, organització d’evidències i preparació del producte final.\n\nAPLICACIÓ\nPresentació del producte final, transferència a un context proper i reflexió individual.\n\nMESURES I SUPORTS\nDisseny universal: instruccions fragmentades, exemples, checklist, rols i opcions de resposta. TDAH: temporització i tasques curtes. TEA: anticipació i estructura visual. Dislèxia: suport oral i reducció de càrrega lectora. TDL: vocabulari previ i frases model.\n\nEVIDÈNCIES\nProcés de treball, producte final, presentació i reflexió final.\n\nINSTRUMENTS\nRúbrica NA/AS/AN/AE, llista de control, coavaluació i autoavaluació.\n\nRETORN I MILLORA\nFeedback durant el procés, revisió entre iguals i millora abans del lliurament.\n\nRÚBRICA\n1.1 | Comprensió del repte | NA: identifica parcialment | AS: identifica els elements bàsics | AN: analitza i justifica | AE: analitza amb profunditat i transfereix\n2.1 | Aplicació de sabers | NA: aplica amb moltes ajudes | AS: aplica procediments bàsics | AN: aplica de manera coherent | AE: aplica amb autonomia i criteri\n3.1 | Comunicació i reflexió | NA: comunica amb poca claredat | AS: comunica la idea principal | AN: comunica amb evidències | AE: comunica amb rigor i proposa millores`; 
 }
 
 function getSelectedGeminiModel() {
@@ -999,7 +1150,7 @@ async function callGeminiText(prompt) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.55, maxOutputTokens: 4096 }
+        generationConfig: { temperature: 0.5, maxOutputTokens: 8192 }
       })
     });
   } catch (networkError) {

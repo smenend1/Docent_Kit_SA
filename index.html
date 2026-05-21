@@ -199,13 +199,73 @@
               <option value="gemini-flash-latest">gemini-flash-latest · latest</option>
             </select>
           </label>
+        </div>
+        <section class="ai-wizard" aria-label="Assistent guiat per generar una situació d’aprenentatge completa">
+          <div class="wizard-head">
+            <div>
+              <p class="eyebrow">Assistent guiat</p>
+              <h3>Construeix una SA completa sense escriure un prompt llarg</h3>
+              <p class="hint">Omple els camps principals i l’app crearà unes instruccions completes per a Gemini o per al mode local.</p>
+            </div>
+            <button id="aiBuildPromptBtn" class="secondary small" type="button">Construeix instruccions</button>
+          </div>
+          <div class="ai-grid compact">
+            <label class="field">
+              <span>Curs</span>
+              <select id="aiCourse">
+                <option value="1r ESO">1r ESO</option>
+                <option value="2n ESO">2n ESO</option>
+                <option value="3r ESO" selected>3r ESO</option>
+                <option value="4t ESO">4t ESO</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Matèria</span>
+              <input id="aiSubject" type="text" value="Tecnologia i Digitalització" />
+            </label>
+            <label class="field full">
+              <span>Tema / repte</span>
+              <textarea id="aiTopic" rows="2" placeholder="Ex. Construcció i programació d’un robot amb micro:bit i Cutebot que superi un circuit o resolgui una necessitat del centre."></textarea>
+            </label>
+            <label class="field">
+              <span>Producte final</span>
+              <input id="aiProduct" type="text" placeholder="Robot funcional, codi comentat, fitxa tècnica i presentació oral" />
+            </label>
+            <label class="field">
+              <span>Durada</span>
+              <input id="aiDuration" type="text" placeholder="8 sessions" />
+            </label>
+            <label class="field full">
+              <span>Materials, eines i recursos</span>
+              <textarea id="aiTools" rows="2" placeholder="micro:bit, Cutebot, MakeCode, ordinadors, circuit, rúbrica, checklist..."></textarea>
+            </label>
+            <label class="field full">
+              <span>Sabers / continguts clau</span>
+              <textarea id="aiKnowledge" rows="2" placeholder="Programació per blocs, sensors, actuadors, disseny, prototipatge, assaig-error, sostenibilitat..."></textarea>
+            </label>
+            <label class="field full">
+              <span>Criteris LOMLOE o competències</span>
+              <input id="aiCriteria" type="text" placeholder="Ex. CE1, CE2, CE3 / 1.1, 2.1, 3.2" />
+            </label>
+            <label class="field full">
+              <span>Inclusió i adaptacions</span>
+              <div class="check-grid">
+                <label><input id="aiInclTdah" type="checkbox" checked /> TDAH</label>
+                <label><input id="aiInclTea" type="checkbox" checked /> TEA</label>
+                <label><input id="aiInclDislexia" type="checkbox" checked /> Dislèxia</label>
+                <label><input id="aiInclTdl" type="checkbox" checked /> TDL</label>
+              </div>
+            </label>
+          </div>
+        </section>
+        <div class="ai-grid">
           <label class="field full">
             <span>Base o instruccions per a l’esborrany</span>
-            <textarea id="aiContext" rows="4" placeholder="Ex. Vull una SA de 4t ESO sobre millorar un espai del centre, amb rúbrica LOMLOE i adaptacions..."></textarea>
+            <textarea id="aiContext" rows="6" placeholder="Pots escriure directament o prémer ‘Construeix instruccions’ a partir de l’assistent guiat."></textarea>
           </label>
         </div>
         <div class="actions-row">
-          <button id="aiDraftBtn" class="secondary" type="button">Genera esborrany assistit</button>
+          <button id="aiDraftBtn" class="secondary" type="button">Genera SA completa assistida</button>
           <button id="aiTestBtn" class="secondary" type="button">Prova connexió API</button>
           <button id="aiApplyBtn" class="secondary" type="button">Aplica l’esborrany al formulari</button>
         </div>

@@ -1,47 +1,52 @@
 # DocentKit · Generador de situacions i recursos
 
-Versió 0.7 de la PWA educativa en català per a docents.
+Versió 1.1 de la PWA educativa en català per a docents.
 
-## Objectiu de la v1.0
+## Objectiu de la v1.1
 
-Aquesta versió deixa l'app preparada per evolucionar cap a una eina més completa amb més plantilles, importació documental millorada i mode d'IA assistida, sense fer obligatòria cap API externa.
+Aquesta versió fa un pas més en el mode d'IA assistida: l'usuari ja no ha d'escriure necessàriament una descripció llarga. L'app incorpora un assistent guiat que construeix automàticament unes instruccions completes per generar una situació d'aprenentatge sencera.
 
-## Novetats v1.0
+## Novetats v1.1
 
-- Selector de plantilles integrat.
-- Biblioteca inicial de plantilles ampliada:
-  - SA de Tecnologia ESO.
-  - SA de Matemàtiques ESO basada en dades reals.
-  - SA general competencial.
-  - Projecte base.
-  - Projecte STEAM amb prototip.
-  - Sessió guiada.
-  - Rúbrica NA/AS/AN/AE.
-  - Prova competencial base.
-  - Prova LOMLOE amb estímul.
-  - Fitxa d'activitats.
-  - Adaptació inclusiva per TDAH, TEA, dislèxia i TDL.
-- Importació avançada de documents:
-  - TXT i Markdown.
-  - JSON.
-  - DOCX amb lectura de paràgrafs, taules, notes i text principal.
-  - PDF amb text seleccionable.
-- Estat d'importació amb recompte de caràcters i camps detectats.
-- Mode IA assistida preparat:
-  - Mode local amb plantilles intel·ligents sense enviar dades fora del navegador.
-  - Mode experimental amb Google API / Gemini si s'introdueix una API key.
-  - Aplicació de l'esborrany generat directament al formulari.
-- Exportació PDF visual sense pop-up.
-- Vista HTML/impressió de SA amb estructura d'informe de programació.
-- Rúbrica de SA en quadre amb criteri LOMLOE, ítem, NA, AS, AN i AE.
-- Service worker actualitzat a `docentkit-v7`.
+- Nou bloc **Assistent guiat** dins el mode IA.
+- Camps específics per construir una SA completa:
+  - curs;
+  - matèria;
+  - tema o repte;
+  - producte final;
+  - durada;
+  - materials, eines i recursos;
+  - sabers o continguts clau;
+  - criteris LOMLOE o competències;
+  - adaptacions per TDAH, TEA, dislèxia i TDL.
+- Botó **Construeix instruccions**: crea automàticament un prompt complet a partir dels camps guiats.
+- Botó **Genera SA completa assistida**: envia les instruccions a Gemini si hi ha API key o genera un esborrany local si no n'hi ha.
+- Prompt de Gemini millorat per demanar una SA completa, amb objectius, criteris, sabers, seqüència, vectors, evidències i rúbrica.
+- Rúbrica demanada en format: criteri LOMLOE | ítem d'avaluació | NA | AS | AN | AE.
+- Més marge de resposta de Gemini (`maxOutputTokens` ampliat) per evitar esborranys massa curts.
+- Es guarden localment les preferències de l'assistent guiat en aquest navegador.
+- Service worker actualitzat a `docentkit-v11`.
+
+## Es manté
+
+- PWA instal·lable i preparada per GitHub Pages.
+- Mode local sense API externa.
+- Mode experimental Google API / Gemini.
+- Selector de model Gemini.
+- Prova de connexió API.
+- Plantilles internes.
+- Importació TXT, Markdown, JSON, DOCX i PDF amb text seleccionable.
+- Exportació PDF visual descarregable sense pop-up.
+- Vista HTML/impressió neta.
+- Biblioteca local amb `localStorage`.
+- Exportació/importació JSON.
 
 ## Notes honestes
 
-- El mode IA externa és experimental i depèn de la disponibilitat, permisos i model associats a la clau de Google API. El mode local continua funcionant sense connexió.
-- La importació DOCX ha millorat, però no interpreta imatges, formes, comentaris ni maquetació complexa.
-- La importació PDF recupera text seleccionable. Els PDF escanejats continuen necessitant OCR.
-- La vista HTML/impressió és la sortida més fidel visualment. El PDF descarregable és real i estructurat, però no és una còpia exacta píxel a píxel de l'HTML.
+- El mode Gemini depèn de la clau API, permisos, quota, restriccions de domini i models disponibles.
+- La clau API es desa només al navegador amb `localStorage`; no s'ha de posar mai dins el codi del repositori.
+- La importació PDF no fa OCR en documents escanejats.
+- El PDF descarregable és real i estructurat, però no replica sempre exactament la maquetació HTML.
 
 ## Publicació a GitHub Pages
 
@@ -54,21 +59,3 @@ Puja aquests fitxers a la branca configurada per Pages:
 - `sw.js`
 
 Després obre la URL de GitHub Pages i força una recàrrega o reinstal·la la PWA si el navegador conserva una versió antiga.
-
-
-## v1.0
-- Correcció del selector de plantilles: ara es carreguen correctament les opcions del desplegable.
-- Preparada la configuració IA amb camp de clau API local al navegador.
-- Cache actualitzada a docentkit-v8.
-
-
-## Correcció v1.0
-- Estat visual del mode IA corregit: el badge canvia de Mode local a Mode Gemini / Google API quan es tria el proveïdor Google.
-- Vinculació dels camps aiModeStatus, aiContext i aiOutput corregida.
-
-
-## v1.0
-- Mode IA Gemini amb selector de model.
-- Botó de prova de connexió API.
-- Errors de Gemini visibles en pantalla amb causes probables.
-- Model recomanat per defecte: gemini-2.5-flash.
