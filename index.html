@@ -59,7 +59,13 @@
             <p class="eyebrow">Formulari guiat</p>
             <h2 id="formTitle">Crear SA</h2>
           </div>
-          <button id="loadTemplateBtn" class="secondary">Crea des de plantilla</button>
+          <div class="template-actions">
+            <label class="field template-select-field">
+              <span>Plantilla</span>
+              <select id="templateSelect"></select>
+            </label>
+            <button id="loadTemplateBtn" class="secondary">Crea des de plantilla</button>
+          </div>
         </div>
 
         <form id="resourceForm" class="form-grid">
@@ -152,14 +158,48 @@
 
       <section class="import-card">
         <div>
-          <p class="eyebrow">Importació</p>
+          <p class="eyebrow">Importació avançada</p>
           <h2>Documents i recursos</h2>
-          <p>Importa TXT, JSON, DOCX o PDF. En DOCX s’intenta extreure el text del document; en PDF s’intenta recuperar el text seleccionable. Els PDF escanejats poden necessitar OCR extern.</p>
+          <p>Importa TXT, Markdown, JSON, DOCX o PDF. En DOCX s’extreu text de paràgrafs i taules; en PDF s’intenta recuperar el text seleccionable. Els PDF escanejats poden necessitar OCR extern.</p>
+          <p id="importStatus" class="hint">Cap document importat encara.</p>
         </div>
         <div class="import-actions">
-          <input id="fileInput" type="file" accept=".txt,.json,.docx,.pdf" />
-          <button id="importBtn" class="secondary">Importa base</button>
+          <input id="fileInput" type="file" accept=".txt,.md,.json,.docx,.pdf" />
+          <button id="importBtn" class="secondary">Importa i interpreta</button>
         </div>
+      </section>
+
+      <section class="ai-card">
+        <div class="card-title-row">
+          <div>
+            <p class="eyebrow">Evolució preparada</p>
+            <h2>Mode IA assistida</h2>
+          </div>
+          <span id="aiModeStatus" class="pill">Mode local</span>
+        </div>
+        <p>Aquesta secció permet generar un esborrany amb plantilles intel·ligents sense enviar dades fora del navegador. Opcionalment, pots activar una API de Google per provar generació assistida.</p>
+        <div class="ai-grid">
+          <label class="field">
+            <span>Mode</span>
+            <select id="aiProvider">
+              <option value="local">Plantilles intel·ligents locals</option>
+              <option value="google">Google API / Gemini experimental</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Google API key opcional</span>
+            <input id="aiKey" type="password" placeholder="No cal per al mode local" autocomplete="off" />
+          </label>
+          <label class="field full">
+            <span>Base o instruccions per a l’esborrany</span>
+            <textarea id="aiContext" rows="4" placeholder="Ex. Vull una SA de 4t ESO sobre millorar un espai del centre, amb rúbrica LOMLOE i adaptacions..."></textarea>
+          </label>
+        </div>
+        <div class="actions-row">
+          <button id="aiDraftBtn" class="secondary" type="button">Genera esborrany assistit</button>
+          <button id="aiApplyBtn" class="secondary" type="button">Aplica l’esborrany al formulari</button>
+        </div>
+        <pre id="aiOutput" class="ai-output" aria-live="polite">Encara no hi ha cap esborrany.</pre>
       </section>
 
       <section class="library-card">

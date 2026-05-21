@@ -1,5 +1,6 @@
-const APP_KEY = 'docentkit.resources.v6';
-const OLD_KEYS = ['docentkit.resources.v1', 'docentkit.resources.v2', 'docentkit.resources.v3'];
+const APP_KEY = 'docentkit.resources.v7';
+const SETTINGS_KEY = 'docentkit.settings.v7';
+const OLD_KEYS = ['docentkit.resources.v6', 'docentkit.resources.v5', 'docentkit.resources.v4', 'docentkit.resources.v3', 'docentkit.resources.v2', 'docentkit.resources.v1'];
 
 const MODULES = [
   { id: 'sa', label: 'Crear SA', type: 'Situació d’aprenentatge', intro: 'Dissenya una situació d’aprenentatge competencial amb repte, sabers, criteris, seqüència, inclusió i evidències.' },
@@ -10,7 +11,8 @@ const MODULES = [
   { id: 'fitxa', label: 'Crear fitxa d’activitats', type: 'Fitxa d’activitats', intro: 'Elabora una fitxa per a l’alumnat amb instruccions, passos, recursos, lliurables i autoavaluació.' },
   { id: 'adaptacio', label: 'Adaptar activitat', type: 'Adaptació inclusiva', intro: 'Adapta una activitat per TDAH, TEA, dislèxia i TDL amb mesures concretes i no estigmatitzants.' },
   { id: 'importexport', label: 'Exportar / importar', type: 'Exportació / importació', intro: 'Gestiona recursos en JSON, HTML i PDF descarregable sense finestres emergents.' },
-  { id: 'biblioteca', label: 'Biblioteca', type: 'Biblioteca local', intro: 'Consulta, reutilitza, cerca i elimina recursos guardats localment en aquest navegador.' }
+  { id: 'biblioteca', label: 'Biblioteca', type: 'Biblioteca local', intro: 'Consulta, reutilitza, cerca i elimina recursos guardats localment en aquest navegador.' },
+  { id: 'modeia', label: 'Mode IA assistida', type: 'IA assistida', intro: 'Prepara una evolució amb generació local guiada i connexió opcional a una API externa.' }
 ];
 
 const TEMPLATES = {
@@ -82,6 +84,62 @@ const TEMPLATES = {
   }
 };
 
+const EXTRA_TEMPLATES = {
+  sa_matematiques: {
+    title: 'Investiguem dades reals per prendre decisions', level: '3r ESO', subject: 'Matemàtiques', duration: '7 sessions',
+    challenge: 'Context: l’alumnat analitza dades properes del centre o del barri per detectar patrons i prendre decisions justificades.\n\nRepte: com podem interpretar dades reals i comunicar conclusions útils amb arguments matemàtics?\n\nJustificació: la proposta connecta estadística, representació gràfica i pensament crític amb una situació significativa.\n\nProducte final: informe breu amb gràfics, conclusions, recomanacions i presentació oral o visual.',
+    knowledge: 'Blocs de sabers: sentit estocàstic, sentit numèric, representació i comunicació matemàtica.\n\nSabers concrets:\n- Recollida, organització i neteja de dades.\n- Taules de freqüències, gràfics i mesures de centralització.\n- Interpretació crítica de resultats.\n- Comunicació d’arguments matemàtics.',
+    competences: 'Competències específiques: CE1, CE2, CE5, CE6.\n\nCriteris d’avaluació: 1.1, 2.1, 5.1, 6.2.\n\nCompetències transversals:\n- Digital: ús de fulls de càlcul i gràfics.\n- Ciutadana: lectura crítica de dades.\n- Personal i social: treball cooperatiu i revisió de conclusions.',
+    sequence: 'Inicials: activació amb una pregunta sobre dades properes.\nDesenvolupament: recollida, organització i representació de dades.\nEstructuració: interpretació de gràfics, mesures i possibles biaixos.\nAplicació: informe final amb conclusions i recomanacions.',
+    inclusion: 'Mesures i suports universals: exemples resolts, plantilla de càlcul, glossari visual i rols cooperatius.\nTDAH: tasques curtes i temporitzades.\nTEA: seqüència anticipada i criteris explícits.\nDislèxia: lectura reduïda i suport gràfic.\nTDL: vocabulari matemàtic previ i frases model.',
+    assessment: 'Evidències: taula de dades, gràfics, càlculs, informe i exposició.\nInstruments: rúbrica, checklist i autoavaluació.\nRetorn i millora: revisió de gràfics i conclusions abans del lliurament.',
+    tags: 'SA, Matemàtiques ESO, dades, estadística, competencial'
+  },
+  sa_generica: {
+    title: 'Situació d’aprenentatge competencial', level: '2n ESO', subject: 'Matèria o àmbit', duration: '6-8 sessions',
+    challenge: 'Context: situació propera o repte social, científic, tecnològic o cultural.\n\nRepte: pregunta o problema que l’alumnat haurà de comprendre, respondre o transformar.\n\nJustificació: relació amb interessos de l’alumnat, currículum i context del centre.\n\nProducte final: evidència competencial transferible i comunicable.',
+    knowledge: 'Blocs de sabers: sabers curriculars seleccionats i sabers procedimentals necessaris.\n\nSabers concrets:\n- Conceptes clau.\n- Procediments.\n- Estratègies de comunicació.\n- Valors i actituds vinculats al repte.',
+    competences: 'Competències específiques: CE1, CE2, CE3.\n\nCriteris d’avaluació: 1.1, 2.1, 3.1.\n\nCompetències transversals: digital, ciutadana, emprenedora i personal, social i d’aprendre a aprendre.',
+    sequence: 'Inicials: exploració de coneixements previs i presentació del repte.\nDesenvolupament: recerca, pràctica guiada i construcció de sabers.\nEstructuració: síntesi, mapa d’idees o pauta de criteris.\nAplicació: producte final, presentació i transferència.',
+    inclusion: 'Mesures i suports universals: instruccions clares, exemples, bastides, opcions de resposta i revisió guiada.\nTDAH: fragmentació i temporització.\nTEA: estructura visual i previsibilitat.\nDislèxia: suport oral i menys càrrega lectora.\nTDL: vocabulari previ i frases model.',
+    assessment: 'Evidències: procés, producte final i reflexió.\nInstruments: rúbrica, llista de control, coavaluació i autoavaluació.\nRetorn i millora: feedback formatiu i possibilitat de revisió.',
+    tags: 'SA, plantilla general, competencial, inclusió'
+  },
+  projecte_steam: {
+    title: 'Projecte STEAM amb prototip', level: '3r ESO', subject: 'Àmbit STEAM', duration: '4 setmanes',
+    challenge: 'Dissenyar una solució a una necessitat real mitjançant recerca, càlculs, prototipatge i comunicació.',
+    knowledge: 'Procés tecnològic, dades, mesures, representació, sostenibilitat, iteració i comunicació científica.',
+    competences: 'Competències específiques de tecnologia, matemàtiques i ciències. Criteris: 1.1, 2.1, 3.2, 4.1.',
+    sequence: '1. Llançament del repte.\n2. Recerca i definició de requisits.\n3. Disseny i planificació.\n4. Construcció o simulació.\n5. Proves, millores i presentació.',
+    inclusion: 'Rols cooperatius, prototipatge amb opcions de baixa complexitat, suports visuals i rúbrica compartida.',
+    assessment: 'Rúbrica del procés, registre de proves, producte final i defensa oral.', tags: 'projecte, STEAM, prototip'
+  },
+  prova_lomloe: {
+    title: 'Prova competencial amb estímul i pauta de correcció', level: '4t ESO', subject: 'Transversal', duration: '1-2 sessions',
+    challenge: 'Una situació inicial amb dades, text o imatge que exigeix interpretar, aplicar sabers i justificar decisions.',
+    knowledge: 'Sabers vinculats a l’estímul, vocabulari clau, procediments de resolució i argumentació.',
+    competences: 'Criteris d’avaluació: 1.1, 2.1, 3.1. Relacionar cada pregunta amb un criteri i un nivell d’assoliment.',
+    sequence: 'Bloc 1: comprensió de l’estímul.\nBloc 2: aplicació de sabers.\nBloc 3: presa de decisions.\nBloc 4: justificació i transferència.',
+    inclusion: 'Lectura accessible, preguntes numerades, espai per planificar la resposta, suport visual i temps addicional quan calgui.',
+    assessment: 'Pauta de correcció amb criteris LOMLOE, descriptors NA/AS/AN/AE i exemples de resposta esperada.', tags: 'prova, LOMLOE, competencial'
+  }
+};
+
+const TEMPLATE_LIBRARY = [
+  { id: 'sa_tecnologia', module: 'sa', label: 'SA · Tecnologia ESO · Millora del centre', data: TEMPLATES.sa },
+  { id: 'sa_matematiques', module: 'sa', label: 'SA · Matemàtiques ESO · Dades reals', data: EXTRA_TEMPLATES.sa_matematiques },
+  { id: 'sa_generica', module: 'sa', label: 'SA · Plantilla general competencial', data: EXTRA_TEMPLATES.sa_generica },
+  { id: 'projecte_base', module: 'projecte', label: 'Projecte · Base competencial', data: TEMPLATES.projecte },
+  { id: 'projecte_steam', module: 'projecte', label: 'Projecte · STEAM amb prototip', data: EXTRA_TEMPLATES.projecte_steam },
+  { id: 'sessio_base', module: 'sessio', label: 'Sessió · Guiada', data: TEMPLATES.sessio },
+  { id: 'rubrica_base', module: 'rubrica', label: 'Rúbrica · Quadre NA/AS/AN/AE', data: TEMPLATES.rubrica },
+  { id: 'prova_base', module: 'prova', label: 'Prova · Competencial base', data: TEMPLATES.prova },
+  { id: 'prova_lomloe', module: 'prova', label: 'Prova · LOMLOE amb estímul', data: EXTRA_TEMPLATES.prova_lomloe },
+  { id: 'fitxa_base', module: 'fitxa', label: 'Fitxa · Activitats alumnat', data: TEMPLATES.fitxa },
+  { id: 'adaptacio_base', module: 'adaptacio', label: 'Adaptació · TDAH, TEA, dislèxia i TDL', data: TEMPLATES.adaptacio }
+];
+
+
 let currentModule = MODULES[0];
 let resources = loadResources();
 let deferredPrompt = null;
@@ -98,6 +156,7 @@ const els = {
 function init() {
   renderNav();
   renderTypeOptions();
+  renderTemplateOptions();
   setModule('sa');
   renderLibrary();
   bindEvents();
@@ -120,6 +179,12 @@ function bindEvents() {
   document.getElementById('copyBtn').addEventListener('click', copyReportText);
   document.getElementById('importBtn').addEventListener('click', importFile);
   document.getElementById('clearLibraryBtn').addEventListener('click', clearLibrary);
+  document.getElementById('aiDraftBtn').addEventListener('click', generateAiDraft);
+  document.getElementById('aiApplyBtn').addEventListener('click', applyAiDraftToForm);
+  els.aiProvider.addEventListener('change', updateAiStatus);
+  els.aiKey.value = loadSettings().googleApiKey || '';
+  els.aiKey.addEventListener('change', () => saveSettings({ googleApiKey: els.aiKey.value.trim() }));
+  updateAiStatus();
   els.search.addEventListener('input', renderLibrary);
   els.levelFilter.addEventListener('change', renderLibrary);
   window.addEventListener('online', updateOnlineStatus);
@@ -153,7 +218,9 @@ function setModule(id) {
   els.type.value = currentModule.type;
   const templateHint = currentModule.id === 'sa' ? "Inclou una sortida d'informe segons pauta de programació de SA, amb rúbrica LOMLOE completa." : 'Inclou una plantilla inicial editable.';
   els.intro.innerHTML = `<p class="eyebrow">${escapeHtml(currentModule.type)}</p><h2>${escapeHtml(currentModule.label)}</h2><p>${escapeHtml(currentModule.intro)}</p><p class="hint">${escapeHtml(templateHint)}</p>`;
+  renderTemplateOptions();
   if (id === 'biblioteca') document.querySelector('.library-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (id === 'modeia') document.querySelector('.ai-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function clearForm() {
@@ -163,10 +230,20 @@ function clearForm() {
   els.report.innerHTML = '<p>Omple el formulari o prem “Crea des de plantilla” per generar un informe net.</p>';
 }
 
+function renderTemplateOptions() {
+  if (!els.templateSelect) return;
+  const allowed = TEMPLATE_LIBRARY.filter(t => t.module === currentModule.id || currentModule.id === 'modeia');
+  const list = allowed.length ? allowed : TEMPLATE_LIBRARY.filter(t => t.module === 'sa');
+  els.templateSelect.innerHTML = list.map(t => `<option value="${escapeHtml(t.id)}">${escapeHtml(t.label)}</option>`).join('');
+}
+
 function loadTemplate() {
-  const template = TEMPLATES[currentModule.id] || TEMPLATES.sa;
+  const selected = TEMPLATE_LIBRARY.find(t => t.id === els.templateSelect.value);
+  const template = selected ? selected.data : (TEMPLATES[currentModule.id] || TEMPLATES.sa);
   Object.entries(template).forEach(([key, value]) => { if (els[key]) els[key].value = value; });
-  els.type.value = currentModule.type;
+  const moduleId = selected ? selected.module : currentModule.id;
+  const module = MODULES.find(m => m.id === moduleId) || currentModule;
+  els.type.value = module.type;
   renderReport(getFormData());
 }
 
@@ -845,5 +922,145 @@ function persistResources() { localStorage.setItem(APP_KEY, JSON.stringify(resou
 function updateOnlineStatus() { els.offlineStatus.textContent = navigator.onLine ? 'Mode connexió: en línia.' : 'Mode connexió: offline.'; }
 function slugify(value) { return value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'docentkit-recurs'; }
 function escapeHtml(value = '') { return String(value).replace(/[&<>'"]/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[char])); }
+
+
+function loadSettings() {
+  try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}; } catch { return {}; }
+}
+function saveSettings(partial) {
+  const next = { ...loadSettings(), ...partial };
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(next));
+}
+function updateAiStatus() {
+  if (!els.aiModeStatus) return;
+  const provider = els.aiProvider.value;
+  els.aiModeStatus.textContent = provider === 'google' ? 'Google API experimental' : 'Mode local';
+  els.aiModeStatus.style.background = provider === 'google' ? '#fff7ed' : '#ecfdf3';
+  els.aiModeStatus.style.color = provider === 'google' ? '#9a3412' : '#155b32';
+}
+
+function buildAiPrompt() {
+  const data = getFormData();
+  const context = els.aiContext.value.trim();
+  return `Ets un assistent docent en català. Genera un esborrany de recurs docent per a ESO seguint una estructura clara i importable per DocentKit.\n\nTipus: ${data.type}\nTítol provisional: ${data.title}\nNivell: ${data.level}\nMatèria: ${data.subject || 'pendent'}\nDurada: ${data.duration || 'pendent'}\nInstruccions o base: ${context || data.challenge || 'crear una proposta completa'}\n\nRespon només amb aquests apartats i etiquetes:\nTÍTOL\nCURS\nMATÈRIA\nDURADA\nCONTEXT\nREPTE\nJUSTIFICACIÓ\nPRODUCTE FINAL\nCOMPETÈNCIES ESPECÍFIQUES\nCRITERIS D’AVALUACIÓ\nBLOCS DE SABERS\nSABERS CONCRETS\nMETODOLOGIA\nINICIALS\nDESENVOLUPAMENT\nESTRUCTURACIÓ\nAPLICACIÓ\nMESURES I SUPORTS\nEVIDÈNCIES\nINSTRUMENTS\nRETORN I MILLORA\nRÚBRICA`; 
+}
+
+function buildLocalAIDraft() {
+  const data = getFormData();
+  const context = els.aiContext.value.trim() || data.challenge || 'necessitat propera de l’alumnat';
+  const subject = data.subject || 'Matèria o àmbit';
+  const level = data.level || 'ESO';
+  const title = data.title && data.title !== 'Recurs sense títol' ? data.title : `Situació d’aprenentatge sobre ${subject}`;
+  const product = isSituation(data) ? 'producte final competencial amb evidències, presentació i reflexió' : 'producte o evidència final vinculada al repte';
+  return `TÍTOL\n${title}\n\nCURS\n${level}\n\nMATÈRIA\n${subject}\n\nDURADA\n${data.duration || '6 sessions'}\n\nCONTEXT\n${context}\n\nREPTE\nCom podem donar resposta a aquesta necessitat aplicant sabers de ${subject} i comunicant una proposta justificada?\n\nJUSTIFICACIÓ\nLa proposta parteix d’un context proper i permet treballar aprenentatges funcionals, presa de decisions, cooperació i comunicació d’evidències.\n\nPRODUCTE FINAL\n${product}.\n\nCOMPETÈNCIES ESPECÍFIQUES\nCE1, CE2, CE3. Ajusta-les segons el currículum de la matèria.\n\nCRITERIS D’AVALUACIÓ\n1.1, 2.1, 3.1. Revisa la numeració LOMLOE de la matèria i el curs.\n\nBLOCS DE SABERS\nSabers conceptuals, procedimentals i actitudinals vinculats al repte.\n\nSABERS CONCRETS\n- Comprensió del context i formulació del problema.\n- Recerca i selecció d’informació.\n- Aplicació de procediments propis de la matèria.\n- Comunicació clara del procés i dels resultats.\n\nMETODOLOGIA\nAprenentatge basat en reptes, treball cooperatiu, bastides, revisió entre iguals i feedback formatiu.\n\nINICIALS\nActivació de coneixements previs, presentació del repte i construcció compartida dels criteris d’èxit.\n\nDESENVOLUPAMENT\nRecerca, pràctica guiada, resolució de tasques parcials i revisió del procés.\n\nESTRUCTURACIÓ\nSíntesi dels aprenentatges, organització d’evidències i preparació del producte final.\n\nAPLICACIÓ\nPresentació del producte final, transferència a un context proper i reflexió individual.\n\nMESURES I SUPORTS\nDisseny universal: instruccions fragmentades, exemples, checklist, rols i opcions de resposta. TDAH: temporització i tasques curtes. TEA: anticipació i estructura visual. Dislèxia: suport oral i reducció de càrrega lectora. TDL: vocabulari previ i frases model.\n\nEVIDÈNCIES\nProcés de treball, producte final, presentació i reflexió final.\n\nINSTRUMENTS\nRúbrica NA/AS/AN/AE, llista de control, coavaluació i autoavaluació.\n\nRETORN I MILLORA\nFeedback durant el procés, revisió entre iguals i millora abans del lliurament.\n\nRÚBRICA\n1.1 | Comprensió del repte | NA: identifica parcialment | AS: identifica els elements bàsics | AN: analitza i justifica | AE: analitza amb profunditat i transfereix\n2.1 | Aplicació de sabers | NA: aplica amb moltes ajudes | AS: aplica procediments bàsics | AN: aplica de manera coherent | AE: aplica amb autonomia i criteri\n3.1 | Comunicació i reflexió | NA: comunica amb poca claredat | AS: comunica la idea principal | AN: comunica amb evidències | AE: comunica amb rigor i proposa millores`; 
+}
+
+async function generateAiDraft() {
+  const provider = els.aiProvider.value;
+  els.aiOutput.textContent = 'Generant esborrany...';
+  if (provider !== 'google') {
+    els.aiOutput.textContent = buildLocalAIDraft();
+    return;
+  }
+  const key = els.aiKey.value.trim();
+  if (!key) {
+    els.aiOutput.textContent = 'No hi ha API key. Genero un esborrany local sense enviar dades fora del navegador.\n\n' + buildLocalAIDraft();
+    return;
+  }
+  saveSettings({ googleApiKey: key });
+  try {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(key)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: buildAiPrompt() }] }] })
+    });
+    if (!response.ok) throw new Error(`Error API ${response.status}`);
+    const json = await response.json();
+    const text = json?.candidates?.[0]?.content?.parts?.map(p => p.text).join('\n') || '';
+    els.aiOutput.textContent = text.trim() || buildLocalAIDraft();
+  } catch (error) {
+    console.error(error);
+    els.aiOutput.textContent = 'No he pogut obtenir resposta de la API. Mantinc un esborrany local perquè puguis continuar.\n\n' + buildLocalAIDraft();
+  }
+}
+
+function applyAiDraftToForm() {
+  const text = els.aiOutput.textContent.trim();
+  if (!text || text === 'Encara no hi ha cap esborrany.') return alert('Primer genera o enganxa un esborrany.');
+  applyImportedText('esborrany-ia.txt', text, els.aiProvider.value === 'google' ? 'IA Google' : 'IA local');
+}
+
+async function extractDocxText(file) {
+  const buffer = await file.arrayBuffer();
+  const entries = findZipEntries(buffer);
+  const parts = [];
+  for (const name of ['word/document.xml', 'word/footnotes.xml', 'word/endnotes.xml']) {
+    const entry = entries.find(e => e.name === name);
+    if (!entry) continue;
+    const xmlBytes = await inflateZipEntry(buffer, entry);
+    parts.push(docxXmlToText(new TextDecoder('utf-8').decode(xmlBytes)));
+  }
+  const text = parts.join('\n\n').replace(/\n{3,}/g, '\n\n').trim();
+  if (!text) throw new Error('DOCX sense text');
+  return text;
+}
+
+function findZipEntries(buffer) {
+  const view = new DataView(buffer);
+  const entries = [];
+  for (let offset = 0; offset + 46 < view.byteLength; offset++) {
+    if (view.getUint32(offset, true) !== 0x02014b50) continue;
+    const method = view.getUint16(offset + 10, true);
+    const compressedSize = view.getUint32(offset + 20, true);
+    const uncompressedSize = view.getUint32(offset + 24, true);
+    const nameLen = view.getUint16(offset + 28, true);
+    const extraLen = view.getUint16(offset + 30, true);
+    const commentLen = view.getUint16(offset + 32, true);
+    const localHeaderOffset = view.getUint32(offset + 42, true);
+    const name = new TextDecoder('utf-8').decode(new Uint8Array(buffer, offset + 46, nameLen));
+    if (localHeaderOffset + 30 < view.byteLength && view.getUint32(localHeaderOffset, true) === 0x04034b50) {
+      const localNameLen = view.getUint16(localHeaderOffset + 26, true);
+      const localExtraLen = view.getUint16(localHeaderOffset + 28, true);
+      const dataOffset = localHeaderOffset + 30 + localNameLen + localExtraLen;
+      entries.push({ name, method, compressedSize, uncompressedSize, dataOffset });
+    }
+    offset += 45 + nameLen + extraLen + commentLen;
+  }
+  if (entries.length) return entries;
+  return parseZipEntries(buffer);
+}
+
+function docxXmlToText(xml) {
+  return xml
+    .replace(/<w:tab\s*\/>/g, '\t')
+    .replace(/<w:br\s*\/>/g, '\n')
+    .replace(/<\/w:tc>/g, '\n')
+    .replace(/<\/w:tr>/g, '\n')
+    .replace(/<\/w:p>/g, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"').replace(/&apos;/g, "'")
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function applyImportedText(filename, text, kind) {
+  els.title.value = filename.replace(/\.[^.]+$/, '');
+  const mapped = mapImportedTemplateText(text);
+  if (mapped.title) els.title.value = mapped.title;
+  if (mapped.level) els.level.value = mapped.level;
+  if (mapped.subject) els.subject.value = mapped.subject;
+  if (mapped.duration) els.duration.value = mapped.duration;
+  if (mapped.challenge) els.challenge.value = mapped.challenge;
+  if (mapped.knowledge) els.knowledge.value = mapped.knowledge;
+  if (mapped.competences) els.competences.value = mapped.competences;
+  if (mapped.sequence) els.sequence.value = mapped.sequence;
+  if (mapped.inclusion) els.inclusion.value = mapped.inclusion;
+  if (mapped.assessment) els.assessment.value = mapped.assessment;
+  if (!mapped.challenge && text) els.challenge.value = `${kind} importat: ${filename}\n\n${text.slice(0, 5000)}`;
+  if (els.importStatus) els.importStatus.textContent = `${kind} importat: ${filename}. Text recuperat: ${text.length.toLocaleString('ca-ES')} caràcters. Camps detectats: ${Object.values(mapped).filter(Boolean).length}.`;
+  renderReport(getFormData());
+}
 
 init();
