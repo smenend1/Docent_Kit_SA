@@ -1,4 +1,4 @@
-const APP_KEY = 'docentkit.resources.v5';
+const APP_KEY = 'docentkit.resources.v6';
 const OLD_KEYS = ['docentkit.resources.v1', 'docentkit.resources.v2', 'docentkit.resources.v3'];
 
 const MODULES = [
@@ -472,8 +472,7 @@ function closeExportMode() { document.body.classList.remove('export-mode'); }
 function downloadCurrentPdf() {
   const data = getFormData();
   renderReport(data);
-  const pdfText = buildPlainReport(data);
-  const pdfBlob = buildSimplePdf(pdfText, data.title);
+  const pdfBlob = isSituation(data) ? buildVisualSaPdf(data) : buildSimplePdf(buildPlainReport(data), data.title);
   downloadBlob(pdfBlob, slugify(data.title) + '.pdf', 'application/pdf');
 }
 
@@ -623,6 +622,109 @@ function escapePdfText(value) {
 function sanitizePdfComment(value) { return escapePdfText(value).replace(/[\r\n]/g, ' '); }
 function byteLength(value) { return new TextEncoder().encode(value).length; }
 
+
+function buildVisualSaPdf(data) {
+  const doc = new PdfDoc();
+  const challenge = extractSaParts(data.challenge);
+  const competences = extractCompetenceParts(data.competences);
+  const sequence = extractSequenceParts(data.sequence);
+  const assessment = extractAssessmentParts(data.assessment);
+  const inclusion = extractInclusionParts(data.inclusion);
+  const rubric = buildRubricRows(data, competences.criteriaCodes);
+  doc.cover(data.title || 'Situació d’aprenentatge', challenge.repte || firstSentence(data.challenge), data.level, data.subject || '—', data.duration || '—');
+  doc.twoMeta('Curs', data.level, 'Àrea / matèria / àmbit', data.subject || '—');
+  doc.section('Descripció, context i repte');
+  doc.textBlock('Context', challenge.context || data.challenge);
+  doc.textBlock('Repte', challenge.repte || '—');
+  doc.textBlock('Justificació', challenge.justificacio || '—');
+  doc.textBlock('Producte final', challenge.producte || '—');
+  doc.section('Competències específiques i criteris d’avaluació');
+  doc.textBlock('Competències específiques', competences.competencies || data.competences);
+  doc.textBlock('Criteris d’avaluació', competences.criteria || competences.criteriaCodes.join(', ') || '—');
+  doc.textBlock('Competències transversals', competences.transversals || 'Digital, ciutadana, emprenedora i personal, social i d’aprendre a aprendre.');
+  doc.section('Objectius d’aprenentatge');
+  doc.paragraphs(stripHtml(buildObjectivesList(data)));
+  doc.section('Sabers');
+  doc.paragraphs(data.knowledge || '—');
+  doc.section('Desenvolupament de la situació d’aprenentatge');
+  doc.table(['Moment', 'Finalitat', 'Activitats principals'], [
+    ['Inicials', 'Què en sabem?', sequence.inicials || '—'],
+    ['Desenvolupament', 'Aprenem nous continguts', sequence.desenvolupament || '—'],
+    ['Estructuració', 'Què hem après?', sequence.estructuracio || '—'],
+    ['Aplicació', 'Apliquem el que hem après', sequence.aplicacio || '—']
+  ], [0.17, 0.22, 0.61]);
+  doc.section('Mesures i suports');
+  doc.textBlock('Disseny universal i suports generals', inclusion.universals || data.inclusion || '—');
+  doc.table(['TDAH', 'TEA', 'Dislèxia', 'TDL'], [[inclusion.tdah || '—', inclusion.tea || '—', inclusion.dislexia || '—', inclusion.tdl || '—']], [0.25,0.25,0.25,0.25]);
+  doc.section('Evidències, instruments i retorn');
+  doc.textBlock('Evidències', assessment.evidencies || '—');
+  doc.textBlock('Instruments', assessment.instruments || '—');
+  doc.textBlock('Retorn i millora', assessment.retorn || '—');
+  doc.section('Rúbrica de la situació d’aprenentatge');
+  doc.table(['Criteri LOMLOE', 'Ítem', 'NA', 'AS', 'AN', 'AE'], rubric.map(r => [r.criteri, r.item, r.na, r.as, r.an, r.ae]), [0.10,0.18,0.18,0.18,0.18,0.18], 7.5);
+  doc.section('Vectors');
+  doc.table(['Vector', 'Concreció'], [
+    ['Aprenentatges competencials', 'Repte autèntic, producte final i aplicació funcional dels sabers.'],
+    ['Perspectiva de gènere', 'Referents diversos, participació equitativa i revisió d’estereotips.'],
+    ['Universalitat del currículum', 'Opcions d’accés, expressió i participació per reduir barreres.'],
+    ['Qualitat de les llengües', 'Comunicació oral, escrita, tècnica i multimodal.'],
+    ['Ciutadania democràtica i consciència global', 'Connexió amb necessitats del centre, sostenibilitat i impacte comunitari.'],
+    ['Benestar emocional', 'Clima segur, rols clars, feedback formatiu i confiança en la millora.']
+  ], [0.32,0.68]);
+  return doc.toBlob(data.title);
+}
+
+class PdfDoc {
+  constructor() { this.w = 595.28; this.h = 841.89; this.margin = 42; this.y = this.h - this.margin; this.pages = [[]]; this.pageNo = 1; }
+  current() { return this.pages[this.pages.length - 1]; }
+  add(cmd) { this.current().push(cmd); }
+  newPage() { this.pages.push([]); this.pageNo += 1; this.y = this.h - this.margin; this.footer(); }
+  ensure(height) { if (this.y - height < this.margin + 24) this.newPage(); }
+  footer() { this.text(`DocentKit · ${this.pageNo}`, this.margin, 24, 8, false, 0.45); }
+  text(value, x, y, size=10, bold=false, gray=0) { const font = bold ? 'F2' : 'F1'; this.add(`BT /${font} ${size} Tf ${gray} g ${x.toFixed(2)} ${y.toFixed(2)} Td (${escapePdfText(value)}) Tj ET`); }
+  rect(x, y, w, h, fill=[1,1,1], stroke=[0.82,0.88,0.82]) { this.add(`q ${fill.join(' ')} rg ${stroke.join(' ')} RG ${x.toFixed(2)} ${y.toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re B Q`); }
+  line(x1,y1,x2,y2, color=[0.82,0.88,0.82]) { this.add(`q ${color.join(' ')} RG ${x1} ${y1} m ${x2} ${y2} l S Q`); }
+  cover(title, question) { this.rect(0, this.h-170, this.w, 170, [0.94,0.99,0.95], [0.94,0.99,0.95]); this.text('PROGRAMACIO DE LA SITUACIO D APRENENTATGE', this.margin, this.h-48, 11, true, 0.10); this.wrap(title, this.margin, this.h-85, this.w-this.margin*2, 26, true, 31); this.y = this.h-120; this.wrap(question || 'Repte pendent de concretar.', this.margin, this.y, this.w-this.margin*2, 14, false, 18); this.y = this.h-205; }
+  twoMeta(l1,v1,l2,v2) { const gap=14, boxW=(this.w-this.margin*2-gap)/2, boxH=54; this.ensure(boxH+10); this.rect(this.margin, this.y-boxH, boxW, boxH, [0.99,1,0.99]); this.rect(this.margin+boxW+gap, this.y-boxH, boxW, boxH, [0.99,1,0.99]); this.text(l1.toUpperCase(), this.margin+12, this.y-19, 9, true, 0.15); this.text(v1 || '—', this.margin+12, this.y-39, 14, true, 0.05); this.text(l2.toUpperCase(), this.margin+boxW+gap+12, this.y-19, 9, true, 0.15); this.text(v2 || '—', this.margin+boxW+gap+12, this.y-39, 14, true, 0.05); this.y -= boxH + 18; }
+  section(title) { this.ensure(46); this.line(this.margin, this.y, this.w-this.margin, this.y); this.y -= 20; this.text(title, this.margin, this.y, 15, true, 0.12); this.y -= 16; }
+  textBlock(title, body) { const lines = this.wrapLines(String(body || '—'), 82); const height = Math.max(48, 22 + lines.length * 11); this.ensure(height + 8); this.rect(this.margin, this.y-height, this.w-this.margin*2, height, [0.99,1,0.99]); this.text(title, this.margin+10, this.y-16, 10.5, true, 0.12); let yy = this.y-31; lines.slice(0, 18).forEach(line => { this.text(line, this.margin+10, yy, 9.3, false, 0.05); yy -= 11; }); this.y -= height + 8; }
+  paragraphs(text) { const lines = this.wrapLines(text, 92); lines.forEach(line => { this.ensure(13); this.text(line, this.margin, this.y, 9.5, false, 0.05); this.y -= 12; }); this.y -= 5; }
+  table(headers, rows, widths, fontSize=8.5) { const totalW = this.w - this.margin*2; const colW = widths.map(v => v*totalW); const drawRow = (cells, header=false) => { const cellLines = cells.map((c,i) => this.wrapLines(String(c || '—'), Math.max(8, Math.floor(colW[i]/(fontSize*0.48))))); const rowH = Math.max(24, 13 + Math.max(...cellLines.map(l => l.length))* (fontSize+2)); this.ensure(rowH+2); let x=this.margin; cells.forEach((c,i) => { this.rect(x, this.y-rowH, colW[i], rowH, header ? [0.91,0.97,0.93] : [1,1,1], [0.74,0.82,0.74]); let yy=this.y-12; cellLines[i].slice(0, 9).forEach(line => { this.text(line, x+4, yy, fontSize, header, header ? 0.12 : 0.05); yy -= fontSize+2; }); x += colW[i]; }); this.y -= rowH; }; drawRow(headers, true); rows.forEach(row => drawRow(row, false)); this.y -= 10; }
+  wrap(text, x, y, width, size, bold=false, leading=14) { const maxChars = Math.max(16, Math.floor(width/(size*0.52))); const lines = this.wrapLines(text, maxChars); let yy = y; lines.forEach(line => { this.text(line, x, yy, size, bold, 0.05); yy -= leading; }); return lines.length * leading; }
+  wrapLines(text, maxChars) { const output=[]; String(text || '').replace(/\r/g,'').split(/\n+/).forEach(p => { const clean=p.replace(/^[-•*]\s*/, '').trim(); if (!clean) { output.push(''); return; } let line=''; clean.split(/\s+/).forEach(word => { const cand=line ? line+' '+word : word; if (cand.length > maxChars && line) { output.push(line); line=word; } else line=cand; }); if (line) output.push(line); }); return output; }
+  toBlob(title) { this.footer(); const objects=[]; const add=v=>{objects.push(v); return objects.length;}; const catalogId=add(''), pagesId=add(''); const fontId=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'); const boldId=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>'); const pageIds=[]; this.pages.forEach(cmds => { const content = cmds.join('\n'); const contentId=add(`<< /Length ${byteLength(content)} >>\nstream\n${content}\nendstream`); const pageId=add(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${this.w} ${this.h}] /Resources << /Font << /F1 ${fontId} 0 R /F2 ${boldId} 0 R >> >> /Contents ${contentId} 0 R >>`); pageIds.push(pageId); }); objects[catalogId-1]=`<< /Type /Catalog /Pages ${pagesId} 0 R >>`; objects[pagesId-1]=`<< /Type /Pages /Kids [${pageIds.map(id => `${id} 0 R`).join(' ')}] /Count ${pageIds.length} >>`; let pdf=`%PDF-1.4\n% DocentKit PDF visual: ${sanitizePdfComment(title)}\n`; const offsets=[0]; objects.forEach((obj,idx)=>{offsets.push(byteLength(pdf)); pdf += `${idx+1} 0 obj\n${obj}\nendobj\n`;}); const xref=byteLength(pdf); pdf += `xref\n0 ${objects.length+1}\n0000000000 65535 f \n`; offsets.slice(1).forEach(o => { pdf += String(o).padStart(10,'0') + ' 00000 n \n'; }); pdf += `trailer\n<< /Size ${objects.length+1} /Root ${catalogId} 0 R >>\nstartxref\n${xref}\n%%EOF`; return new Blob([pdf], {type:'application/pdf'}); }
+}
+
+async function extractDocxText(file) {
+  const buffer = await file.arrayBuffer();
+  const entries = parseZipEntries(buffer);
+  const documentEntry = entries.find(e => e.name === 'word/document.xml');
+  if (!documentEntry) throw new Error('No word/document.xml found');
+  const xmlBytes = await inflateZipEntry(buffer, documentEntry);
+  const xml = new TextDecoder('utf-8').decode(xmlBytes);
+  return docxXmlToText(xml);
+}
+function parseZipEntries(buffer) { const view = new DataView(buffer); const entries=[]; let offset=0; while (offset + 30 < view.byteLength) { const sig = view.getUint32(offset, true); if (sig !== 0x04034b50) break; const method = view.getUint16(offset+8, true); const compressedSize = view.getUint32(offset+18, true); const uncompressedSize = view.getUint32(offset+22, true); const nameLen = view.getUint16(offset+26, true); const extraLen = view.getUint16(offset+28, true); const nameBytes = new Uint8Array(buffer, offset+30, nameLen); const name = new TextDecoder('utf-8').decode(nameBytes); const dataOffset = offset + 30 + nameLen + extraLen; entries.push({name, method, compressedSize, uncompressedSize, dataOffset}); offset = dataOffset + compressedSize; } return entries; }
+async function inflateZipEntry(buffer, entry) { const bytes = new Uint8Array(buffer, entry.dataOffset, entry.compressedSize); if (entry.method === 0) return bytes; if (entry.method !== 8) throw new Error('Unsupported zip compression'); if (!('DecompressionStream' in window)) throw new Error('DecompressionStream not available'); const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw')); return new Uint8Array(await new Response(stream).arrayBuffer()); }
+function docxXmlToText(xml) { return xml.replace(/<w:tab\/>/g, '\t').replace(/<w:br\/>/g, '\n').replace(/<\/w:p>/g, '\n').replace(/<\/w:tr>/g, '\n').replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/\n{3,}/g, '\n\n').trim(); }
+async function extractPdfText(file) { const buffer = await file.arrayBuffer(); const bytes = new Uint8Array(buffer); let binary = ''; const chunk = 0x8000; for (let i=0; i<bytes.length; i+=chunk) binary += String.fromCharCode(...bytes.subarray(i, i+chunk)); const parts=[]; const literalRegex = /\((?:\\.|[^\\)]){2,}\)\s*Tj/g; let match; while ((match = literalRegex.exec(binary))) parts.push(decodePdfLiteral(match[0].replace(/\)\s*Tj$/, '').slice(1))); const tjRegex = /\[(.*?)\]\s*TJ/gs; while ((match = tjRegex.exec(binary))) { const inner = match[1]; let m; const re=/\((?:\\.|[^\\)])+\)/g; const line=[]; while ((m = re.exec(inner))) line.push(decodePdfLiteral(m[0].slice(1,-1))); if (line.length) parts.push(line.join('')); } const text = parts.join('\n').replace(/\s+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim(); if (!text || text.length < 20) throw new Error('No extractable PDF text'); return text; }
+function decodePdfLiteral(value) { return value.replace(/\\([nrtbf()\\])/g, (_, c) => ({n:'\n', r:'\r', t:'\t', b:'\b', f:'\f', '(':'(', ')':')', '\\':'\\'}[c] || c)); }
+function applyImportedText(filename, text, kind) { els.title.value = filename.replace(/\.[^.]+$/, ''); const mapped = mapImportedTemplateText(text); if (mapped.title) els.title.value = mapped.title; if (mapped.level) els.level.value = mapped.level; if (mapped.subject) els.subject.value = mapped.subject; if (mapped.duration) els.duration.value = mapped.duration; if (mapped.challenge) els.challenge.value = mapped.challenge; if (mapped.knowledge) els.knowledge.value = mapped.knowledge; if (mapped.competences) els.competences.value = mapped.competences; if (mapped.sequence) els.sequence.value = mapped.sequence; if (mapped.inclusion) els.inclusion.value = mapped.inclusion; if (mapped.assessment) els.assessment.value = mapped.assessment; if (!mapped.challenge && text) els.challenge.value = `${kind} importat: ${filename}\n\n${text.slice(0, 3000)}`; renderReport(getFormData()); }
+function mapImportedTemplateText(text) {
+  const labels = 'TÍTOL|TITOL|CURS|MATÈRIA|MATERIA|DURADA|DOCENT|CONTEXT|REPTE|JUSTIFICACIÓ|JUSTIFICACIO|PRODUCTE FINAL|COMPETÈNCIES ESPECÍFIQUES|COMPETENCIES ESPECIFIQUES|CRITERIS D’AVALUACIÓ|CRITERIS D.AVALUACIÓ|CRITERIS D.AVALUACIO|BLOCS DE SABERS|SABERS CONCRETS|METODOLOGIA|ORGANITZACIÓ DE L.AULA|ORGANITZACIO DE L.AULA|RECURSOS|MESURES I SUPORTS|INICIALS|DESENVOLUPAMENT|ESTRUCTURACIÓ|ESTRUCTURACIO|APLICACIÓ|APLICACIO|EVIDÈNCIES|EVIDENCIES|INSTRUMENTS|RETORN I MILLORA|APRENENTATGES COMPETENCIALS|PERSPECTIVA DE GÈNERE|PERSPECTIVA DE GENERE|UNIVERSALITAT|QUALITAT|CIUTADANIA|BENESTAR|Ítem d.avaluació|Item d.avaluacio|Annex|CE|CA|BLOCS';
+  const get = (...aliases) => { for (const label of aliases) { const re = new RegExp(`${escapeRegExp(label)}\\s*:?\\s*\\n+([\\s\\S]*?)(?=\\n\\s*(?:${labels})\\b|$)`, 'i'); const m = text.match(re); if (m && cleanImportedValue(m[1])) return cleanImportedValue(m[1]); } return ''; };
+  const title=get('TÍTOL','TITOL'), level=normalizeLevel(get('CURS')), subject=get('MATÈRIA','MATERIA'), duration=get('DURADA');
+  const context=get('CONTEXT'), repte=get('REPTE'), justificacio=get('JUSTIFICACIÓ','JUSTIFICACIO'), producte=get('PRODUCTE FINAL');
+  const ce=get('COMPETÈNCIES ESPECÍFIQUES','COMPETENCIES ESPECIFIQUES','CE'), ca=get('CRITERIS D’AVALUACIÓ','CRITERIS D AVALUACIÓ','CA');
+  const blocs=get('BLOCS DE SABERS','BLOCS'), sabers=get('SABERS CONCRETS');
+  const metodologia=get('METODOLOGIA'), organitzacio=get('ORGANITZACIÓ DE L’AULA','ORGANITZACIO DE L AULA'), recursos=get('RECURSOS'), mesures=get('MESURES I SUPORTS');
+  const inicials=get('INICIALS: QUÈ EN SABEM?','INICIALS'), desenvolupament=get('DESENVOLUPAMENT: APRENEM NOUS CONTINGUTS','DESENVOLUPAMENT'), estructuracio=get('ESTRUCTURACIÓ: QUÈ HEM APRÈS?','ESTRUCTURACIO'), aplicacio=get('APLICACIÓ: APLIQUEM EL QUE HEM APRÈS','APLICACIO');
+  const evidencies=get('EVIDÈNCIES','EVIDENCIES'), instruments=get('INSTRUMENTS'), retorn=get('RETORN I MILLORA');
+  return { title, level, subject, duration, challenge: joinNonEmpty([context && `Context: ${context}`, repte && `Repte: ${repte}`, justificacio && `Justificació: ${justificacio}`, producte && `Producte final: ${producte}`]), competences: joinNonEmpty([ce && `Competències específiques: ${ce}`, ca && `Criteris d’avaluació: ${ca}`]), knowledge: joinNonEmpty([blocs && `Blocs de sabers: ${blocs}`, sabers && `Sabers concrets: ${sabers}`]), sequence: joinNonEmpty([metodologia && `Metodologia: ${metodologia}`, organitzacio && `Organització de l’aula: ${organitzacio}`, recursos && `Recursos: ${recursos}`, inicials && `Inicials: ${inicials}`, desenvolupament && `Desenvolupament: ${desenvolupament}`, estructuracio && `Estructuració: ${estructuracio}`, aplicacio && `Aplicació: ${aplicacio}`]), inclusion: mesures, assessment: joinNonEmpty([evidencies && `Evidències: ${evidencies}`, instruments && `Instruments: ${instruments}`, retorn && `Retorn i millora: ${retorn}`]) };
+}
+function cleanImportedValue(value) { return String(value || '').replace(/\[[^\]]*\]/g, '').replace(/\n{3,}/g, '\n\n').trim(); }
+function normalizeLevel(value) { const v = String(value || '').toLowerCase(); if (v.includes('1r') || v.includes('eso1')) return '1r ESO'; if (v.includes('2n') || v.includes('eso2')) return '2n ESO'; if (v.includes('3r') || v.includes('eso3')) return '3r ESO'; if (v.includes('4t') || v.includes('eso4')) return '4t ESO'; return value || ''; }
+
 function buildStandaloneHtml(data, reportHtml) {
   return `<!doctype html>
 <html lang="ca">
@@ -682,8 +784,9 @@ function downloadJson(data, filename) { downloadBlob(JSON.stringify(data, null, 
 
 async function importFile() {
   const file = els.fileInput.files[0];
-  if (!file) return alert('Selecciona un fitxer TXT o JSON.');
-  if (file.name.endsWith('.json')) {
+  if (!file) return alert('Selecciona un fitxer TXT, JSON, DOCX o PDF.');
+  const lowerName = file.name.toLowerCase();
+  if (lowerName.endsWith('.json')) {
     const text = await file.text();
     try {
       const parsed = JSON.parse(text);
@@ -693,16 +796,28 @@ async function importFile() {
     } catch { alert('El JSON no és vàlid.'); }
     return;
   }
-  if (file.name.endsWith('.docx') || file.name.endsWith('.pdf')) {
-    els.title.value = file.name.replace(/\.[^.]+$/, '');
-    els.challenge.value = `Document importat: ${file.name}.\n\nLa lectura automàtica completa de DOCX/PDF encara no està activada en aquesta versió sense llibreries externes. Pots copiar-ne el contingut als camps o convertir-lo a TXT.`;
-    renderReport(getFormData());
+  if (lowerName.endsWith('.docx')) {
+    try {
+      const text = await extractDocxText(file);
+      applyImportedText(file.name, text, 'DOCX');
+    } catch (error) {
+      console.error(error);
+      alert('No he pogut llegir el DOCX en aquest navegador. Prova de convertir-lo a TXT o obrir-lo amb un navegador actualitzat.');
+    }
+    return;
+  }
+  if (lowerName.endsWith('.pdf')) {
+    try {
+      const text = await extractPdfText(file);
+      applyImportedText(file.name, text, 'PDF');
+    } catch (error) {
+      console.error(error);
+      alert('No he pogut extreure text útil del PDF. Alguns PDF són imatges escanejades i necessiten OCR.');
+    }
     return;
   }
   const text = await file.text();
-  els.title.value = file.name.replace(/\.[^.]+$/, '');
-  els.challenge.value = text.slice(0, 2500);
-  renderReport(getFormData());
+  applyImportedText(file.name, text, 'TXT');
 }
 
 function normalizeImportedResource(item) {

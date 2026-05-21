@@ -1,22 +1,24 @@
 # DocentKit · Generador de situacions i recursos
 
-Versió 0.5 de la PWA educativa en català per a docents.
+Versió 0.6 de la PWA educativa en català per a docents.
 
-## Novetats v0.5
+## Novetats v0.6
 
+- Exportació **PDF real** sense finestres emergents, amb estructura visual bàsica: portada, blocs, taules, seqüència i rúbrica.
 - Sortida específica per a **situacions d’aprenentatge** amb estil d’informe de programació.
-- Estructura d’impressió inspirada en la plantilla de suport de programació de SA: identificació, descripció, competències, objectius, sabers, desenvolupament, activitats, mesures, evidències, vectors i rúbrica.
+- Estructura d’impressió inspirada en la pauta de programació de SA: identificació, descripció, competències, objectius, sabers, desenvolupament, activitats, mesures, evidències, vectors i rúbrica.
 - Rúbrica ampliada en format de **quadre** amb columnes: criteri LOMLOE, ítem d’avaluació, NA, AS, AN i AE.
 - Detecció automàtica de codis de criteris com `1.1`, `2.1`, `4.2` per omplir la columna de criteris de la rúbrica.
-- Millora de la vista d’impressió A4 amb `@page`, taules i blocs que eviten salts dolents quan és possible.
-- Es manté l’exportació a **PDF real descarregable** sense finestres emergents.
-- Es manté l’exportació HTML neta i la impressió des de la mateixa pàgina.
-- Service worker actualitzat a `docentkit-v5`.
+- Importació DOCX activada amb extractor intern del text principal del document.
+- Importació PDF bàsica per a documents amb text seleccionable.
+- Exportació HTML neta i impressió des de la mateixa pàgina.
+- Service worker actualitzat a `docentkit-v6`.
 
-## Limitacions conegudes
+## Notes honestes
 
-- El botó **Descarrega PDF** genera un PDF textual robust i descarregable. La vista d’impressió/HTML és la que conserva millor la maquetació visual de plantilla.
-- La lectura completa de DOCX/PDF encara no està activada. La importació accepta el fitxer com a base i en registra el nom, però per extreure contingut caldrà afegir una fase amb `mammoth.js` per DOCX i `pdf.js` per PDF.
+- El PDF descarregable ja no és només un bolcat textual: genera un document PDF amb blocs i taules. Tot i això, la vista HTML/impressió continua sent la més fidel si vols conservar exactament l’aspecte visual de pantalla.
+- La importació DOCX llegeix el text principal de `word/document.xml`. Pot no conservar taules complexes, imatges, capçaleres o peus.
+- La importació PDF funciona quan el PDF conté text seleccionable. Els PDF escanejats o amb text com a imatge necessitaran OCR o una integració posterior amb `pdf.js`.
 
 ## Publicació a GitHub Pages
 
