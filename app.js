@@ -1,4 +1,6 @@
-const APP_KEY = 'docentkit.resources.v1';
+const APP_KEY = 'docentkit.resources.v3';
+const OLD_KEYS = ['docentkit.resources.v1', 'docentkit.resources.v2'];
+
 const MODULES = [
   { id: 'sa', label: 'Crear SA', type: 'Situació d’aprenentatge', intro: 'Dissenya una situació d’aprenentatge competencial amb repte, sabers, criteris, seqüència, inclusió i evidències.' },
   { id: 'projecte', label: 'Crear projecte', type: 'Projecte', intro: 'Planifica un projecte amb producte final, fases, rols, materials, calendarització i avaluació.' },
@@ -7,20 +9,40 @@ const MODULES = [
   { id: 'prova', label: 'Crear prova competencial', type: 'Prova competencial', intro: 'Crea una prova contextualitzada amb estímul, preguntes competencials, criteris i pauta de correcció.' },
   { id: 'fitxa', label: 'Crear fitxa d’activitats', type: 'Fitxa d’activitats', intro: 'Elabora una fitxa per a l’alumnat amb instruccions, passos, recursos, lliurables i autoavaluació.' },
   { id: 'adaptacio', label: 'Adaptar activitat', type: 'Adaptació inclusiva', intro: 'Adapta una activitat per TDAH, TEA, dislèxia i TDL amb mesures concretes i no estigmatitzants.' },
-  { id: 'importexport', label: 'Exportar / importar', type: 'Exportació / importació', intro: 'Gestiona recursos en JSON i prepara informes nets sense finestres emergents, amb vista d’exportació i descàrrega HTML.' },
+  { id: 'importexport', label: 'Exportar / importar', type: 'Exportació / importació', intro: 'Gestiona recursos en JSON, HTML i PDF descarregable sense finestres emergents.' },
   { id: 'biblioteca', label: 'Biblioteca', type: 'Biblioteca local', intro: 'Consulta, reutilitza, cerca i elimina recursos guardats localment en aquest navegador.' }
 ];
 
 const TEMPLATES = {
   sa: {
-    title: 'Investiguem i millorem un espai del centre', subject: 'Àmbit STEAM', duration: '6 sessions',
-    challenge: 'L’alumnat detecta una necessitat real del centre i proposa una millora argumentada, viable i sostenible.',
-    knowledge: 'Observació de l’entorn, recollida de dades, disseny de solucions, comunicació de resultats i ús responsable d’eines digitals.',
-    competences: 'Analitzar problemes reals, formular propostes, justificar decisions i comunicar evidències amb criteris de qualitat.',
-    sequence: '1. Presentació del repte i exploració inicial.\n2. Recollida de dades i anàlisi.\n3. Ideació de solucions.\n4. Prototip o proposta visual.\n5. Presentació i retroacció.\n6. Millora i reflexió final.',
-    inclusion: 'Opcions de treball individual i cooperatiu, instruccions fragmentades, exemples visuals, temps flexible, anticipació de tasques i productes finals alternatius.',
-    assessment: 'Rúbrica del procés i del producte final, diari d’aprenentatge, observació docent, coavaluació i defensa oral breu.',
-    tags: 'SA, competencial, STEAM, inclusió'
+    title: 'Dissenyem una solució tecnològica per millorar el centre',
+    level: '2n ESO',
+    subject: 'Tecnologia i Digitalització',
+    duration: '8 sessions',
+    challenge: 'Context: el centre vol detectar una necessitat real d’un espai comú i proposar-hi una millora viable, segura i sostenible.\n\nRepte: com podem dissenyar, justificar i comunicar una solució tecnològica que millori un espai del centre?\n\nJustificació: l’alumnat treballa a partir d’una necessitat propera, pren decisions tècniques i valora l’impacte social i ambiental.\n\nProducte final: proposta tècnica amb esbós, maqueta o simulació, pressupost bàsic, justificació i presentació final.',
+    knowledge: 'Blocs de sabers: procés de projectes, comunicació tècnica, eines digitals, tecnologia sostenible i operadors tecnològics.\n\nSabers concrets:\n- Identificació de necessitats i formulació de problemes.\n- Recerca, selecció i contrast d’informació.\n- Disseny d’esbossos, croquis o prototips.\n- Planificació de fases, materials i recursos.\n- Comunicació oral, escrita i visual de solucions.\n- Valoració de sostenibilitat, seguretat i viabilitat.',
+    competences: 'Competències específiques: CE1, CE2, CE4.\n\nCriteris d’avaluació: 1.1, 2.1, 4.2.\n\nCompetències transversals:\n- Digital: ús d’eines digitals per documentar, dissenyar i comunicar.\n- Ciutadana: proposta de millora vinculada a la comunitat educativa.\n- Emprenedora: ideació, presa de decisions i millora iterativa.\n- Personal, social i d’aprendre a aprendre: treball cooperatiu, autoregulació i reflexió.',
+    sequence: 'Inicials: què en sabem?\n- Observació de l’espai i pluja d’idees de necessitats.\n- Conversa guiada sobre criteris de qualitat: utilitat, sostenibilitat, seguretat i cost.\n\nDesenvolupament: aprenem nous continguts\n- Recerca de solucions existents.\n- Anàlisi de materials, eines, limitacions i usuaris.\n- Esbossos, croquis o simulacions inicials.\n\nEstructuració: què hem après?\n- Organització de la proposta en una memòria breu.\n- Revisió amb llista de control i coavaluació.\n\nAplicació: apliquem el que hem après\n- Elaboració del producte final.\n- Presentació oral o multimodal.\n- Millora final a partir del retorn rebut.',
+    inclusion: 'Mesures i suports universals:\n- Instruccions fragmentades i visibles.\n- Exemple de proposta final i checklist.\n- Rols cooperatius clars.\n- Opcions de resposta: text, àudio, esquema, maqueta, presentació o vídeo.\n\nTDAH: tasques curtes, temporitzador, objectius de sessió i pauses funcionals.\nTEA: anticipació de fases, estructura visual, consignes literals i previsibilitat.\nDislèxia: menys càrrega lectora, tipografia clara, suport oral i plantilles amb frases iniciades.\nTDL: vocabulari previ, frases simples, suports visuals i temps addicional per formular respostes.',
+    assessment: 'Evidències:\n- Registre d’observació i recerca.\n- Esbossos, croquis, maqueta o simulació.\n- Memòria tècnica breu.\n- Presentació final i reflexió individual.\n\nInstruments:\n- Rúbrica del procés i del producte.\n- Llista de control de la memòria.\n- Coavaluació i autoavaluació.\n\nRetorn i millora:\n- Feedback durant el procés.\n- Revisió entre iguals.\n- Millora obligatòria abans del lliurament final.\n\nRúbrica inicial:\n1. Identificació del problema i recerca: NA / AS / AN / AE.\n2. Disseny, planificació i justificació tècnica: NA / AS / AN / AE.\n3. Construcció, simulació, prova o millora: NA / AS / AN / AE.\n4. Comunicació, documentació i reflexió final: NA / AS / AN / AE.',
+    tags: 'SA, Tecnologia ESO, plantilla, competencial, inclusió'
+  },
+  projecte: {
+    title: 'Projecte competencial amb producte final', subject: 'Transversal', duration: '3-5 setmanes',
+    challenge: 'Repte real o versemblant que demana investigar, crear un producte i presentar una solució.',
+    knowledge: 'Sabers vinculats al context, procediments de recerca, planificació, prototipatge i comunicació.',
+    competences: 'Competències específiques i criteris seleccionats. Indicadors observables del procés i del producte.',
+    sequence: '1. Llançament del repte.\n2. Recerca i definició del problema.\n3. Ideació i planificació.\n4. Desenvolupament del producte.\n5. Presentació, retorn i millora.',
+    inclusion: 'Rols, bastides, exemples, opcions de producte, temps flexible i suports visuals.',
+    assessment: 'Rúbrica, diari de projecte, coavaluació i presentació final.', tags: 'projecte, competencial'
+  },
+  sessio: {
+    title: 'Sessió guiada', subject: 'Transversal', duration: '1 hora',
+    challenge: 'Objectiu de sessió clar i connectat amb una necessitat o pregunta.',
+    knowledge: 'Sabers principals i vocabulari clau.', competences: 'Criteris observables de la sessió.',
+    sequence: 'Inici: activació i objectiu.\nDesenvolupament: pràctica guiada i activitat principal.\nTancament: síntesi, evidència ràpida i deures opcionals.',
+    inclusion: 'Instruccions curtes, exemple resolt, suport visual i comprovacions de comprensió.',
+    assessment: 'Evidència breu de sortida, observació docent i feedback immediat.', tags: 'sessió'
   },
   rubrica: {
     title: 'Rúbrica per valorar un projecte competencial', subject: 'Transversal', duration: 'Una activitat o projecte',
@@ -28,9 +50,26 @@ const TEMPLATES = {
     knowledge: 'Criteris de qualitat, evidències, argumentació, autonomia i revisió del treball.',
     competences: 'Planificar, executar, revisar i comunicar un producte o solució amb evidències.',
     sequence: 'Criteri 1: Comprensió del repte.\nCriteri 2: Qualitat del procés.\nCriteri 3: Producte final.\nCriteri 4: Comunicació.\nCriteri 5: Reflexió i millora.',
-    inclusion: 'Descriptors breus, llenguatge clar, exemples de cada nivell i possibilitat d’evidenciar l’aprenentatge en formats diversos.',
-    assessment: 'Nivells: Inicial, En procés, Assolit, Excel·lent. Incloure descriptors observables i espai per a retroacció formativa.',
-    tags: 'rúbrica, avaluació, competencial'
+    inclusion: 'Descriptors breus, llenguatge clar, exemples de cada nivell i formats diversos per evidenciar l’aprenentatge.',
+    assessment: 'Nivells: NA, AS, AN, AE. Incloure descriptors observables i espai per a retroacció formativa.', tags: 'rúbrica, avaluació'
+  },
+  prova: {
+    title: 'Prova competencial contextualitzada', subject: 'Transversal', duration: '1-2 sessions',
+    challenge: 'Estímul inicial amb situació real, dades o document breu que l’alumnat ha d’interpretar.',
+    knowledge: 'Sabers necessaris per comprendre el context i respondre amb justificació.',
+    competences: 'Criteris d’avaluació vinculats a preguntes obertes, aplicades i justificades.',
+    sequence: 'Bloc A: comprensió de l’estímul.\nBloc B: aplicació de coneixements.\nBloc C: presa de decisions i justificació.\nBloc D: reflexió o transferència.',
+    inclusion: 'Lectura accessible, preguntes clares, temps addicional, suport visual i espai per planificar la resposta.',
+    assessment: 'Pauta de correcció amb criteris, exemples de resposta i nivells d’assoliment.', tags: 'prova, competencial'
+  },
+  fitxa: {
+    title: 'Fitxa d’activitats per a l’alumnat', subject: 'Transversal', duration: '1-3 sessions',
+    challenge: 'Activitat amb propòsit clar i producte o resposta final.',
+    knowledge: 'Conceptes clau, procediments i vocabulari necessari.',
+    competences: 'Objectius d’aprenentatge i criteris d’èxit escrits en llenguatge comprensible per a l’alumnat.',
+    sequence: '1. Llegeix el repte.\n2. Revisa l’exemple.\n3. Resol les tasques pas a pas.\n4. Comprova la feina amb la checklist.\n5. Escriu una reflexió final.',
+    inclusion: 'Passos numerats, frases curtes, icones o suports visuals, opcions de resposta i extensió voluntària.',
+    assessment: 'Checklist, autoavaluació i espai de feedback docent.', tags: 'fitxa, activitats'
   },
   adaptacio: {
     title: 'Adaptació inclusiva d’una activitat', subject: 'Transversal', duration: 'Segons activitat base',
@@ -39,8 +78,7 @@ const TEMPLATES = {
     competences: 'Participar, comprendre instruccions, produir evidències i autoregular-se amb suports adequats.',
     sequence: '1. Simplificar instruccions.\n2. Afegir exemple resolt.\n3. Dividir la tasca en passos.\n4. Oferir formats de resposta alternatius.\n5. Incorporar revisió guiada.',
     inclusion: 'TDAH: passos curts, temporitzador i pauses. TEA: anticipació, estructura visual i consignes literals. Dislèxia: tipografia clara, menys càrrega lectora i suport oral. TDL: vocabulari previ, frases simples i suport visual.',
-    assessment: 'Avaluar el mateix criteri amb evidències adaptades; prioritzar qualitat de resposta i progrés, no la quantitat de producció.',
-    tags: 'TDAH, TEA, dislèxia, TDL, inclusió'
+    assessment: 'Avaluar el mateix criteri amb evidències adaptades; prioritzar qualitat de resposta i progrés, no quantitat.', tags: 'TDAH, TEA, dislèxia, TDL'
   }
 };
 
@@ -64,6 +102,7 @@ function init() {
   renderLibrary();
   bindEvents();
   updateOnlineStatus();
+  els.report.innerHTML = '<p>Omple el formulari o prem “Crea des de plantilla” per generar un informe net.</p>';
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
 }
 
@@ -73,6 +112,7 @@ function bindEvents() {
   document.getElementById('generateBtn').addEventListener('click', () => renderReport(getFormData()));
   document.getElementById('saveBtn').addEventListener('click', saveCurrentResource);
   document.getElementById('exportPdfBtn').addEventListener('click', openExportMode);
+  document.getElementById('downloadPdfBtn').addEventListener('click', downloadCurrentPdf);
   document.getElementById('closeExportModeBtn').addEventListener('click', closeExportMode);
   document.getElementById('printSamePageBtn').addEventListener('click', () => window.print());
   document.getElementById('downloadHtmlBtn').addEventListener('click', downloadCurrentHtml);
@@ -84,9 +124,7 @@ function bindEvents() {
   els.levelFilter.addEventListener('change', renderLibrary);
   window.addEventListener('online', updateOnlineStatus);
   window.addEventListener('offline', updateOnlineStatus);
-  window.addEventListener('beforeinstallprompt', event => {
-    event.preventDefault(); deferredPrompt = event; els.installBtn.classList.remove('hidden');
-  });
+  window.addEventListener('beforeinstallprompt', event => { event.preventDefault(); deferredPrompt = event; els.installBtn.classList.remove('hidden'); });
   els.installBtn.addEventListener('click', async () => {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
@@ -106,16 +144,15 @@ function renderNav() {
   });
 }
 
-function renderTypeOptions() {
-  els.type.innerHTML = MODULES.map(m => `<option>${escapeHtml(m.type)}</option>`).join('');
-}
+function renderTypeOptions() { els.type.innerHTML = MODULES.map(m => `<option>${escapeHtml(m.type)}</option>`).join(''); }
 
 function setModule(id) {
   currentModule = MODULES.find(m => m.id === id) || MODULES[0];
   document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.id === id));
   els.formTitle.textContent = currentModule.label;
   els.type.value = currentModule.type;
-  els.intro.innerHTML = `<p class="eyebrow">${escapeHtml(currentModule.type)}</p><h2>${escapeHtml(currentModule.label)}</h2><p>${escapeHtml(currentModule.intro)}</p>`;
+  const templateHint = currentModule.id === 'sa' ? 'Inclou la plantilla oficial de SA de Tecnologia ESO integrada.' : 'Inclou una plantilla inicial editable.';
+  els.intro.innerHTML = `<p class="eyebrow">${escapeHtml(currentModule.type)}</p><h2>${escapeHtml(currentModule.label)}</h2><p>${escapeHtml(currentModule.intro)}</p><p class="hint">${escapeHtml(templateHint)}</p>`;
   if (id === 'biblioteca') document.querySelector('.library-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
@@ -123,7 +160,7 @@ function clearForm() {
   ['title','subject','duration','challenge','knowledge','competences','sequence','inclusion','assessment','tags'].forEach(key => els[key].value = '');
   els.level.value = '1r ESO';
   els.type.value = currentModule.type;
-  els.report.innerHTML = '<p>Omple el formulari o carrega una plantilla per generar un informe net.</p>';
+  els.report.innerHTML = '<p>Omple el formulari o prem “Crea des de plantilla” per generar un informe net.</p>';
 }
 
 function loadTemplate() {
@@ -144,29 +181,37 @@ function getFormData() {
 }
 
 function renderReport(data) {
-  els.report.innerHTML = `
+  els.report.innerHTML = buildReportHtml(data);
+}
+
+function buildReportHtml(data) {
+  return `
     <h1>${escapeHtml(data.title)}</h1>
-    <p><strong>Tipus:</strong> ${escapeHtml(data.type)} · <strong>Nivell:</strong> ${escapeHtml(data.level)}${data.subject ? ' · <strong>Àmbit:</strong> ' + escapeHtml(data.subject) : ''}${data.duration ? ' · <strong>Durada:</strong> ' + escapeHtml(data.duration) : ''}</p>
-    ${section('Repte o necessitat', data.challenge)}
-    ${section('Sabers / continguts clau', data.knowledge)}
-    ${section('Competències i criteris d’avaluació', data.competences)}
-    ${section('Seqüència d’activitats', asList(data.sequence))}
-    ${section('Atenció a la diversitat', asList(data.inclusion))}
-    ${section('Avaluació i evidències', asList(data.assessment))}
-    ${data.tags.length ? `<h2>Etiquetes</h2><p>${data.tags.map(escapeHtml).join(' · ')}</p>` : ''}
+    <p><strong>Tipus:</strong> ${escapeHtml(data.type)} · <strong>Nivell:</strong> ${escapeHtml(data.level)}${data.subject ? ` · <strong>Matèria:</strong> ${escapeHtml(data.subject)}` : ''}${data.duration ? ` · <strong>Durada:</strong> ${escapeHtml(data.duration)}` : ''}</p>
+    ${section('1. Descripció, context i repte', data.challenge)}
+    ${section('2. Sabers i continguts clau', data.knowledge)}
+    ${section('3. Competències i criteris d’avaluació', data.competences)}
+    ${section('4. Seqüència d’activitats', data.sequence)}
+    ${section('5. Atenció a la diversitat i adaptacions', data.inclusion)}
+    ${section('6. Avaluació, evidències i retorn', data.assessment)}
+    ${data.tags.length ? `<p class="tags"><strong>Etiquetes:</strong> ${data.tags.map(escapeHtml).join(', ')}</p>` : ''}
   `;
 }
 
-function section(title, value) {
-  if (!value) return '';
-  return `<h2>${escapeHtml(title)}</h2><div>${value}</div>`;
+function section(title, text) {
+  if (!text) return '';
+  return `<h2>${escapeHtml(title)}</h2>${formatText(text)}`;
 }
 
-function asList(text) {
-  if (!text) return '';
-  const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
-  if (lines.length < 2) return `<p>${escapeHtml(text)}</p>`;
-  return `<ul>${lines.map(line => `<li>${escapeHtml(line)}</li>`).join('')}</ul>`;
+function formatText(text) {
+  const paragraphs = String(text).split(/\n{2,}/).map(block => block.trim()).filter(Boolean);
+  return paragraphs.map(block => {
+    const lines = block.split('\n').map(line => line.trim()).filter(Boolean);
+    if (lines.length > 1 || lines.some(line => /^[-•*]|^\d+[.)]/.test(line))) {
+      return `<ul>${lines.map(line => `<li>${escapeHtml(line.replace(/^[-•*]\s*/, ''))}</li>`).join('')}</ul>`;
+    }
+    return `<p>${escapeHtml(block)}</p>`;
+  }).join('');
 }
 
 function saveCurrentResource() {
@@ -175,6 +220,7 @@ function saveCurrentResource() {
   resources.unshift(data);
   persistResources();
   renderLibrary();
+  alert('Recurs desat a la biblioteca local.');
 }
 
 function renderLibrary() {
@@ -224,7 +270,6 @@ function clearLibrary() {
   renderLibrary();
 }
 
-
 function openExportMode() {
   const data = getFormData();
   renderReport(data);
@@ -233,8 +278,14 @@ function openExportMode() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function closeExportMode() {
-  document.body.classList.remove('export-mode');
+function closeExportMode() { document.body.classList.remove('export-mode'); }
+
+function downloadCurrentPdf() {
+  const data = getFormData();
+  renderReport(data);
+  const pdfText = buildPlainReport(data);
+  const pdfBlob = buildSimplePdf(pdfText, data.title);
+  downloadBlob(pdfBlob, slugify(data.title) + '.pdf', 'application/pdf');
 }
 
 function downloadCurrentHtml() {
@@ -243,6 +294,112 @@ function downloadCurrentHtml() {
   const html = buildStandaloneHtml(data, els.report.innerHTML);
   downloadBlob(html, slugify(data.title) + '.html', 'text/html;charset=utf-8');
 }
+
+function buildPlainReport(data) {
+  const parts = [
+    data.title,
+    `Tipus: ${data.type}`,
+    `Nivell: ${data.level}`,
+    data.subject ? `Matèria: ${data.subject}` : '',
+    data.duration ? `Durada: ${data.duration}` : '',
+    '',
+    plainSection('1. Descripció, context i repte', data.challenge),
+    plainSection('2. Sabers i continguts clau', data.knowledge),
+    plainSection('3. Competències i criteris d’avaluació', data.competences),
+    plainSection('4. Seqüència d’activitats', data.sequence),
+    plainSection('5. Atenció a la diversitat i adaptacions', data.inclusion),
+    plainSection('6. Avaluació, evidències i retorn', data.assessment),
+    data.tags.length ? `Etiquetes: ${data.tags.join(', ')}` : ''
+  ];
+  return parts.filter(Boolean).join('\n');
+}
+
+function plainSection(title, text) { return text ? `${title}\n${text}\n` : ''; }
+
+function buildSimplePdf(text, title) {
+  const pageWidth = 595.28;
+  const pageHeight = 841.89;
+  const margin = 48;
+  const fontSize = 11;
+  const leading = 15;
+  const maxChars = 88;
+  const lines = wrapPdfText(text, maxChars);
+  const pages = [];
+  let current = [];
+  const maxLines = Math.floor((pageHeight - margin * 2) / leading);
+  lines.forEach(line => {
+    if (current.length >= maxLines) { pages.push(current); current = []; }
+    current.push(line);
+  });
+  if (current.length) pages.push(current);
+
+  const objects = [];
+  const addObject = value => { objects.push(value); return objects.length; };
+  const catalogId = addObject('');
+  const pagesId = addObject('');
+  const fontId = addObject('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+  const pageIds = [];
+
+  pages.forEach(pageLines => {
+    const content = makePdfContent(pageLines, margin, pageHeight, fontSize, leading);
+    const contentId = addObject(`<< /Length ${byteLength(content)} >>\nstream\n${content}\nendstream`);
+    const pageId = addObject(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 ${fontId} 0 R >> >> /Contents ${contentId} 0 R >>`);
+    pageIds.push(pageId);
+  });
+
+  objects[catalogId - 1] = `<< /Type /Catalog /Pages ${pagesId} 0 R >>`;
+  objects[pagesId - 1] = `<< /Type /Pages /Kids [${pageIds.map(id => `${id} 0 R`).join(' ')}] /Count ${pageIds.length} >>`;
+
+  let pdf = `%PDF-1.4\n% DocentKit PDF: ${sanitizePdfComment(title)}\n`;
+  const offsets = [0];
+  objects.forEach((obj, idx) => {
+    offsets.push(byteLength(pdf));
+    pdf += `${idx + 1} 0 obj\n${obj}\nendobj\n`;
+  });
+  const xrefOffset = byteLength(pdf);
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  offsets.slice(1).forEach(offset => { pdf += String(offset).padStart(10, '0') + ' 00000 n \n'; });
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root ${catalogId} 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+  return new Blob([pdf], { type: 'application/pdf' });
+}
+
+function wrapPdfText(text, maxChars) {
+  const output = [];
+  String(text).replace(/\r/g, '').split('\n').forEach(paragraph => {
+    const clean = paragraph.trim();
+    if (!clean) { output.push(''); return; }
+    const words = clean.split(/\s+/);
+    let line = '';
+    words.forEach(word => {
+      const candidate = line ? `${line} ${word}` : word;
+      if (candidate.length > maxChars && line) { output.push(line); line = word; }
+      else { line = candidate; }
+    });
+    if (line) output.push(line);
+  });
+  return output;
+}
+
+function makePdfContent(lines, margin, pageHeight, fontSize, leading) {
+  const chunks = ['BT', `/F1 ${fontSize} Tf`, `${margin} ${pageHeight - margin} Td`, `${leading} TL`];
+  lines.forEach((line, index) => {
+    if (index > 0) chunks.push('T*');
+    chunks.push(`(${escapePdfText(line)}) Tj`);
+  });
+  chunks.push('ET');
+  return chunks.join('\n');
+}
+
+function escapePdfText(value) {
+  return String(value)
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[’‘]/g, "'").replace(/[“”]/g, '"').replace(/[·]/g, '-')
+    .replace(/[^\x09\x0A\x0D\x20-\x7E]/g, '')
+    .replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+}
+
+function sanitizePdfComment(value) { return escapePdfText(value).replace(/[\r\n]/g, ' '); }
+function byteLength(value) { return new TextEncoder().encode(value).length; }
 
 function buildStandaloneHtml(data, reportHtml) {
   return `<!doctype html>
@@ -277,7 +434,7 @@ function buildStandaloneHtml(data, reportHtml) {
 }
 
 function downloadBlob(content, filename, type) {
-  const blob = new Blob([content], { type });
+  const blob = content instanceof Blob ? content : new Blob([content], { type });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -288,20 +445,14 @@ function downloadBlob(content, filename, type) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-function exportCurrentJson() {
-  const data = getFormData();
-  downloadJson(data, slugify(data.title) + '.json');
-}
-
-function downloadJson(data, filename) {
-  downloadBlob(JSON.stringify(data, null, 2), filename, 'application/json;charset=utf-8');
-}
+function exportCurrentJson() { const data = getFormData(); downloadJson(data, slugify(data.title) + '.json'); }
+function downloadJson(data, filename) { downloadBlob(JSON.stringify(data, null, 2), filename, 'application/json;charset=utf-8'); }
 
 async function importFile() {
   const file = els.fileInput.files[0];
   if (!file) return alert('Selecciona un fitxer TXT o JSON.');
-  const text = await file.text();
   if (file.name.endsWith('.json')) {
+    const text = await file.text();
     try {
       const parsed = JSON.parse(text);
       const items = Array.isArray(parsed) ? parsed : [parsed];
@@ -311,10 +462,14 @@ async function importFile() {
     return;
   }
   if (file.name.endsWith('.docx') || file.name.endsWith('.pdf')) {
-    alert('Fitxer detectat. En aquesta primera versió es registra el nom, però la lectura DOCX/PDF s’afegirà amb llibreries específiques.');
+    els.title.value = file.name.replace(/\.[^.]+$/, '');
+    els.challenge.value = `Document importat: ${file.name}.\n\nLa lectura automàtica completa de DOCX/PDF encara no està activada en aquesta versió sense llibreries externes. Pots copiar-ne el contingut als camps o convertir-lo a TXT.`;
+    renderReport(getFormData());
+    return;
   }
+  const text = await file.text();
   els.title.value = file.name.replace(/\.[^.]+$/, '');
-  els.challenge.value = text.slice(0, 1800);
+  els.challenge.value = text.slice(0, 2500);
   renderReport(getFormData());
 }
 
@@ -323,11 +478,21 @@ function normalizeImportedResource(item) {
 }
 
 async function copyReportText() {
+  if (!els.report.innerText.trim()) renderReport(getFormData());
   await navigator.clipboard.writeText(els.report.innerText);
+  alert('Text copiat.');
 }
 
 function loadResources() {
-  try { return JSON.parse(localStorage.getItem(APP_KEY)) || []; } catch { return []; }
+  try {
+    const current = JSON.parse(localStorage.getItem(APP_KEY));
+    if (Array.isArray(current)) return current;
+    for (const key of OLD_KEYS) {
+      const old = JSON.parse(localStorage.getItem(key));
+      if (Array.isArray(old)) return old;
+    }
+    return [];
+  } catch { return []; }
 }
 function persistResources() { localStorage.setItem(APP_KEY, JSON.stringify(resources)); }
 function updateOnlineStatus() { els.offlineStatus.textContent = navigator.onLine ? 'Mode connexió: en línia.' : 'Mode connexió: offline.'; }

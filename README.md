@@ -1,33 +1,30 @@
 # DocentKit · Generador de situacions i recursos
 
-Nova PWA independent per a docents, en català, preparada per GitHub Pages.
+Versió 0.3 de la PWA educativa en català per a docents.
 
-## Fitxers
+## Novetats v0.3
 
-- `index.html`: estructura principal de la interfície.
-- `styles.css`: disseny responsive i estils d'impressió/PDF.
-- `app.js`: lògica de mòduls, plantilles, localStorage, import/export JSON i PWA install prompt.
-- `manifest.json`: configuració PWA.
-- `sw.js`: service worker per a funcionament offline bàsic.
+- Nova línia independent de les PWA de Matemàtiques i Tecnologia.
+- Botó **Crea des de plantilla** amb plantilla de situació d'aprenentatge de Tecnologia ESO integrada.
+- Exportació a **PDF real descarregable** des del navegador, sense finestres emergents.
+- Es manté la vista d'exportació neta, la impressió i l'exportació HTML.
+- Biblioteca local amb `localStorage`.
+- Exportació/importació JSON.
+- Funcionament offline bàsic amb service worker `docentkit-v3`.
 
-## Arquitectura inicial
+## Limitacions conegudes
 
-L'aplicació funciona com una eina local-first:
-
-1. Formularis guiats per generar recursos docents.
-2. Plantilles intel·ligents sense dependència d'IA externa.
-3. Biblioteca local amb `localStorage`.
-4. Exportació visual a PDF mitjançant `window.print()` i CSS específic d'impressió.
-5. Importació/exportació JSON per moure recursos entre dispositius.
-6. Preparació per incorporar lectura avançada de DOCX/PDF i mode IA assistida en fases posteriors.
+- La lectura completa de DOCX/PDF encara no està activada. La importació accepta el fitxer com a base i en registra el nom, però per extreure contingut caldrà afegir una fase amb `mammoth.js` per DOCX i `pdf.js` per PDF.
+- El PDF integrat és deliberadament simple i robust: genera text net en format A4 amb Helvetica. Manté millor la compatibilitat mòbil que `window.print()`, però no reprodueix tota la maquetació visual HTML.
 
 ## Publicació a GitHub Pages
 
-1. Crea un repositori nou.
-2. Puja aquests fitxers a l'arrel.
-3. Activa GitHub Pages des de Settings > Pages.
-4. Selecciona la branca principal i carpeta `/root`.
+Puja aquests fitxers a la branca configurada per Pages:
 
-## Notes de versió
+- `index.html`
+- `styles.css`
+- `app.js`
+- `manifest.json`
+- `sw.js`
 
-Versió 0.1: base funcional sense API externa. La importació DOCX/PDF queda només detectada i preparada; per llegir contingut real caldrà afegir llibreries com `mammoth.js` per DOCX i `pdf.js` per PDF.
+Després obre la URL de GitHub Pages i força una recàrrega si el navegador conserva una versió antiga.
