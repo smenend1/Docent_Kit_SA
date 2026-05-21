@@ -152,7 +152,7 @@ const els = {
   report: document.getElementById('reportPreview'), library: document.getElementById('libraryList'), storageStatus: document.getElementById('storageStatus'), offlineStatus: document.getElementById('offlineStatus'),
   search: document.getElementById('searchInput'), levelFilter: document.getElementById('levelFilter'), fileInput: document.getElementById('fileInput'), installBtn: document.getElementById('installBtn'),
   templateSelect: document.getElementById('templateSelect'), aiProvider: document.getElementById('aiProvider'), aiKey: document.getElementById('aiKey'),
-  aiStatus: document.getElementById('aiStatus'), aiDraft: document.getElementById('aiDraft')
+  aiModeStatus: document.getElementById('aiModeStatus'), aiContext: document.getElementById('aiContext'), aiOutput: document.getElementById('aiOutput')
 };
 
 function init() {
@@ -184,6 +184,7 @@ function bindEvents() {
   document.getElementById('aiDraftBtn').addEventListener('click', generateAiDraft);
   document.getElementById('aiApplyBtn').addEventListener('click', applyAiDraftToForm);
   els.aiProvider.addEventListener('change', updateAiStatus);
+  els.aiProvider.addEventListener('input', updateAiStatus);
   els.aiKey.value = loadSettings().googleApiKey || '';
   els.aiKey.addEventListener('change', () => saveSettings({ googleApiKey: els.aiKey.value.trim() }));
   updateAiStatus();
@@ -934,11 +935,14 @@ function saveSettings(partial) {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(next));
 }
 function updateAiStatus() {
-  if (!els.aiModeStatus) return;
+  if (!els.aiModeStatus || !els.aiProvider) return;
   const provider = els.aiProvider.value;
-  els.aiModeStatus.textContent = provider === 'google' ? 'Google API experimental' : 'Mode local';
-  els.aiModeStatus.style.background = provider === 'google' ? '#fff7ed' : '#ecfdf3';
-  els.aiModeStatus.style.color = provider === 'google' ? '#9a3412' : '#155b32';
+  const isGoogle = provider === 'google';
+  els.aiModeStatus.textContent = isGoogle ? 'Mode Gemini / Google API' : 'Mode local';
+  els.aiModeStatus.classList.toggle('google-mode', isGoogle);
+  els.aiModeStatus.classList.toggle('local-mode', !isGoogle);
+  els.aiModeStatus.style.background = isGoogle ? '#fff7ed' : '#ecfdf3';
+  els.aiModeStatus.style.color = isGoogle ? '#9a3412' : '#155b32';
 }
 
 function buildAiPrompt() {
