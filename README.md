@@ -2,11 +2,11 @@
 
 Versió 0.7 de la PWA educativa en català per a docents.
 
-## Objectiu de la v0.9
+## Objectiu de la v1.0
 
 Aquesta versió deixa l'app preparada per evolucionar cap a una eina més completa amb més plantilles, importació documental millorada i mode d'IA assistida, sense fer obligatòria cap API externa.
 
-## Novetats v0.9
+## Novetats v1.0
 
 - Selector de plantilles integrat.
 - Biblioteca inicial de plantilles ampliada:
@@ -56,12 +56,19 @@ Puja aquests fitxers a la branca configurada per Pages:
 Després obre la URL de GitHub Pages i força una recàrrega o reinstal·la la PWA si el navegador conserva una versió antiga.
 
 
-## v0.9
+## v1.0
 - Correcció del selector de plantilles: ara es carreguen correctament les opcions del desplegable.
 - Preparada la configuració IA amb camp de clau API local al navegador.
 - Cache actualitzada a docentkit-v8.
 
 
-## Correcció v0.9
+## Correcció v1.0
 - Estat visual del mode IA corregit: el badge canvia de Mode local a Mode Gemini / Google API quan es tria el proveïdor Google.
 - Vinculació dels camps aiModeStatus, aiContext i aiOutput corregida.
+
+
+## v1.0
+- Mode IA Gemini amb selector de model.
+- Botó de prova de connexió API.
+- Errors de Gemini visibles en pantalla amb causes probables.
+- Model recomanat per defecte: gemini-2.5-flash.

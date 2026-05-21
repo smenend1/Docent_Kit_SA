@@ -152,7 +152,7 @@ const els = {
   report: document.getElementById('reportPreview'), library: document.getElementById('libraryList'), storageStatus: document.getElementById('storageStatus'), offlineStatus: document.getElementById('offlineStatus'),
   search: document.getElementById('searchInput'), levelFilter: document.getElementById('levelFilter'), fileInput: document.getElementById('fileInput'), installBtn: document.getElementById('installBtn'),
   templateSelect: document.getElementById('templateSelect'), aiProvider: document.getElementById('aiProvider'), aiKey: document.getElementById('aiKey'),
-  aiModeStatus: document.getElementById('aiModeStatus'), aiContext: document.getElementById('aiContext'), aiOutput: document.getElementById('aiOutput')
+  aiModel: document.getElementById('aiModel'), aiModeStatus: document.getElementById('aiModeStatus'), aiContext: document.getElementById('aiContext'), aiOutput: document.getElementById('aiOutput')
 };
 
 function init() {
@@ -182,11 +182,17 @@ function bindEvents() {
   document.getElementById('importBtn').addEventListener('click', importFile);
   document.getElementById('clearLibraryBtn').addEventListener('click', clearLibrary);
   document.getElementById('aiDraftBtn').addEventListener('click', generateAiDraft);
+  const aiTestBtn = document.getElementById('aiTestBtn');
+  if (aiTestBtn) aiTestBtn.addEventListener('click', testGeminiConnection);
   document.getElementById('aiApplyBtn').addEventListener('click', applyAiDraftToForm);
   els.aiProvider.addEventListener('change', updateAiStatus);
   els.aiProvider.addEventListener('input', updateAiStatus);
   els.aiKey.value = loadSettings().googleApiKey || '';
   els.aiKey.addEventListener('change', () => saveSettings({ googleApiKey: els.aiKey.value.trim() }));
+  if (els.aiModel) {
+    els.aiModel.value = loadSettings().googleModel || 'gemini-2.5-flash';
+    els.aiModel.addEventListener('change', () => saveSettings({ googleModel: els.aiModel.value }));
+  }
   updateAiStatus();
   els.search.addEventListener('input', renderLibrary);
   els.levelFilter.addEventListener('change', renderLibrary);
@@ -961,6 +967,68 @@ function buildLocalAIDraft() {
   return `TÍTOL\n${title}\n\nCURS\n${level}\n\nMATÈRIA\n${subject}\n\nDURADA\n${data.duration || '6 sessions'}\n\nCONTEXT\n${context}\n\nREPTE\nCom podem donar resposta a aquesta necessitat aplicant sabers de ${subject} i comunicant una proposta justificada?\n\nJUSTIFICACIÓ\nLa proposta parteix d’un context proper i permet treballar aprenentatges funcionals, presa de decisions, cooperació i comunicació d’evidències.\n\nPRODUCTE FINAL\n${product}.\n\nCOMPETÈNCIES ESPECÍFIQUES\nCE1, CE2, CE3. Ajusta-les segons el currículum de la matèria.\n\nCRITERIS D’AVALUACIÓ\n1.1, 2.1, 3.1. Revisa la numeració LOMLOE de la matèria i el curs.\n\nBLOCS DE SABERS\nSabers conceptuals, procedimentals i actitudinals vinculats al repte.\n\nSABERS CONCRETS\n- Comprensió del context i formulació del problema.\n- Recerca i selecció d’informació.\n- Aplicació de procediments propis de la matèria.\n- Comunicació clara del procés i dels resultats.\n\nMETODOLOGIA\nAprenentatge basat en reptes, treball cooperatiu, bastides, revisió entre iguals i feedback formatiu.\n\nINICIALS\nActivació de coneixements previs, presentació del repte i construcció compartida dels criteris d’èxit.\n\nDESENVOLUPAMENT\nRecerca, pràctica guiada, resolució de tasques parcials i revisió del procés.\n\nESTRUCTURACIÓ\nSíntesi dels aprenentatges, organització d’evidències i preparació del producte final.\n\nAPLICACIÓ\nPresentació del producte final, transferència a un context proper i reflexió individual.\n\nMESURES I SUPORTS\nDisseny universal: instruccions fragmentades, exemples, checklist, rols i opcions de resposta. TDAH: temporització i tasques curtes. TEA: anticipació i estructura visual. Dislèxia: suport oral i reducció de càrrega lectora. TDL: vocabulari previ i frases model.\n\nEVIDÈNCIES\nProcés de treball, producte final, presentació i reflexió final.\n\nINSTRUMENTS\nRúbrica NA/AS/AN/AE, llista de control, coavaluació i autoavaluació.\n\nRETORN I MILLORA\nFeedback durant el procés, revisió entre iguals i millora abans del lliurament.\n\nRÚBRICA\n1.1 | Comprensió del repte | NA: identifica parcialment | AS: identifica els elements bàsics | AN: analitza i justifica | AE: analitza amb profunditat i transfereix\n2.1 | Aplicació de sabers | NA: aplica amb moltes ajudes | AS: aplica procediments bàsics | AN: aplica de manera coherent | AE: aplica amb autonomia i criteri\n3.1 | Comunicació i reflexió | NA: comunica amb poca claredat | AS: comunica la idea principal | AN: comunica amb evidències | AE: comunica amb rigor i proposa millores`; 
 }
 
+function getSelectedGeminiModel() {
+  return (els.aiModel && els.aiModel.value) || loadSettings().googleModel || 'gemini-2.5-flash';
+}
+
+function formatGeminiError(status, detail) {
+  let message = detail || '';
+  try {
+    const parsed = JSON.parse(detail);
+    message = parsed?.error?.message || detail;
+  } catch {}
+  const tips = [];
+  if (status === 400) tips.push('El model o el format de la petició no és acceptat. Prova gemini-2.5-flash.');
+  if (status === 401 || status === 403) tips.push('La clau pot ser incorrecta, no tenir activada la Gemini API / Generative Language API, tenir restriccions de domini massa estrictes o no permetre aquest model.');
+  if (status === 404) tips.push('El model seleccionat no està disponible per aquesta clau o endpoint. Prova gemini-2.5-flash.');
+  if (status === 429) tips.push('S’ha superat el límit de quota o peticions. Espera una estona o revisa quota/facturació.');
+  if (status >= 500) tips.push('Error temporal del servei de Google. Torna-ho a provar més tard.');
+  return `Error API ${status}${message ? `: ${message}` : ''}${tips.length ? `\n\nPossibles causes:\n- ${tips.join('\n- ')}` : ''}`;
+}
+
+async function callGeminiText(prompt) {
+  const key = els.aiKey.value.trim();
+  if (!key) throw new Error('No hi ha API key configurada.');
+  const model = getSelectedGeminiModel();
+  saveSettings({ googleApiKey: key, googleModel: model });
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;
+  let response;
+  try {
+    response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.55, maxOutputTokens: 4096 }
+      })
+    });
+  } catch (networkError) {
+    throw new Error('No s’ha pogut contactar amb Google. Revisa connexió, bloquejadors, CORS/restriccions de domini o si estàs obrint la PWA des de file:// en lloc d’https://.');
+  }
+  const detail = await response.text();
+  if (!response.ok) throw new Error(formatGeminiError(response.status, detail));
+  let json;
+  try { json = JSON.parse(detail); } catch { throw new Error('La resposta de Gemini no és JSON vàlid.'); }
+  const text = json?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n').trim();
+  if (!text) throw new Error('Gemini ha respost, però no ha retornat text. Pot ser un bloqueig de seguretat o una resposta buida.');
+  return text;
+}
+
+async function testGeminiConnection() {
+  if (els.aiProvider.value !== 'google') {
+    els.aiOutput.textContent = 'El mode seleccionat és local. Tria “Google API / Gemini experimental” per provar la connexió.';
+    return;
+  }
+  els.aiOutput.textContent = `Provant connexió amb ${getSelectedGeminiModel()}...`;
+  try {
+    const text = await callGeminiText('Respon només amb aquesta frase en català: Connexió Gemini correcta.');
+    els.aiOutput.textContent = `Connexió correcta amb ${getSelectedGeminiModel()}.\n\nResposta:\n${text}`;
+  } catch (error) {
+    console.error(error);
+    els.aiOutput.textContent = `No s’ha pogut connectar amb Gemini.\n\n${error.message}`;
+  }
+}
+
 async function generateAiDraft() {
   const provider = els.aiProvider.value;
   els.aiOutput.textContent = 'Generant esborrany...';
@@ -968,25 +1036,16 @@ async function generateAiDraft() {
     els.aiOutput.textContent = buildLocalAIDraft();
     return;
   }
-  const key = els.aiKey.value.trim();
-  if (!key) {
+  if (!els.aiKey.value.trim()) {
     els.aiOutput.textContent = 'No hi ha API key. Genero un esborrany local sense enviar dades fora del navegador.\n\n' + buildLocalAIDraft();
     return;
   }
-  saveSettings({ googleApiKey: key });
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(key)}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: buildAiPrompt() }] }] })
-    });
-    if (!response.ok) throw new Error(`Error API ${response.status}`);
-    const json = await response.json();
-    const text = json?.candidates?.[0]?.content?.parts?.map(p => p.text).join('\n') || '';
-    els.aiOutput.textContent = text.trim() || buildLocalAIDraft();
+    const text = await callGeminiText(buildAiPrompt());
+    els.aiOutput.textContent = text;
   } catch (error) {
     console.error(error);
-    els.aiOutput.textContent = 'No he pogut obtenir resposta de la API. Mantinc un esborrany local perquè puguis continuar.\n\n' + buildLocalAIDraft();
+    els.aiOutput.textContent = `No he pogut obtenir resposta de la API.\n\n${error.message}\n\nMantinc un esborrany local perquè puguis continuar.\n\n` + buildLocalAIDraft();
   }
 }
 

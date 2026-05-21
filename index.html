@@ -190,6 +190,15 @@
             <span>Google API key opcional</span>
             <input id="aiKey" type="password" placeholder="No cal per al mode local" autocomplete="off" />
           </label>
+          <label class="field">
+            <span>Model Gemini</span>
+            <select id="aiModel">
+              <option value="gemini-2.5-flash">gemini-2.5-flash · recomanat</option>
+              <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite · ràpid</option>
+              <option value="gemini-2.5-pro">gemini-2.5-pro · avançat</option>
+              <option value="gemini-flash-latest">gemini-flash-latest · latest</option>
+            </select>
+          </label>
           <label class="field full">
             <span>Base o instruccions per a l’esborrany</span>
             <textarea id="aiContext" rows="4" placeholder="Ex. Vull una SA de 4t ESO sobre millorar un espai del centre, amb rúbrica LOMLOE i adaptacions..."></textarea>
@@ -197,6 +206,7 @@
         </div>
         <div class="actions-row">
           <button id="aiDraftBtn" class="secondary" type="button">Genera esborrany assistit</button>
+          <button id="aiTestBtn" class="secondary" type="button">Prova connexió API</button>
           <button id="aiApplyBtn" class="secondary" type="button">Aplica l’esborrany al formulari</button>
         </div>
         <pre id="aiOutput" class="ai-output" aria-live="polite">Encara no hi ha cap esborrany.</pre>
