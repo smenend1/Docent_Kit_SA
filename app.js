@@ -706,8 +706,23 @@ function printCurrentReport() {
 function downloadCurrentPdf() {
   const data = getFormData();
   renderReport(data);
-  const pdfBlob = isSituation(data) ? buildVisualSaPdf(data) : buildSimplePdf(buildPlainReport(data), data.title);
-  downloadBlob(pdfBlob, slugify(data.title) + '.pdf', 'application/pdf');
+  document.body.classList.add('export-mode');
+
+  try {
+    const pdfBlob = isSituation(data) ? buildVisualSaPdf(data) : buildSimplePdf(buildPlainReport(data), data.title);
+    const filename = slugify(data.title || 'docentkit') + '.pdf';
+    const ok = downloadBlob(pdfBlob, filename, 'application/pdf');
+
+    if (!ok) {
+      throw new Error('El navegador ha bloquejat la descàrrega directa.');
+    }
+
+    showTransientMessage('PDF generat. Si el mòbil no mostra la baixada, usa “Imprimeix / desa”.');
+  } catch (error) {
+    console.warn('No he pogut generar la descàrrega PDF directa:', error);
+    showTransientMessage('No he pogut descarregar el PDF directament. Obro la vista d’impressió perquè el puguis desar com a PDF.');
+    setTimeout(() => window.print(), 250);
+  }
 }
 
 function downloadCurrentHtml() {
@@ -1027,15 +1042,30 @@ function buildStandaloneHtml(data, reportHtml) {
 }
 
 function downloadBlob(content, filename, type) {
-  const blob = content instanceof Blob ? content : new Blob([content], { type });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  try {
+    const blob = content instanceof Blob ? content : new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.rel = 'noopener';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    return true;
+  } catch (error) {
+    console.warn('Descàrrega bloquejada:', error);
+    return false;
+  }
+}
+
+function showTransientMessage(message) {
+  const output = document.getElementById('aiOutput');
+  if (output) {
+    output.textContent = message + '\n\n' + (output.textContent || '');
+  }
 }
 
 function exportCurrentJson() { const data = getFormData(); downloadJson(data, slugify(data.title) + '.json'); }
