@@ -1,6 +1,6 @@
-const APP_KEY = 'docentkit.resources.v16';
-const SETTINGS_KEY = 'docentkit.settings.v16';
-const OLD_KEYS = ['docentkit.resources.v15', 'docentkit.resources.v14', 'docentkit.resources.v13', 'docentkit.resources.v12', 'docentkit.resources.v11', 'docentkit.resources.v10', 'docentkit.resources.v9', 'docentkit.resources.v8', 'docentkit.resources.v7', 'docentkit.resources.v6', 'docentkit.resources.v5', 'docentkit.resources.v4', 'docentkit.resources.v3', 'docentkit.resources.v2', 'docentkit.resources.v1'];
+const APP_KEY = 'docentkit.resources.v18';
+const SETTINGS_KEY = 'docentkit.settings.v18';
+const OLD_KEYS = ['docentkit.resources.v17', 'docentkit.resources.v16', 'docentkit.resources.v15', 'docentkit.resources.v14', 'docentkit.resources.v13', 'docentkit.resources.v12', 'docentkit.resources.v11', 'docentkit.resources.v10', 'docentkit.resources.v9', 'docentkit.resources.v8', 'docentkit.resources.v7', 'docentkit.resources.v6', 'docentkit.resources.v5', 'docentkit.resources.v4', 'docentkit.resources.v3', 'docentkit.resources.v2', 'docentkit.resources.v1'];
 
 const MODULES = [
   { id: 'sa', label: 'Crear SA', type: 'Situació d’aprenentatge', intro: 'Dissenya una situació d’aprenentatge competencial amb repte, sabers, criteris, seqüència, inclusió i evidències.' },
@@ -929,12 +929,16 @@ async function importFile() {
       const items = Array.isArray(parsed) ? parsed : [parsed];
       if (items.length === 1 && isDocentKitSaJson(items[0])) {
         applyImportedJson(file.name, items[0]);
-      } else if (items.every(isDocentKitSaJson)) {
-        resources = [...items.map(jsonSaToFormResource), ...resources];
+      } else if (items.length && items.every(isDocentKitSaJson)) {
+        const mappedItems = items.map(jsonSaToFormResource);
+        resources = [...mappedItems, ...resources];
         persistResources();
         renderLibrary();
-        loadResource(resources[0].id);
-        if (els.importStatus) els.importStatus.textContent = `JSON importat: ${file.name}. ${items.length} situacions d’aprenentatge carregades a la biblioteca.`;
+        if (mappedItems[0]) {
+          setModule('sa');
+          loadResource(mappedItems[0].id);
+        }
+        if (els.importStatus) els.importStatus.textContent = `JSON DocentKit importat: ${file.name}. ${items.length} situacions d’aprenentatge carregades a la biblioteca. S’ha obert la primera.`;
       } else {
         resources = [...items.map(normalizeImportedResource), ...resources];
         persistResources();
@@ -977,25 +981,45 @@ function normalizeImportedResource(item) {
 }
 
 
-// ===== v1.7: importació JSON DocentKit SA =====
+// ===== v1.8: importació JSON DocentKit SA robusta =====
 function isDocentKitSaJson(item) {
   if (!item || typeof item !== 'object') return false;
-  const schema = String(item.schema || '').toLowerCase();
-  const tipus = String(item.tipus || item.type || '').toLowerCase();
-  return schema.includes('docentkit.sa') || tipus.includes('situacio_aprenentatge') || tipus.includes('situació') || (!!item.titol && !!item.rubrica && !!item.sequencia_activitats);
+  const normalize = value => String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const schema = normalize(item.schema);
+  const tipus = normalize(item.tipus || item.type);
+  const hasSaFields = !!(item.titol || item.title) && !!(item.repte || item.context || item.producte_final || item.sabers || item.sequencia_activitats || item.rubrica);
+  return schema.includes('docentkit.sa') || tipus.includes('situacio_aprenentatge') || tipus.includes('situacio') || hasSaFields;
 }
 
 function applyImportedJson(filename, item) {
   const mapped = jsonSaToFormResource(item);
+
+  // v1.8: importació directa i robusta. El JSON DocentKit no es tracta com a recurs genèric:
+  // es converteix en recurs SA, es desa a la biblioteca, s'obre al formulari i es renderitza l'informe.
+  setModule('sa');
+  currentModule = MODULES.find(m => m.id === 'sa') || currentModule;
+
+  resources = [mapped, ...resources.filter(r => r.id !== mapped.id)];
+  persistResources();
+  renderLibrary();
+
   ['title','level','subject','duration','type','challenge','knowledge','competences','sequence','inclusion','assessment'].forEach(key => {
     if (els[key]) els[key].value = mapped[key] || '';
   });
-  els.tags.value = (mapped.tags || []).join(', ');
-  if (els.importStatus) {
-    els.importStatus.textContent = `JSON DocentKit importat: ${filename}. Camps aplicats al formulari: títol, curs, matèria, durada, sabers, seqüència, adaptacions, avaluació i rúbrica.`;
+  if (els.tags) els.tags.value = (mapped.tags || []).join(', ');
+
+  // Renderitzem amb l'objecte mapejat, no amb una lectura posterior del formulari, per evitar valors per defecte.
+  renderReport(mapped);
+  if (typeof renderAiValidation === 'function' && typeof validateSaQuality === 'function') {
+    renderAiValidation(validateSaQuality(mapped));
   }
-  renderReport(getFormData());
-  renderAiValidation(validateSaQuality(getFormData()));
+
+  if (els.importStatus) {
+    els.importStatus.textContent = `JSON DocentKit importat: ${filename}. S'ha carregat al formulari i s'ha actualitzat l'informe: ${mapped.title} · ${mapped.level} · ${mapped.subject || 'sense matèria'}.`;
+  }
+
+  // Doble comprovació visual: alguns navegadors amb service worker poden aplicar canvis amb retard.
+  setTimeout(() => renderReport(getFormData()), 0);
 }
 
 function jsonSaToFormResource(item) {
