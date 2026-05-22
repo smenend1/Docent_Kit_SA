@@ -452,3 +452,23 @@ button.small {
 @media (max-width: 760px) {
   .audit-grid { grid-template-columns: 1fr; }
 }
+
+
+/* v2.1.6: sortida SA visual i accions clares */
+.report-actions .primary { box-shadow: 0 10px 22px rgba(22, 91, 50, .13); }
+.report-preview { background: #fff; }
+.report-preview > .sa-report { box-shadow: 0 18px 48px rgba(15, 23, 42, .08); border: 1px solid #d9eadc; }
+.sa-cover { background: linear-gradient(135deg, #effaf2 0%, #f9fffb 68%); }
+.sa-block { background: #ffffff; }
+body.export-mode .report-preview > .sa-report { box-shadow: none; border: 0; }
+body.export-mode .output-card { box-shadow: none; border: 0; }
+@media (max-width: 720px) {
+  .report-actions { display: grid; grid-template-columns: 1fr; width: 100%; }
+  .report-actions button { width: 100%; min-height: 46px; }
+  .output-card .card-title-row { align-items: stretch; }
+  .sa-cover h1 { font-size: clamp(2rem, 13vw, 3.4rem); }
+}
+@media print {
+  .sa-cover { background: linear-gradient(135deg, #effaf2 0%, #ffffff 72%) !important; }
+  .sa-meta, .definition, .support-card, .vector-card { background: #fbfffc !important; }
+}

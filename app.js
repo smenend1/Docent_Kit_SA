@@ -142,6 +142,7 @@ const TEMPLATE_LIBRARY = [
 
 let currentModule = MODULES[0];
 let resources = loadResources();
+let reportMode = 'sa';
 let deferredPrompt = null;
 
 const els = {
@@ -317,12 +318,22 @@ function getFormData() {
   };
 }
 
-function renderReport(data) {
-  els.report.innerHTML = buildReportHtml(data);
+function setReportMode(mode) {
+  reportMode = mode === 'brief' ? 'brief' : 'sa';
+  document.getElementById('reportModeSaBtn')?.classList.toggle('primary', reportMode === 'sa');
+  document.getElementById('reportModeSaBtn')?.classList.toggle('secondary', reportMode !== 'sa');
+  document.getElementById('reportModeBriefBtn')?.classList.toggle('primary', reportMode === 'brief');
+  document.getElementById('reportModeBriefBtn')?.classList.toggle('secondary', reportMode !== 'brief');
+  renderReport(getFormData());
 }
 
-function buildReportHtml(data) {
-  if (isSituation(data)) return buildSaReportHtml(data);
+function renderReport(data) {
+  els.report.innerHTML = buildReportHtml(data, reportMode);
+}
+
+
+function buildReportHtml(data, mode = 'sa') {
+  if (isSituation(data) && mode !== 'brief') return buildSaReportHtml(data);
   return `
     <h1>${escapeHtml(data.title)}</h1>
     <p><strong>Tipus:</strong> ${escapeHtml(data.type)} · <strong>Nivell:</strong> ${escapeHtml(data.level)}${data.subject ? ` · <strong>Matèria:</strong> ${escapeHtml(data.subject)}` : ''}${data.duration ? ` · <strong>Durada:</strong> ${escapeHtml(data.duration)}` : ''}</p>
@@ -337,7 +348,12 @@ function buildReportHtml(data) {
 }
 
 function isSituation(data) {
-  return String(data.type || '').toLowerCase().includes('situació');
+  const normalize = value => String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const type = normalize(data.type || data.tipus);
+  const schema = normalize(data.schema);
+  const tags = Array.isArray(data.tags) ? normalize(data.tags.join(' ')) : '';
+  const hasSaShape = !!(data.challenge || data.repte || data.knowledge || data.sabers || data.sequence || data.sequencia_activitats || data.rubrica || data.assessment);
+  return type.includes('situacio') || type.includes('situacio_aprenentatge') || schema.includes('docentkit.sa') || tags.includes('docentkit.sa') || hasSaShape;
 }
 
 function buildSaReportHtml(data) {
@@ -686,10 +702,32 @@ function scrollReportIntoView() {
   if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+function makeExportFileName(data, ext) {
+  const title = (data && data.title ? data.title : 'situacio-aprenentatge');
+  const level = data && data.level ? '-' + data.level : '';
+  const clean = slugify(title + level) || 'situacio-aprenentatge';
+  return clean + (ext || '');
+}
+
+function withPrintTitle(data, action) {
+  const previousTitle = document.title;
+  const suggested = makeExportFileName(data, '');
+  document.title = suggested;
+  try {
+    action(suggested);
+  } finally {
+    setTimeout(() => { document.title = previousTitle; }, 1500);
+  }
+}
+
 function printCurrentReport() {
-  renderReport(getFormData());
+  const data = getFormData();
+  renderReport(data);
   document.body.classList.add('export-mode');
-  setTimeout(() => window.print(), 120);
+  withPrintTitle(data, (suggested) => {
+    showTransientMessage('Nom suggerit per al PDF: ' + suggested + '.pdf');
+    setTimeout(() => window.print(), 120);
+  });
 }
 
 function scrollReportIntoView() {
@@ -704,32 +742,23 @@ function printCurrentReport() {
 }
 
 function downloadCurrentPdf() {
+  // En mòbil, la descàrrega PDF directa és irregular. Fem servir la via fiable:
+  // vista SA visual + diàleg del sistema per imprimir o desar com a PDF.
   const data = getFormData();
+  reportMode = 'sa';
   renderReport(data);
   document.body.classList.add('export-mode');
-
-  try {
-    const pdfBlob = isSituation(data) ? buildVisualSaPdf(data) : buildSimplePdf(buildPlainReport(data), data.title);
-    const filename = slugify(data.title || 'docentkit') + '.pdf';
-    const ok = downloadBlob(pdfBlob, filename, 'application/pdf');
-
-    if (!ok) {
-      throw new Error('El navegador ha bloquejat la descàrrega directa.');
-    }
-
-    showTransientMessage('PDF generat. Si el mòbil no mostra la baixada, usa “Imprimeix / desa”.');
-  } catch (error) {
-    console.warn('No he pogut generar la descàrrega PDF directa:', error);
-    showTransientMessage('No he pogut descarregar el PDF directament. Obro la vista d’impressió perquè el puguis desar com a PDF.');
-    setTimeout(() => window.print(), 250);
-  }
+  withPrintTitle(data, (suggested) => {
+    showTransientMessage('S’obre la vista neta. Nom suggerit: ' + suggested + '.pdf. Si el mòbil no deixa canviar-lo, aquest nom ajuda a no sobreescriure altres PDF.');
+    setTimeout(() => window.print(), 220);
+  });
 }
 
 function downloadCurrentHtml() {
   const data = getFormData();
   renderReport(data);
   const html = buildStandaloneHtml(data, els.report.innerHTML);
-  downloadBlob(html, slugify(data.title) + '.html', 'text/html;charset=utf-8');
+  downloadBlob(html, makeExportFileName(data, '.html'), 'text/html;charset=utf-8');
 }
 
 function buildPlainReport(data) {
