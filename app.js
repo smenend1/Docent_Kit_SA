@@ -156,7 +156,7 @@ const els = {
   aiCourse: document.getElementById('aiCourse'), aiSubject: document.getElementById('aiSubject'), aiTopic: document.getElementById('aiTopic'), aiProduct: document.getElementById('aiProduct'),
   aiDuration: document.getElementById('aiDuration'), aiTools: document.getElementById('aiTools'), aiKnowledge: document.getElementById('aiKnowledge'), aiCriteria: document.getElementById('aiCriteria'),
   aiInclTdah: document.getElementById('aiInclTdah'), aiInclTea: document.getElementById('aiInclTea'), aiInclDislexia: document.getElementById('aiInclDislexia'), aiInclTdl: document.getElementById('aiInclTdl'),
-  aiValidationPanel: document.getElementById('aiValidationPanel'), importStatus: document.getElementById('importStatus')
+  aiValidationPanel: document.getElementById('aiValidationPanel'), pedagogicAuditPanel: document.getElementById('pedagogicAuditPanel'), importStatus: document.getElementById('importStatus')
 };
 
 function init() {
@@ -1729,10 +1729,35 @@ function validateSaPedagogy(data) {
 }
 
 function renderPedagogicAudit(result) {
-  if (!els.aiValidationPanel) return;
-  const chips = result.checks.map(c => `<span class="validation-chip ${c.ok ? 'ok' : 'missing'}">${c.ok ? '✓' : '!' } ${escapeHtml(c.label)}</span>`).join('');
-  const recs = result.recommendations.length ? `<h4>Recomanacions prioritàries</h4><ol>${result.recommendations.map(r => `<li>${escapeHtml(r)}</li>`).join('')}</ol>` : '<p class="ok">La SA és coherent i està prou alineada per generar informe i PDF.</p>';
-  els.aiValidationPanel.innerHTML = `<p class="${result.score >= 65 ? 'ok' : 'warn'}">Revisió pedagògica: ${result.score}/100 · ${escapeHtml(result.level)}</p><div class="validation-chip-row">${chips}</div>${recs}`;
+  const target = els.pedagogicAuditPanel || els.aiValidationPanel;
+  if (!target) return;
+
+  const scoreClass = result.score >= 85 ? 'excellent' : result.score >= 65 ? 'good' : result.score >= 45 ? 'partial' : 'weak';
+  const checkedCards = result.checks.map(c => `
+    <article class="audit-card ${c.ok ? 'ok' : 'missing'}">
+      <div class="audit-card-title"><span>${c.ok ? '✓' : '!'}</span>${escapeHtml(c.label)}</div>
+      <p>${escapeHtml(c.ok ? 'Correcte o prou desenvolupat.' : c.advice)}</p>
+    </article>`).join('');
+  const recs = result.recommendations.length
+    ? `<div class="audit-recommendations"><h4>Recomanacions prioritàries</h4><ol>${result.recommendations.map(r => `<li>${escapeHtml(r)}</li>`).join('')}</ol></div>`
+    : '<div class="audit-recommendations ok"><h4>Resultat</h4><p>La SA és coherent i està prou alineada per generar informe i PDF.</p></div>';
+
+  target.innerHTML = `
+    <div class="audit-summary ${scoreClass}">
+      <div>
+        <p class="eyebrow">Resultat de la revisió pedagògica</p>
+        <h3>${result.score}/100 · ${escapeHtml(result.level)}</h3>
+      </div>
+      <div class="audit-meter" aria-label="Puntuació ${result.score} sobre 100">
+        <span style="width:${Math.max(0, Math.min(100, result.score))}%"></span>
+      </div>
+    </div>
+    <div class="audit-grid">${checkedCards}</div>
+    ${recs}`;
+
+  if (els.aiValidationPanel) {
+    els.aiValidationPanel.innerHTML = `<p class="ok">Revisió pedagògica generada. Consulta el panell “Resultat de la revisió pedagògica” just a sota.</p>`;
+  }
 }
 
 function buildPartialPrompt(kind) {

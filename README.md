@@ -63,3 +63,11 @@ Novetats:
 - Comprovació de repte contextualitzat, producte final observable, alineació criteris-rúbrica, seqüència didàctica, evidències, retorn formatiu, inclusió, seguretat de taller i durada.
 - Puntuació global 0-100 amb recomanacions prioritàries.
 - Cache actualitzada a `docentkit-v21`.
+
+## v2.1.1
+
+- Afegit un panell propi i visible de **Resultat de la revisió pedagògica**.
+- La puntuació global surt amb barra de progrés i nivell.
+- La revisió mostra targetes separades per repte, producte final, criteris-rúbrica, seqüència, avaluació, inclusió, taller i durada.
+- Les recomanacions prioritàries ja no queden amagades dins la sortida de la IA.
+- Cache actualitzada a `docentkit-v211`.
