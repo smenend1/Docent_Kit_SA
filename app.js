@@ -175,15 +175,23 @@ function init() {
 function bindEvents() {
   document.getElementById('newResourceBtn').addEventListener('click', clearForm);
   document.getElementById('loadTemplateBtn').addEventListener('click', loadTemplate);
-  document.getElementById('generateBtn').addEventListener('click', () => renderReport(getFormData()));
+  document.getElementById('generateBtn').addEventListener('click', () => { renderReport(getFormData()); scrollReportIntoView(); });
   document.getElementById('saveBtn').addEventListener('click', saveCurrentResource);
   document.getElementById('exportPdfBtn').addEventListener('click', openExportMode);
   document.getElementById('downloadPdfBtn').addEventListener('click', downloadCurrentPdf);
   document.getElementById('closeExportModeBtn').addEventListener('click', closeExportMode);
-  document.getElementById('printSamePageBtn').addEventListener('click', () => window.print());
+  document.getElementById('printSamePageBtn').addEventListener('click', printCurrentReport);
   document.getElementById('downloadHtmlBtn').addEventListener('click', downloadCurrentHtml);
   document.getElementById('exportJsonBtn').addEventListener('click', exportCurrentJson);
   document.getElementById('copyBtn').addEventListener('click', copyReportText);
+  const updateReportBtn = document.getElementById('updateReportBtn');
+  if (updateReportBtn) updateReportBtn.addEventListener('click', () => { renderReport(getFormData()); scrollReportIntoView(); });
+  const openReportBtn = document.getElementById('openReportBtn');
+  if (openReportBtn) openReportBtn.addEventListener('click', openExportMode);
+  const quickPdfBtn = document.getElementById('quickPdfBtn');
+  if (quickPdfBtn) quickPdfBtn.addEventListener('click', downloadCurrentPdf);
+  const quickPrintBtn = document.getElementById('quickPrintBtn');
+  if (quickPrintBtn) quickPrintBtn.addEventListener('click', printCurrentReport);
   document.getElementById('importBtn').addEventListener('click', importFile);
   document.getElementById('clearLibraryBtn').addEventListener('click', clearLibrary);
   const loadPackBtn = document.getElementById('loadLocalTechPackBtn');
@@ -672,6 +680,28 @@ function openExportMode() {
 }
 
 function closeExportMode() { document.body.classList.remove('export-mode'); }
+
+function scrollReportIntoView() {
+  const card = document.querySelector('.output-card');
+  if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function printCurrentReport() {
+  renderReport(getFormData());
+  document.body.classList.add('export-mode');
+  setTimeout(() => window.print(), 120);
+}
+
+function scrollReportIntoView() {
+  const card = document.querySelector('.output-card');
+  if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function printCurrentReport() {
+  renderReport(getFormData());
+  document.body.classList.add('export-mode');
+  setTimeout(() => window.print(), 120);
+}
 
 function downloadCurrentPdf() {
   const data = getFormData();
@@ -1764,7 +1794,7 @@ function renderPedagogicAudit(result) {
   }).join('');
   const recs = result.recommendations.length
     ? `<div class="audit-recommendations"><h4>Recomanacions prioritàries</h4><ol>${result.recommendations.map(r => `<li>${escapeHtml(r)}</li>`).join('')}</ol></div>`
-    : '<div class="audit-recommendations ok"><h4>Resultat</h4><p>La SA és coherent i està prou alineada per generar informe i PDF.</p></div>';
+    : '<div class="audit-recommendations ok"><h4>Resultat</h4><p>La SA és coherent i està prou alineada. Usa els botons ‘Genera informe’, ‘Obre vista d’impressió’ o ‘Descarrega PDF’ de la vista d’informe.</p></div>';
 
   target.innerHTML = `
     <div class="audit-summary ${scoreClass}">

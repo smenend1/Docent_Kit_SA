@@ -146,7 +146,7 @@
         <div class="actions-row">
           <button id="generateBtn" class="primary">Genera proposta</button>
           <button id="saveBtn" class="secondary">Desa a la biblioteca</button>
-          <button id="exportPdfBtn" class="secondary">Exporta / PDF</button>
+          <button id="exportPdfBtn" class="secondary">Obre informe / PDF</button>
           <button id="exportJsonBtn" class="secondary">Exporta JSON</button>
         </div>
       </section>
@@ -157,7 +157,13 @@
             <p class="eyebrow">Vista d’informe</p>
             <h2>Document net per exportar</h2>
           </div>
-          <button id="copyBtn" class="secondary">Copia text</button>
+          <div class="report-actions">
+            <button id="updateReportBtn" class="secondary" type="button">Genera informe</button>
+            <button id="openReportBtn" class="primary" type="button">Obre vista d’impressió</button>
+            <button id="quickPdfBtn" class="secondary" type="button">Descarrega PDF</button>
+            <button id="quickPrintBtn" class="secondary" type="button">Imprimeix / desa</button>
+            <button id="copyBtn" class="secondary" type="button">Copia text</button>
+          </div>
         </div>
         <article id="reportPreview" class="report-preview" aria-live="polite"></article>
       </section>
@@ -331,7 +337,7 @@
         <button id="closeExportModeBtn" class="secondary">Torna a editar</button>
       </div>
     </div>
-    <p class="export-help">Aquesta vista no usa finestres emergents. El botó “Descarrega PDF” genera un PDF real des del navegador; “Imprimeix” queda com a alternativa.</p>
+    <p class="export-help">Aquesta és la vista neta de sortida. Pots descarregar un PDF real, imprimir/desar com a PDF des del navegador o baixar l’HTML editable. No s’obren finestres emergents.</p>
   </section>
 
   <template id="resourceItemTemplate">
