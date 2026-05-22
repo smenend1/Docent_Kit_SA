@@ -1,6 +1,6 @@
-const APP_KEY = 'docentkit.resources.v18';
-const SETTINGS_KEY = 'docentkit.settings.v18';
-const OLD_KEYS = ['docentkit.resources.v17', 'docentkit.resources.v16', 'docentkit.resources.v15', 'docentkit.resources.v14', 'docentkit.resources.v13', 'docentkit.resources.v12', 'docentkit.resources.v11', 'docentkit.resources.v10', 'docentkit.resources.v9', 'docentkit.resources.v8', 'docentkit.resources.v7', 'docentkit.resources.v6', 'docentkit.resources.v5', 'docentkit.resources.v4', 'docentkit.resources.v3', 'docentkit.resources.v2', 'docentkit.resources.v1'];
+const APP_KEY = 'docentkit.resources.v20';
+const SETTINGS_KEY = 'docentkit.settings.v20';
+const OLD_KEYS = ['docentkit.resources.v19', 'docentkit.resources.v18', 'docentkit.resources.v17', 'docentkit.resources.v16', 'docentkit.resources.v15', 'docentkit.resources.v14', 'docentkit.resources.v13', 'docentkit.resources.v12', 'docentkit.resources.v11', 'docentkit.resources.v10', 'docentkit.resources.v9', 'docentkit.resources.v8', 'docentkit.resources.v7', 'docentkit.resources.v6', 'docentkit.resources.v5', 'docentkit.resources.v4', 'docentkit.resources.v3', 'docentkit.resources.v2', 'docentkit.resources.v1'];
 
 const MODULES = [
   { id: 'sa', label: 'Crear SA', type: 'Situació d’aprenentatge', intro: 'Dissenya una situació d’aprenentatge competencial amb repte, sabers, criteris, seqüència, inclusió i evidències.' },
@@ -150,7 +150,7 @@ const els = {
   duration: document.getElementById('duration'), challenge: document.getElementById('challenge'), knowledge: document.getElementById('knowledge'), competences: document.getElementById('competences'),
   sequence: document.getElementById('sequence'), inclusion: document.getElementById('inclusion'), assessment: document.getElementById('assessment'), tags: document.getElementById('tags'),
   report: document.getElementById('reportPreview'), library: document.getElementById('libraryList'), storageStatus: document.getElementById('storageStatus'), offlineStatus: document.getElementById('offlineStatus'),
-  search: document.getElementById('searchInput'), levelFilter: document.getElementById('levelFilter'), fileInput: document.getElementById('fileInput'), installBtn: document.getElementById('installBtn'),
+  search: document.getElementById('searchInput'), levelFilter: document.getElementById('levelFilter'), typeFilter: document.getElementById('typeFilter'), fileInput: document.getElementById('fileInput'), installBtn: document.getElementById('installBtn'),
   templateSelect: document.getElementById('templateSelect'), aiProvider: document.getElementById('aiProvider'), aiKey: document.getElementById('aiKey'),
   aiModel: document.getElementById('aiModel'), aiModeStatus: document.getElementById('aiModeStatus'), aiContext: document.getElementById('aiContext'), aiOutput: document.getElementById('aiOutput'),
   aiCourse: document.getElementById('aiCourse'), aiSubject: document.getElementById('aiSubject'), aiTopic: document.getElementById('aiTopic'), aiProduct: document.getElementById('aiProduct'),
@@ -164,6 +164,7 @@ function init() {
   renderTypeOptions();
   renderTemplateOptions();
   setModule('sa');
+  renderLibraryTypeFilter();
   renderLibrary();
   bindEvents();
   updateOnlineStatus();
@@ -185,6 +186,12 @@ function bindEvents() {
   document.getElementById('copyBtn').addEventListener('click', copyReportText);
   document.getElementById('importBtn').addEventListener('click', importFile);
   document.getElementById('clearLibraryBtn').addEventListener('click', clearLibrary);
+  const loadPackBtn = document.getElementById('loadLocalTechPackBtn');
+  if (loadPackBtn) loadPackBtn.addEventListener('click', addLocalTechPackToLibrary);
+  const exportTechBtn = document.getElementById('exportTechPackBtn');
+  if (exportTechBtn) exportTechBtn.addEventListener('click', exportLocalTechPack);
+  const exportLibraryBtn = document.getElementById('exportLibraryPackBtn');
+  if (exportLibraryBtn) exportLibraryBtn.addEventListener('click', exportLibraryPack);
   document.getElementById('aiDraftBtn').addEventListener('click', generateAiDraft);
   const aiTestBtn = document.getElementById('aiTestBtn');
   if (aiTestBtn) aiTestBtn.addEventListener('click', testGeminiConnection);
@@ -221,6 +228,7 @@ function bindEvents() {
   updateAiStatus();
   els.search.addEventListener('input', renderLibrary);
   els.levelFilter.addEventListener('change', renderLibrary);
+  if (els.typeFilter) els.typeFilter.addEventListener('change', renderLibrary);
   window.addEventListener('online', updateOnlineStatus);
   window.addEventListener('offline', updateOnlineStatus);
   window.addEventListener('beforeinstallprompt', event => { event.preventDefault(); deferredPrompt = event; els.installBtn.classList.remove('hidden'); });
@@ -523,12 +531,22 @@ function saveCurrentResource() {
   alert('Recurs desat a la biblioteca local.');
 }
 
+function renderLibraryTypeFilter() {
+  if (!els.typeFilter) return;
+  const current = els.typeFilter.value || '';
+  const types = Array.from(new Set(resources.map(r => r.type).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'ca'));
+  els.typeFilter.innerHTML = '<option value="">Tots</option>' + types.map(type => `<option value="${escapeHtml(type)}">${escapeHtml(type)}</option>`).join('');
+  if (types.includes(current)) els.typeFilter.value = current;
+}
+
 function renderLibrary() {
-  const query = els.search.value.toLowerCase();
+  renderLibraryTypeFilter();
+  const query = (els.search.value || '').toLowerCase();
   const level = els.levelFilter.value;
+  const type = els.typeFilter ? els.typeFilter.value : '';
   const filtered = resources.filter(item => {
-    const haystack = [item.title, item.type, item.level, item.subject, ...(item.tags || [])].join(' ').toLowerCase();
-    return (!query || haystack.includes(query)) && (!level || item.level === level);
+    const haystack = [item.title, item.type, item.level, item.subject, item.duration, ...(item.tags || [])].join(' ').toLowerCase();
+    return (!query || haystack.includes(query)) && (!level || item.level === level) && (!type || item.type === type);
   });
   els.storageStatus.textContent = `${resources.length} recurs(os) desat(s) en aquest navegador.`;
   els.library.innerHTML = '';
@@ -539,10 +557,12 @@ function renderLibrary() {
   const template = document.getElementById('resourceItemTemplate');
   filtered.forEach(item => {
     const node = template.content.cloneNode(true);
-    node.querySelector('h3').textContent = item.title;
-    node.querySelector('.resource-meta').textContent = `${item.type} · ${item.level} · ${new Date(item.createdAt).toLocaleDateString('ca-ES')}`;
+    node.querySelector('h3').textContent = item.title || 'Recurs sense títol';
+    node.querySelector('.resource-meta').textContent = `${item.type || 'Recurs'} · ${item.level || 'sense nivell'} · ${new Date(item.createdAt || Date.now()).toLocaleDateString('ca-ES')}`;
     node.querySelector('.resource-summary').textContent = item.challenge || item.subject || 'Recurs docent desat.';
     node.querySelector('.load-item').addEventListener('click', () => loadResource(item.id));
+    node.querySelector('.duplicate-item').addEventListener('click', () => duplicateResource(item.id));
+    node.querySelector('.export-item').addEventListener('click', () => exportSingleResource(item.id));
     node.querySelector('.delete-item').addEventListener('click', () => deleteResource(item.id));
     els.library.appendChild(node);
   });
@@ -561,6 +581,69 @@ function deleteResource(id) {
   resources = resources.filter(r => r.id !== id);
   persistResources();
   renderLibrary();
+}
+
+function duplicateResource(id) {
+  const item = resources.find(r => r.id === id);
+  if (!item) return;
+  const copy = {
+    ...item,
+    id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+    title: `${item.title || 'Recurs'} · còpia`,
+    createdAt: new Date().toISOString()
+  };
+  resources.unshift(copy);
+  persistResources();
+  renderLibrary();
+}
+
+function exportSingleResource(id) {
+  const item = resources.find(r => r.id === id);
+  if (!item) return;
+  const payload = formResourceToDocentKitJson(item);
+  downloadBlob(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }), `${slugify(item.title || 'recurs')}.json`, 'application/json');
+}
+
+function addLocalTechPackToLibrary() {
+  if (!Array.isArray(LOCAL_TECH_2ESO_SA)) return alert('No s’ha trobat el paquet local de Tecnologia.');
+  const mapped = LOCAL_TECH_2ESO_SA.map(jsonSaToFormResource);
+  let added = 0;
+  mapped.reverse().forEach(item => {
+    const exists = resources.some(r => normalizeLibraryKey(r.title) === normalizeLibraryKey(item.title));
+    if (!exists) { resources.unshift(item); added += 1; }
+  });
+  persistResources();
+  renderLibrary();
+  if (els.importStatus) els.importStatus.textContent = `Paquet local de Tecnologia afegit a la biblioteca: ${added} recurs(os) nou(s).`;
+  alert(added ? `S’han afegit ${added} SA locals a la biblioteca.` : 'Aquestes SA ja eren a la biblioteca.');
+}
+
+function exportLocalTechPack() {
+  const pack = {
+    schema: 'docentkit.pack.v1',
+    nom: 'Tecnologia i Digitalització 2n ESO · 6 SA',
+    idioma: 'ca',
+    versio: '2.0',
+    data_exportacio: new Date().toISOString().slice(0, 10),
+    recursos: LOCAL_TECH_2ESO_SA
+  };
+  downloadBlob(new Blob([JSON.stringify(pack, null, 2)], { type: 'application/json' }), 'docentkit-pack-tecnologia-2eso.json', 'application/json');
+}
+
+function exportLibraryPack() {
+  const pack = {
+    schema: 'docentkit.library.v1',
+    nom: 'Biblioteca local DocentKit',
+    idioma: 'ca',
+    versio: '2.0',
+    data_exportacio: new Date().toISOString(),
+    resources: resources.map(formResourceToDocentKitJson)
+  };
+  downloadBlob(new Blob([JSON.stringify(pack, null, 2)], { type: 'application/json' }), 'docentkit-biblioteca-local.json', 'application/json');
+}
+
+function normalizeLibraryKey(value) {
+  return String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
 }
 
 function clearLibrary() {
@@ -938,12 +1021,22 @@ async function importFile() {
         renderLibrary();
         applyImportedJson(file.name, items[0], { fromPack: true, count: items.length });
       } else {
-        const generic = normalizeImportedResource(parsed);
-        resources = [generic, ...resources];
-        persistResources();
-        renderLibrary();
-        loadResource(generic.id);
-        if (els.importStatus) els.importStatus.textContent = `JSON importat: ${file.name}. No és un JSON de SA DocentKit; s'ha carregat com a recurs genèric.`;
+        const formItems = extractJsonFormResources(parsed);
+        if (formItems.length) {
+          const mapped = formItems.map(normalizeImportedResource);
+          resources = [...mapped, ...resources.filter(r => !mapped.some(m => m.id === r.id))];
+          persistResources();
+          renderLibrary();
+          loadResource(mapped[0].id);
+          if (els.importStatus) els.importStatus.textContent = `Paquet de biblioteca importat: ${file.name}. ${mapped.length} recurs(os) carregat(s).`;
+        } else {
+          const generic = normalizeImportedResource(parsed);
+          resources = [generic, ...resources];
+          persistResources();
+          renderLibrary();
+          loadResource(generic.id);
+          if (els.importStatus) els.importStatus.textContent = `JSON importat: ${file.name}. No és un JSON de SA DocentKit; s'ha carregat com a recurs genèric.`;
+        }
       }
     } catch (error) {
       console.error(error);
@@ -997,6 +1090,41 @@ function extractJsonSaItems(parsed) {
 
 function normalizeImportedResource(item) {
   return { ...getFormData(), ...(item || {}), id: item?.id || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())), createdAt: item?.createdAt || new Date().toISOString(), tags: Array.isArray(item?.tags) ? item.tags : [] };
+}
+
+function extractJsonFormResources(parsed) {
+  const pools = [];
+  if (Array.isArray(parsed)) pools.push(parsed);
+  if (parsed && typeof parsed === 'object') {
+    ['resources','recursos','items','library','biblioteca'].forEach(key => {
+      if (Array.isArray(parsed[key])) pools.push(parsed[key]);
+    });
+  }
+  return pools.flat().filter(item => item && typeof item === 'object' && (item.title || item.titol) && (item.challenge || item.repte || item.type || item.tipus));
+}
+
+function formResourceToDocentKitJson(item) {
+  if (!item) return {};
+  if (isDocentKitSaJson(item) && item.titol) return item;
+  const isSa = String(item.type || '').toLowerCase().includes('situació') || String(item.type || '').toLowerCase().includes('situacio');
+  if (!isSa) return { ...item, schema: 'docentkit.resource.v1' };
+  return {
+    schema: 'docentkit.sa.v1',
+    tipus: 'situacio_aprenentatge',
+    idioma: 'ca',
+    normativa: 'LOMLOE',
+    titol: item.title || item.titol || '',
+    curs: item.level || item.curs || '',
+    materia: item.subject || item.materia || '',
+    durada: { total: item.duration || '' },
+    repte: item.challenge || '',
+    sabers_continguts: item.knowledge ? item.knowledge.split(/\n+/).filter(Boolean) : [],
+    competencies: item.competences || '',
+    sequencia: item.sequence || '',
+    mesures_suports: item.inclusion || '',
+    avaluacio: item.assessment || '',
+    tags: item.tags || []
+  };
 }
 
 

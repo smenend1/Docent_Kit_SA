@@ -41,3 +41,14 @@ Si després d’actualitzar encara veus una versió antiga, cal recarregar forç
 - S'ha aclarit el selector del mode IA: ara diferencia entre “Mode local · sense API externa” i “Mode Gemini · usa la meva API key”.
 - S'ha afegit una nota per evitar confondre el mode de generació amb el selector de plantilles de SA.
 - Cache actualitzada a `docentkit-v191`.
+
+
+## v2.0
+
+- Biblioteca local millorada amb filtre per tipus.
+- Botons per afegir les 6 SA locals de Tecnologia i Digitalització a la biblioteca.
+- Exportació del paquet local de Tecnologia 2n ESO en JSON.
+- Exportació de tota la biblioteca local en JSON.
+- Importació de paquets de biblioteca JSON.
+- Accions noves per recurs: duplicar i exportar JSON individual.
+- Cache actualitzada a `docentkit-v20`.

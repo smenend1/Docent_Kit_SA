@@ -49,6 +49,12 @@
             <option>Altres</option>
           </select>
         </label>
+        <label class="field compact">
+          <span>Tipus</span>
+          <select id="typeFilter">
+            <option value="">Tots</option>
+          </select>
+        </label>
       </div>
 
       <section class="hero-card" id="moduleIntro"></section>
@@ -296,7 +302,12 @@
             <p class="eyebrow">Biblioteca local</p>
             <h2>Recursos desats</h2>
           </div>
-          <button id="clearLibraryBtn" class="danger">Buida biblioteca</button>
+          <div class="library-actions">
+            <button id="loadLocalTechPackBtn" class="secondary" type="button">Afegeix 6 SA locals</button>
+            <button id="exportTechPackBtn" class="secondary" type="button">Exporta paquet Tec 2n</button>
+            <button id="exportLibraryPackBtn" class="secondary" type="button">Exporta biblioteca JSON</button>
+            <button id="clearLibraryBtn" class="danger">Buida biblioteca</button>
+          </div>
         </div>
         <div id="libraryList" class="library-list"></div>
       </section>
@@ -328,6 +339,8 @@
       </div>
       <div class="item-actions">
         <button class="secondary load-item">Obre</button>
+        <button class="secondary duplicate-item">Duplica</button>
+        <button class="secondary export-item">JSON</button>
         <button class="danger delete-item">Elimina</button>
       </div>
     </article>

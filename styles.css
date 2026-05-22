@@ -66,7 +66,7 @@ button.hidden { display: none; }
 .status-card p { margin: 0.35rem 0; color: var(--muted); font-size: 0.9rem; }
 
 .workspace { display: grid; gap: 1.25rem; min-width: 0; }
-.toolbar { display: grid; grid-template-columns: 1fr 180px; gap: 1rem; }
+.toolbar { display: grid; grid-template-columns: 1fr 180px 180px; gap: 1rem; }
 .hero-card, .generator-card, .output-card, .library-card, .import-card { padding: 1.25rem; }
 .hero-card h2, .generator-card h2, .output-card h2, .library-card h2, .import-card h2 { margin: 0; }
 .hero-card p { color: var(--muted); max-width: 72ch; }
@@ -89,7 +89,8 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); box-sh
 .resource-item { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem; border: 1px solid var(--line); border-radius: 18px; background: #fff; }
 .resource-item h3 { margin: 0.2rem 0; }
 .resource-meta, .resource-summary { margin: 0; color: var(--muted); }
-.item-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end; }
+.item-actions, .library-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end; }
+.library-actions { align-items: center; }
 
 
 .export-mode-shell { display: none; }
@@ -223,7 +224,7 @@ body.export-mode .export-mode-shell {
 .ai-output { white-space: pre-wrap; overflow: auto; background: #0f172a; color: #e5e7eb; border-radius: 16px; padding: 1rem; min-height: 160px; line-height: 1.45; }
 body.export-mode .ai-card { display: none !important; }
 @media print { .ai-card { display: none !important; } }
-@media (max-width: 900px) { .ai-grid { grid-template-columns: 1fr; } .template-actions { justify-content: stretch; } .template-actions button, .template-select-field { width: 100%; } }
+@media (max-width: 900px) { .ai-grid { grid-template-columns: 1fr; } .toolbar { grid-template-columns: 1fr; } .template-actions { justify-content: stretch; } .template-actions button, .template-select-field { width: 100%; } }
 
 /* v1.1 · Assistent guiat IA */
 .ai-wizard {
