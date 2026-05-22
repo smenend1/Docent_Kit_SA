@@ -377,6 +377,11 @@ button.small {
   border-color: #bbf7d0;
   background: #f0fdf4;
 }
+.audit-card.warning {
+  border-color: #fed7aa;
+  background: #fff7ed;
+}
+.audit-card.critical,
 .audit-card.missing {
   border-color: #fecaca;
   background: #fff7f7;
@@ -390,13 +395,39 @@ button.small {
   margin-bottom: 4px;
 }
 .audit-card.ok .audit-card-title { color: #166534; }
+.audit-card.warning .audit-card-title { color: #9a3412; }
+.audit-card.critical .audit-card-title,
 .audit-card.missing .audit-card-title { color: #991b1b; }
 .audit-card p {
   margin: 0;
   font-size: 0.88rem;
   color: #475569;
   line-height: 1.42;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
 }
+.audit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.mini-btn {
+  border: 0;
+  border-radius: 999px;
+  padding: 7px 10px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #7c2d12;
+  background: #ffedd5;
+  cursor: pointer;
+}
+.mini-btn.secondary {
+  color: #1e3a8a;
+  background: #dbeafe;
+}
+.mini-btn:active { transform: translateY(1px); }
 .audit-recommendations {
   margin-top: 12px;
   border-top: 1px solid #e2e8f0;
@@ -404,6 +435,7 @@ button.small {
 }
 .audit-recommendations h4 { margin: 0 0 6px; }
 .audit-recommendations ol { margin: 0; padding-left: 1.25rem; }
+.audit-recommendations li { white-space: normal; overflow-wrap: anywhere; word-break: normal; margin-bottom: 4px; }
 .audit-recommendations.ok { color: #166534; }
 @media (max-width: 760px) {
   .audit-grid { grid-template-columns: 1fr; }

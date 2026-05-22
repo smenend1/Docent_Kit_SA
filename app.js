@@ -211,6 +211,14 @@ function bindEvents() {
   if (aiValidateBtn) aiValidateBtn.addEventListener('click', () => renderAiValidation(validateSaQuality(getFormData())));
   const pedagogicAuditBtn = document.getElementById('pedagogicAuditBtn');
   if (pedagogicAuditBtn) pedagogicAuditBtn.addEventListener('click', () => renderPedagogicAudit(validateSaPedagogy(getFormData())));
+  if (els.pedagogicAuditPanel) {
+    els.pedagogicAuditPanel.addEventListener('click', event => {
+      const localBtn = event.target.closest('[data-auto-fix]');
+      if (localBtn) autoFixPedagogicIssue(localBtn.dataset.autoFix);
+      const aiBtn = event.target.closest('[data-ai-fix]');
+      if (aiBtn) generateAiFixForIssue(aiBtn.dataset.aiFix);
+    });
+  }
   const aiCompleteMissingBtn = document.getElementById('aiCompleteMissingBtn');
   if (aiCompleteMissingBtn) aiCompleteMissingBtn.addEventListener('click', () => generatePartialAiDraft('missing'));
   const aiKnowledgeBtn = document.getElementById('aiKnowledgeBtn');
@@ -1705,8 +1713,12 @@ function validateSaPedagogy(data) {
   const hasWorkshopSafety = /seguretat|eina|taller|material|risc|norma|epi|electric|impressora|arduino|circuit|tall|sold/i.test(inclusionText + '\n' + knowledgeText + '\n' + sequenceText + '\n' + assessmentText);
   const hasRealContext = (challengeParts.context || '').length > 120 && /centre|aula|barri|comunitat|entorn|necessitat|problema|ODS|sostenibil/i.test(challengeText);
   const hasClearProduct = productText.length > 50 && /prototip|producte|maqueta|model|app|web|circuit|robot|mem[oò]ria|presentaci[oó]|informe|pe[cç]a|sistema/i.test(productText);
-  const hasCriteriaAlignment = criteriaCodes.length >= 2 && rubricRows.length >= Math.min(3, criteriaCodes.length);
-  const hasRubricLevels = rubricRows.length >= 3 && rubricRows.every(row => row.NA && row.AS && row.AN && row.AE);
+  const hasRubricLevels = rubricRows.length >= 3 && rubricRows.every(row => row.NA || row.na) && rubricRows.every(row => row.AS || row.as) && rubricRows.every(row => row.AN || row.an) && rubricRows.every(row => row.AE || row.ae);
+  const validRubricCriteria = rubricRows.filter(row => {
+    const c = String(row.criteri || row.criteri_lomloe || '').trim();
+    return c && c !== '—' && /\d+\.\d+|CE\d|STEM\d/i.test(c);
+  }).length;
+  const hasCriteriaAlignment = criteriaCodes.length >= 2 && rubricRows.length >= Math.min(3, criteriaCodes.length) && validRubricCriteria >= Math.min(rubricRows.length, criteriaCodes.length);
   const hasInclusionQuality = /TDAH/i.test(inclusionText) && /TEA/i.test(inclusionText) && /disl[eè]xia/i.test(inclusionText) && /TDL/i.test(inclusionText) && /instruccions|visual|temps|anticipaci|glossari|rol|suport/i.test(inclusionText);
   const checks = [
     { id: 'repte', label: 'Repte contextualitzat', ok: hasRealContext && /repte|pregunta|com podem|problema|necessitat/i.test(challengeText), advice: 'Concreta un context proper i formula el repte com una pregunta o necessitat real.' },
@@ -1733,11 +1745,23 @@ function renderPedagogicAudit(result) {
   if (!target) return;
 
   const scoreClass = result.score >= 85 ? 'excellent' : result.score >= 65 ? 'good' : result.score >= 45 ? 'partial' : 'weak';
-  const checkedCards = result.checks.map(c => `
-    <article class="audit-card ${c.ok ? 'ok' : 'missing'}">
-      <div class="audit-card-title"><span>${c.ok ? '✓' : '!'}</span>${escapeHtml(c.label)}</div>
-      <p>${escapeHtml(c.ok ? 'Correcte o prou desenvolupat.' : c.advice)}</p>
-    </article>`).join('');
+  const checkedCards = result.checks.map(c => {
+    const statusClass = c.ok ? 'ok' : (c.critical ? 'critical' : 'warning');
+    const icon = c.ok ? '✓' : (c.critical ? '!' : '⚠');
+    const autoLabel = getAutoFixLabel(c.id);
+    const aiLabel = getAiFixLabel(c.id);
+    const actions = c.ok ? '' : `
+      <div class="audit-actions">
+        ${autoLabel ? `<button type="button" class="mini-btn" data-auto-fix="${escapeHtml(c.id)}">${escapeHtml(autoLabel)}</button>` : ''}
+        ${aiLabel ? `<button type="button" class="mini-btn secondary" data-ai-fix="${escapeHtml(c.id)}">${escapeHtml(aiLabel)}</button>` : ''}
+      </div>`;
+    return `
+      <article class="audit-card ${statusClass}">
+        <div class="audit-card-title"><span>${icon}</span>${escapeHtml(c.label)}</div>
+        <p>${escapeHtml(c.ok ? 'Correcte o prou desenvolupat.' : c.advice)}</p>
+        ${actions}
+      </article>`;
+  }).join('');
   const recs = result.recommendations.length
     ? `<div class="audit-recommendations"><h4>Recomanacions prioritàries</h4><ol>${result.recommendations.map(r => `<li>${escapeHtml(r)}</li>`).join('')}</ol></div>`
     : '<div class="audit-recommendations ok"><h4>Resultat</h4><p>La SA és coherent i està prou alineada per generar informe i PDF.</p></div>';
@@ -1759,6 +1783,161 @@ function renderPedagogicAudit(result) {
     els.aiValidationPanel.innerHTML = `<p class="ok">Revisió pedagògica generada. Consulta el panell “Resultat de la revisió pedagògica” just a sota.</p>`;
   }
 }
+
+function getAutoFixLabel(issueId) {
+  const labels = {
+    alignment: 'Corregeix rúbrica automàticament',
+    assessment: 'Completa avaluació bàsica',
+    inclusion: 'Afegeix adaptacions base',
+    workshop: 'Afegeix seguretat de taller',
+    duration: 'Calcula durada',
+    sequence: 'Afegeix estructura de fases',
+    producte: 'Afegeix producte final al repte'
+  };
+  return labels[issueId] || 'Corregeix automàticament';
+}
+
+function getAiFixLabel(issueId) {
+  const labels = {
+    alignment: 'Millora rúbrica amb IA',
+    assessment: 'Millora avaluació amb IA',
+    inclusion: 'Millora inclusió amb IA',
+    sequence: 'Millora seqüència amb IA',
+    producte: 'Millora repte/producte amb IA'
+  };
+  return labels[issueId] || '';
+}
+
+function generateAiFixForIssue(issueId) {
+  if (issueId === 'alignment') return generatePartialAiDraft('rubric');
+  if (issueId === 'inclusion') return generatePartialAiDraft('inclusion');
+  if (issueId === 'assessment') return generatePartialAiDraft('missing');
+  if (issueId === 'sequence' || issueId === 'producte') return generatePartialAiDraft('missing');
+  return generatePartialAiDraft('missing');
+}
+
+function autoFixPedagogicIssue(issueId) {
+  const data = getFormData();
+  if (issueId === 'alignment') autoFixRubricAlignment(data);
+  else if (issueId === 'assessment') autoFixAssessment(data);
+  else if (issueId === 'inclusion') autoFixInclusion(data);
+  else if (issueId === 'workshop') autoFixWorkshopSafety(data);
+  else if (issueId === 'duration') autoFixDuration(data);
+  else if (issueId === 'sequence') autoFixSequence(data);
+  else if (issueId === 'producte') autoFixProduct(data);
+  renderReport(getFormData());
+  renderAiValidation(validateSaQuality(getFormData()));
+  renderPedagogicAudit(validateSaPedagogy(getFormData()));
+}
+
+function autoFixRubricAlignment(data) {
+  const criteriaCodes = collectCriteriaCodes(data);
+  const rows = buildRubricRows(data, criteriaCodes);
+  const fixedRows = rows.map((row, index) => {
+    const text = [row.item, row.na, row.as, row.an, row.ae].join(' ');
+    const current = String(row.criteri || '').trim();
+    const criteri = current && current !== '—' && /\d+\.\d+|CE\d|STEM\d/i.test(current) ? current : suggestCriterionForRubric(text, criteriaCodes, index);
+    return {
+      criteri,
+      item: row.item || `Ítem ${index + 1}`,
+      na: row.na || 'Mostra dificultats importants i necessita molta guia per evidenciar aquest aprenentatge.',
+      as: row.as || 'Assoleix els aspectes bàsics amb suport o amb algunes mancances.',
+      an: row.an || 'Assoleix l’aprenentatge de manera autònoma, coherent i amb poques errades.',
+      ae: row.ae || 'Mostra domini avançat, justifica decisions i transfereix l’aprenentatge a noves situacions.'
+    };
+  });
+  const withoutRubric = removeRubricBlock(data.assessment || '');
+  els.assessment.value = joinNonEmpty([withoutRubric, formatRubricRowsForAssessment(fixedRows)]);
+}
+
+function collectCriteriaCodes(data) {
+  const parts = extractCompetenceParts(data.competences || '');
+  const found = new Set(parts.criteriaCodes || []);
+  const text = [data.competences, data.assessment].join('\n');
+  (text.match(/\b\d+\.\d+\b/g) || []).forEach(code => found.add(code));
+  return Array.from(found);
+}
+
+function suggestCriterionForRubric(text, codes, index) {
+  const src = String(text || '').toLowerCase();
+  const has = code => codes.includes(code) ? code : null;
+  if (/recerca|problema|investig|font|informaci|necessitat/.test(src)) return has('2.1') || codes[0] || '2.1';
+  if (/disseny|croquis|pl[aà]nol|model|planific|esquema|acot/.test(src)) return has('3.1') || codes.find(c => /^3\.1$/.test(c)) || codes[index] || codes[0] || '3.1';
+  if (/constru|prototip|taller|eina|fabric|program|codi|muntatge|funcion/.test(src)) return has('3.2') || codes.find(c => /^3\.2$/.test(c)) || codes[index] || codes[0] || '3.2';
+  if (/comunic|presentaci|mem[oò]ria|document/.test(src)) return codes.find(c => /^3\.2$/.test(c)) || codes[index] || codes[0] || '3.2';
+  return codes[index] || codes[codes.length - 1] || '2.1';
+}
+
+function removeRubricBlock(text) {
+  return String(text || '')
+    .replace(/\n?R[úu]brica\s*:[\s\S]*$/i, '')
+    .replace(/\n?CRITERI\s+LOMLOE\s*:[\s\S]*$/i, '')
+    .trim();
+}
+
+function formatRubricRowsForAssessment(rows) {
+  return 'Rúbrica:\n' + rows.map(row => [
+    `CRITERI LOMLOE: ${row.criteri}`,
+    `ÍTEM: ${row.item}`,
+    `No Assolit (NA): ${row.na}`,
+    `Assolit Satisfactori (AS): ${row.as}`,
+    `Assolit Notable (AN): ${row.an}`,
+    `Assolit Excel·lent (AE): ${row.ae}`
+  ].join('\n')).join('\n\n');
+}
+
+function autoFixAssessment(data) {
+  const existing = data.assessment || '';
+  const additions = [];
+  if (!/Evid[eè]ncies\s*:/i.test(existing)) additions.push('Evidències: producte final, procés de treball, registre de proves, documentació tècnica i presentació oral.');
+  if (!/Instruments\s*:/i.test(existing)) additions.push('Instruments: rúbrica criterial, llista de control, observació docent, autoavaluació i coavaluació.');
+  if (!/Retorn i millora\s*:/i.test(existing)) additions.push('Retorn i millora: feedback durant el disseny, revisió abans del lliurament, temps de millora i comentaris finals de coavaluació.');
+  els.assessment.value = joinNonEmpty([existing, ...additions]);
+}
+
+function autoFixInclusion(data) {
+  const existing = data.inclusion || '';
+  const additions = [
+    'Mesures universals: instruccions seqüenciades, models visuals, rols cooperatius, glossari tècnic i opcions diverses d’expressió.',
+    'TDAH: tasques fragmentades, temporitzadors visuals, objectius curts i rols actius.',
+    'TEA: anticipació de la sessió, consignes literals, exemples acabats i reducció d’estímuls quan calgui.',
+    'Dislèxia: lectura facilitada, suport visual, temps addicional i alternatives orals o visuals a textos llargs.',
+    'TDL: vocabulari anticipat, frases model, comprovació de comprensió i suport visual en la comunicació.'
+  ].filter(line => !existing.toLowerCase().includes(line.split(':')[0].toLowerCase()));
+  els.inclusion.value = joinNonEmpty([existing, ...additions]);
+}
+
+function autoFixWorkshopSafety(data) {
+  const existing = data.inclusion || '';
+  const safety = 'Seguretat i taller: revisió prèvia d’eines i materials, normes d’ús segur, ordre de l’espai, recollida final, supervisió docent i registre d’incidències o riscos.';
+  if (!/seguretat|taller|eina|risc|norma/i.test(existing)) els.inclusion.value = joinNonEmpty([existing, safety]);
+}
+
+function autoFixDuration(data) {
+  if (data.duration && data.duration.trim()) return;
+  const matches = String(data.sequence || '').match(/\b(\d+)\s*(?:h|hores|sessions)\b/gi) || [];
+  let total = 0;
+  matches.forEach(m => { const n = parseInt(m, 10); if (!Number.isNaN(n)) total += n; });
+  els.duration.value = total ? `${total} hores, distribuïdes en ${matches.length} fases o sessions` : '8 sessions aproximades';
+}
+
+function autoFixSequence(data) {
+  const existing = data.sequence || '';
+  const additions = [];
+  if (!/Inicials\s*:/i.test(existing)) additions.push('Inicials: presentació del repte, activació de coneixements previs i criteris d’èxit compartits.');
+  if (!/Desenvolupament\s*:/i.test(existing)) additions.push('Desenvolupament: recerca, pràctica guiada, disseny, càlculs o programació segons el repte.');
+  if (!/Estructuraci[oó]\s*:/i.test(existing)) additions.push('Estructuració: síntesi dels aprenentatges, revisió del procés i preparació de la documentació.');
+  if (!/Aplicaci[oó]\s*:/i.test(existing)) additions.push('Aplicació: finalització del producte, presentació, avaluació i transferència a una situació propera.');
+  els.sequence.value = joinNonEmpty([existing, ...additions]);
+}
+
+function autoFixProduct(data) {
+  const existing = data.challenge || '';
+  if (/Producte final\s*:/i.test(existing)) return;
+  const product = data.type && /r[úu]brica/i.test(data.type) ? 'Producte final: rúbrica criterial completa.' : 'Producte final: prototip, documentació tècnica i presentació del procés de treball.';
+  els.challenge.value = joinNonEmpty([existing, product]);
+}
+
 
 function buildPartialPrompt(kind) {
   const data = getFormData();
