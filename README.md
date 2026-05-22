@@ -2,7 +2,7 @@
 
 Versió 1.5 de la PWA educativa en català per a docents.
 
-## Objectiu de la v1.6
+## Objectiu de la v1.7
 
 Aquesta versió corregeix especialment la importació de situacions d’aprenentatge en TXT perquè el contingut no es copiï repetit a tots els apartats.
 
@@ -16,7 +16,7 @@ Aquesta versió corregeix especialment la importació de situacions d’aprenent
 - Evita que els descriptors NA, AS, AN i AE vagin al camp de competències.
 - Conversió de rúbriques textuals amb `CRITERI LOMLOE`, `ÍTEM`, `NA`, `AS`, `AN` i `AE` a la taula de rúbrica de l’informe.
 - Millor tractament de fases tipus `Fase 1`, `Fase 2`, `Fase 3` i `Fase 4`.
-- Service worker actualitzat a `docentkit-v16`.
+- Service worker actualitzat a `docentkit-v17`.
 
 ## Ús recomanat
 
@@ -27,3 +27,10 @@ Aquesta versió corregeix especialment la importació de situacions d’aprenent
 5. Genera l’informe i exporta a PDF o HTML.
 
 Si la PWA ja estava instal·lada, fes una recàrrega forçada o esborra la memòria cau perquè el navegador no mantingui versions anteriors.
+
+
+## v1.7
+
+- Importació JSON DocentKit SA (`schema: docentkit.sa.v1`) aplicada directament al formulari.
+- Mapatge de títol, curs, matèria, durada, context, repte, sabers, seqüència, mesures, avaluació, vectors i rúbrica.
+- Accepta també llistes de SA en JSON i les carrega a la biblioteca.

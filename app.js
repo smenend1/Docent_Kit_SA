@@ -927,9 +927,25 @@ async function importFile() {
     try {
       const parsed = JSON.parse(text);
       const items = Array.isArray(parsed) ? parsed : [parsed];
-      resources = [...items.map(normalizeImportedResource), ...resources];
-      persistResources(); renderLibrary(); loadResource(resources[0].id);
-    } catch { alert('El JSON no és vàlid.'); }
+      if (items.length === 1 && isDocentKitSaJson(items[0])) {
+        applyImportedJson(file.name, items[0]);
+      } else if (items.every(isDocentKitSaJson)) {
+        resources = [...items.map(jsonSaToFormResource), ...resources];
+        persistResources();
+        renderLibrary();
+        loadResource(resources[0].id);
+        if (els.importStatus) els.importStatus.textContent = `JSON importat: ${file.name}. ${items.length} situacions d’aprenentatge carregades a la biblioteca.`;
+      } else {
+        resources = [...items.map(normalizeImportedResource), ...resources];
+        persistResources();
+        renderLibrary();
+        loadResource(resources[0].id);
+        if (els.importStatus) els.importStatus.textContent = `JSON importat: ${file.name}. Format genèric carregat a la biblioteca.`;
+      }
+    } catch (error) {
+      console.error(error);
+      alert('El JSON no és vàlid o no s’ha pogut interpretar.');
+    }
     return;
   }
   if (lowerName.endsWith('.docx')) {
@@ -958,6 +974,212 @@ async function importFile() {
 
 function normalizeImportedResource(item) {
   return { ...getFormData(), ...item, id: item.id || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())), createdAt: item.createdAt || new Date().toISOString(), tags: Array.isArray(item.tags) ? item.tags : [] };
+}
+
+
+// ===== v1.7: importació JSON DocentKit SA =====
+function isDocentKitSaJson(item) {
+  if (!item || typeof item !== 'object') return false;
+  const schema = String(item.schema || '').toLowerCase();
+  const tipus = String(item.tipus || item.type || '').toLowerCase();
+  return schema.includes('docentkit.sa') || tipus.includes('situacio_aprenentatge') || tipus.includes('situació') || (!!item.titol && !!item.rubrica && !!item.sequencia_activitats);
+}
+
+function applyImportedJson(filename, item) {
+  const mapped = jsonSaToFormResource(item);
+  ['title','level','subject','duration','type','challenge','knowledge','competences','sequence','inclusion','assessment'].forEach(key => {
+    if (els[key]) els[key].value = mapped[key] || '';
+  });
+  els.tags.value = (mapped.tags || []).join(', ');
+  if (els.importStatus) {
+    els.importStatus.textContent = `JSON DocentKit importat: ${filename}. Camps aplicats al formulari: títol, curs, matèria, durada, sabers, seqüència, adaptacions, avaluació i rúbrica.`;
+  }
+  renderReport(getFormData());
+  renderAiValidation(validateSaQuality(getFormData()));
+}
+
+function jsonSaToFormResource(item) {
+  const title = item.titol || item.title || 'Recurs sense títol';
+  const level = normalizeJsonCourse(item.curs || item.level || item.etapa_nivell || '');
+  const subject = cleanJsonText(item.materia || item.subject || item.ambit || '');
+  const duration = formatJsonDuration(item.durada || item.duration || item.temporalitzacio || '');
+  const challenge = joinNonEmpty([
+    item.subtitol && `Subtítol: ${item.subtitol}`,
+    item.context && `Context: ${item.context}`,
+    item.justificacio && `Justificació: ${item.justificacio}`,
+    item.repte && `Repte: ${item.repte}`,
+    item.producte_final && `Producte final: ${item.producte_final}`
+  ]);
+  const competences = joinNonEmpty([
+    formatJsonArray('Competències clau', item.competencies_clau),
+    formatJsonArray('Competències específiques', item.competencies_especifiques || item.competencies),
+    formatJsonArray('Criteris d’avaluació', item.criteris_avaluacio),
+    formatJsonArray('Objectius d’aprenentatge', item.objectius_aprenentatge || item.objectius)
+  ]);
+  const knowledge = formatJsonKnowledge(item.sabers || item.sabers_continguts || item.coneixements);
+  const sequence = joinNonEmpty([
+    formatJsonMethodology(item.metodologia),
+    formatJsonArray('Seqüència d’activitats', item.sequencia_activitats || item.sequencia || item.activitats)
+  ]);
+  const inclusion = formatJsonInclusion(item.mesures_i_suports || item.mesures_suports || item.inclusio || item.adaptacions);
+  const assessment = joinNonEmpty([
+    formatJsonAssessment(item.avaluacio),
+    formatJsonVectors(item.vectors),
+    formatJsonRubric(item.rubrica)
+  ]);
+  return {
+    ...getFormData(),
+    id: item.id || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())),
+    createdAt: item.createdAt || item.metadades?.data_creacio || new Date().toISOString(),
+    type: 'Situació d’aprenentatge',
+    title,
+    level: level || '1r ESO',
+    subject,
+    duration,
+    challenge,
+    knowledge,
+    competences,
+    sequence,
+    inclusion,
+    assessment,
+    tags: Array.isArray(item.tags) ? item.tags : ['json', item.schema || 'docentkit.sa.v1'].filter(Boolean)
+  };
+}
+
+function normalizeJsonCourse(value) {
+  const text = String(value || '').toLowerCase().replace(/[’‘]/g, "'");
+  if (/1\s*r|primer/.test(text)) return '1r ESO';
+  if (/2\s*n|segon/.test(text)) return '2n ESO';
+  if (/3\s*r|tercer/.test(text)) return '3r ESO';
+  if (/4\s*t|quart/.test(text)) return '4t ESO';
+  return cleanJsonText(value).replace(/d['’]ESO/gi, 'ESO').replace(/\s+/g, ' ').trim();
+}
+
+function formatJsonDuration(value) {
+  if (!value) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'object') {
+    return joinNonEmpty([
+      value.total,
+      value.sessions ? `${value.sessions} sessions` : '',
+      value.distribucio
+    ], ' · ');
+  }
+  return String(value);
+}
+
+function cleanJsonText(value) {
+  return String(value || '').replace(/\s+/g, ' ').trim();
+}
+
+function formatJsonArray(title, value) {
+  if (!value) return '';
+  const arr = Array.isArray(value) ? value : [value];
+  const lines = arr.map(formatJsonItem).filter(Boolean);
+  return lines.length ? `${title}:\n${lines.join('\n')}` : '';
+}
+
+function formatJsonItem(item) {
+  if (item == null) return '';
+  if (typeof item === 'string') return `- ${item}`;
+  if (typeof item !== 'object') return `- ${String(item)}`;
+  const code = item.codi || item.id || item.criteri_lomloe || item.competencia || '';
+  const title = item.titol || item.fase || item.item || item.objectiu || '';
+  const desc = item.descripcio || item.activitats || item.text || '';
+  const dur = item.durada ? ` (${item.durada})` : '';
+  const rel = Array.isArray(item.criteris_relacionats) && item.criteris_relacionats.length ? ` [criteris: ${item.criteris_relacionats.join(', ')}]` : '';
+  if (Array.isArray(item.activitats)) {
+    const acts = item.activitats.map(v => `  - ${v}`).join('\n');
+    const ev = Array.isArray(item.evidencies) && item.evidencies.length ? `\n  Evidències: ${item.evidencies.join('; ')}` : '';
+    return `- ${[item.fase, item.titol].filter(Boolean).join(': ')}${dur}\n${acts}${ev}`;
+  }
+  return `- ${[code, title, desc].filter(Boolean).join(' - ')}${dur}${rel}`;
+}
+
+function formatJsonKnowledge(value) {
+  if (!value) return '';
+  if (Array.isArray(value)) return `Sabers / continguts:\n${value.map(v => `- ${v}`).join('\n')}`;
+  if (typeof value === 'object') {
+    return joinNonEmpty([
+      value.blocs ? `Blocs de sabers:\n${asBulletList(value.blocs)}` : '',
+      value.continguts ? `Sabers / continguts:\n${asBulletList(value.continguts)}` : ''
+    ]);
+  }
+  return String(value);
+}
+
+function formatJsonMethodology(value) {
+  if (!value) return '';
+  if (typeof value === 'string') return `Metodologia: ${value}`;
+  return joinNonEmpty([
+    value.enfocament && `Metodologia: ${value.enfocament}`,
+    value.organitzacio_aula && `Organització de l’aula: ${value.organitzacio_aula}`,
+    value.rols && `Rols:\n${asBulletList(value.rols)}`,
+    value.recursos && `Recursos:\n${asBulletList(value.recursos)}`
+  ]);
+}
+
+function formatJsonInclusion(value) {
+  if (!value) return '';
+  if (Array.isArray(value)) return `Mesures i suports:\n${asBulletList(value)}`;
+  if (typeof value === 'string') return value;
+  return joinNonEmpty([
+    value.universals && `Mesures universals:\n${asBulletList(value.universals)}`,
+    value.tdah && `Adaptacions TDAH:\n${asBulletList(value.tdah)}`,
+    value.tea && `Adaptacions TEA:\n${asBulletList(value.tea)}`,
+    value.dislexia && `Adaptacions dislèxia:\n${asBulletList(value.dislexia)}`,
+    value.dislèxia && `Adaptacions dislèxia:\n${asBulletList(value.dislèxia)}`,
+    value.tdl && `Adaptacions TDL:\n${asBulletList(value.tdl)}`
+  ]);
+}
+
+function formatJsonAssessment(value) {
+  if (!value) return '';
+  if (typeof value === 'string') return value;
+  return joinNonEmpty([
+    value.evidencies && `Evidències:\n${asBulletList(value.evidencies)}`,
+    value.instruments && `Instruments:\n${asBulletList(value.instruments)}`,
+    value.retorn_i_millora && `Retorn i millora:\n${asBulletList(value.retorn_i_millora)}`
+  ]);
+}
+
+function formatJsonVectors(value) {
+  if (!value) return '';
+  if (Array.isArray(value)) return `Vectors:\n${asBulletList(value)}`;
+  if (typeof value === 'string') return `Vectors:\n${value}`;
+  const labels = {
+    aprenentatges_competencials: 'Aprenentatges competencials',
+    perspectiva_genere: 'Perspectiva de gènere',
+    universalitat_curriculum: 'Universalitat del currículum',
+    qualitat_llengues: 'Qualitat de les llengües',
+    ciutadania_democratica_consciencia_global: 'Ciutadania democràtica i consciència global',
+    benestar_emocional: 'Benestar emocional'
+  };
+  const lines = Object.entries(value).map(([k, v]) => `- ${(labels[k] || k)}: ${v}`);
+  return lines.length ? `Vectors:\n${lines.join('\n')}` : '';
+}
+
+function formatJsonRubric(value) {
+  if (!value) return '';
+  if (typeof value === 'string') return `Rúbrica:\n${value}`;
+  const arr = Array.isArray(value) ? value : [value];
+  const blocks = arr.map(row => {
+    if (!row || typeof row !== 'object') return String(row || '');
+    return joinNonEmpty([
+      `CRITERI LOMLOE: ${[row.criteri_lomloe, row.competencia].filter(Boolean).join(' / ')}`,
+      `ÍTEM: ${row.item || ''}`,
+      `NA: ${row.NA || row.na || ''}`,
+      `AS: ${row.AS || row.as || ''}`,
+      `AN: ${row.AN || row.an || ''}`,
+      `AE: ${row.AE || row.ae || ''}`
+    ]);
+  }).filter(Boolean);
+  return blocks.length ? `Rúbrica:\n${blocks.join('\n\n')}` : '';
+}
+
+function asBulletList(value) {
+  const arr = Array.isArray(value) ? value : [value];
+  return arr.map(v => `- ${typeof v === 'object' ? formatJsonItem(v).replace(/^[-]\s*/, '') : v}`).join('\n');
 }
 
 async function copyReportText() {
