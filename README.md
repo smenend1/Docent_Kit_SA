@@ -54,7 +54,7 @@ Si després d’actualitzar encara veus una versió antiga, cal recarregar forç
 - Cache actualitzada a `docentkit-v20`.
 
 
-## v2.1.2
+## v2.1.3
 
 Afegeix un validador pedagògic específic per a situacions d’aprenentatge de Tecnologia i Digitalització.
 
@@ -64,7 +64,7 @@ Novetats:
 - Puntuació global 0-100 amb recomanacions prioritàries.
 - Cache actualitzada a `docentkit-v21`.
 
-## v2.1.2.2
+## v2.1.3.2
 
 - Afegit un panell propi i visible de **Resultat de la revisió pedagògica**.
 - La puntuació global surt amb barra de progrés i nivell.
@@ -73,7 +73,7 @@ Novetats:
 - Cache actualitzada a `docentkit-v211`.
 
 
-## v2.1.2
+## v2.1.3
 - Millora visual dels avisos del validador pedagògic: ambre per a avisos revisables.
 - Botons de correcció automàtica local en les targetes del validador.
 - Correcció semiautomàtica de rúbrica, inclusió, avaluació, durada, seqüència i seguretat de taller.

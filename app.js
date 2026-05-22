@@ -1792,6 +1792,7 @@ function getAutoFixLabel(issueId) {
     workshop: 'Afegeix seguretat de taller',
     duration: 'Calcula durada',
     sequence: 'Afegeix estructura de fases',
+    repte: 'Millora repte i context',
     producte: 'Afegeix producte final al repte'
   };
   return labels[issueId] || 'Corregeix automàticament';
@@ -1803,6 +1804,7 @@ function getAiFixLabel(issueId) {
     assessment: 'Millora avaluació amb IA',
     inclusion: 'Millora inclusió amb IA',
     sequence: 'Millora seqüència amb IA',
+    repte: 'Millora repte/context amb IA',
     producte: 'Millora repte/producte amb IA'
   };
   return labels[issueId] || '';
@@ -1812,7 +1814,7 @@ function generateAiFixForIssue(issueId) {
   if (issueId === 'alignment') return generatePartialAiDraft('rubric');
   if (issueId === 'inclusion') return generatePartialAiDraft('inclusion');
   if (issueId === 'assessment') return generatePartialAiDraft('missing');
-  if (issueId === 'sequence' || issueId === 'producte') return generatePartialAiDraft('missing');
+  if (issueId === 'sequence' || issueId === 'producte' || issueId === 'repte') return generatePartialAiDraft('missing');
   return generatePartialAiDraft('missing');
 }
 
@@ -1824,10 +1826,13 @@ function autoFixPedagogicIssue(issueId) {
   else if (issueId === 'workshop') autoFixWorkshopSafety(data);
   else if (issueId === 'duration') autoFixDuration(data);
   else if (issueId === 'sequence') autoFixSequence(data);
+  else if (issueId === 'repte') autoFixChallenge(data);
   else if (issueId === 'producte') autoFixProduct(data);
+  else { showToast('No hi ha cap correcció automàtica definida per aquest apartat.'); return; }
   renderReport(getFormData());
   renderAiValidation(validateSaQuality(getFormData()));
   renderPedagogicAudit(validateSaPedagogy(getFormData()));
+  showToast('Correcció aplicada. Revisa el formulari i el resultat de la revisió.');
 }
 
 function autoFixRubricAlignment(data) {
@@ -1929,6 +1934,25 @@ function autoFixSequence(data) {
   if (!/Estructuraci[oó]\s*:/i.test(existing)) additions.push('Estructuració: síntesi dels aprenentatges, revisió del procés i preparació de la documentació.');
   if (!/Aplicaci[oó]\s*:/i.test(existing)) additions.push('Aplicació: finalització del producte, presentació, avaluació i transferència a una situació propera.');
   els.sequence.value = joinNonEmpty([existing, ...additions]);
+}
+
+
+function autoFixChallenge(data) {
+  const existing = String(data.challenge || '').trim();
+  const title = data.title && data.title !== 'Recurs sense títol' ? data.title : 'la situació d’aprenentatge';
+  const subject = data.subject || 'Tecnologia i Digitalització';
+  const level = data.level || 'ESO';
+  const additions = [];
+  if (!/Context\s*:/i.test(existing)) {
+    additions.push(`Context: L’alumnat de ${level} treballa ${subject} a partir d’un repte proper vinculat a ${title}, connectant sabers tecnològics amb una necessitat real del centre o de l’entorn.`);
+  }
+  if (!/Repte\s*:/i.test(existing) && !/Com podem/i.test(existing)) {
+    additions.push('Repte: Com podem donar resposta a aquesta necessitat mitjançant una solució tecnològica viable, segura, sostenible i ben documentada?');
+  }
+  if (!/Justificaci[oó]\s*:/i.test(existing)) {
+    additions.push('Justificació: La proposta permet aplicar el procés tecnològic, prendre decisions justificades, treballar cooperativament i comunicar resultats amb vocabulari tècnic.');
+  }
+  els.challenge.value = joinNonEmpty([existing, ...additions]);
 }
 
 function autoFixProduct(data) {
