@@ -1,6 +1,6 @@
-const APP_KEY = 'docentkit.resources.v15';
-const SETTINGS_KEY = 'docentkit.settings.v15';
-const OLD_KEYS = ['docentkit.resources.v11', 'docentkit.resources.v10', 'docentkit.resources.v9', 'docentkit.resources.v8', 'docentkit.resources.v7', 'docentkit.resources.v6', 'docentkit.resources.v5', 'docentkit.resources.v4', 'docentkit.resources.v3', 'docentkit.resources.v2', 'docentkit.resources.v1'];
+const APP_KEY = 'docentkit.resources.v16';
+const SETTINGS_KEY = 'docentkit.settings.v16';
+const OLD_KEYS = ['docentkit.resources.v15', 'docentkit.resources.v14', 'docentkit.resources.v13', 'docentkit.resources.v12', 'docentkit.resources.v11', 'docentkit.resources.v10', 'docentkit.resources.v9', 'docentkit.resources.v8', 'docentkit.resources.v7', 'docentkit.resources.v6', 'docentkit.resources.v5', 'docentkit.resources.v4', 'docentkit.resources.v3', 'docentkit.resources.v2', 'docentkit.resources.v1'];
 
 const MODULES = [
   { id: 'sa', label: 'Crear SA', type: 'Situació d’aprenentatge', intro: 'Dissenya una situació d’aprenentatge competencial amb repte, sabers, criteris, seqüència, inclusió i evidències.' },
@@ -2167,6 +2167,213 @@ function buildRubricRows(data, criteriaCodes) {
     ['Reflexió i millora', 'identifica poques millores', 'accepta retorn i fa algun ajust', 'usa el retorn per millorar el procés i el producte', 'integra retorn, autoavaluació i proposta de transferència']
   ];
   return base.map((row, i) => ({ criteri: codes[i] || codes[codes.length - 1] || '—', item: row[0], na: row[1], as: row[2], an: row[3], ae: row[4] }));
+}
+
+
+
+// ===== v1.6: importacio TXT amb tall estricte d'apartats, durada inferida i rubrica separada =====
+function normalizeImportKeyV16(value) {
+  return String(value || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[’']/g, ' ')
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/[^A-Za-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toUpperCase();
+}
+
+function canonicalHeaderV16(label) {
+  const k = normalizeImportKeyV16(label);
+  if (!k) return '';
+  const tests = [
+    [/^SITUACIO D APRENENTATGE$/, 'TÍTOL'], [/^TITOL$/, 'TÍTOL'],
+    [/^(CURS|NIVELL|NIVELL EDUCATIU)$/, 'CURS'],
+    [/^(MATERIA|AREA MATERIA AMBIT|AREA MATERIA O AMBIT|AMBIT MATERIA)$/, 'MATÈRIA'],
+    [/^(DURADA|TEMPORITZACIO|TEMPORALITZACIO)$/, 'DURADA'],
+    [/^(CONTEXT|DESCRIPCIO|DESCRIPCIO CONTEXT I REPTE)$/, 'CONTEXT'],
+    [/^JUSTIFICACIO$/, 'JUSTIFICACIÓ'], [/^REPTE$/, 'REPTE'], [/^PRODUCTE FINAL$/, 'PRODUCTE FINAL'],
+    [/^(OBJECTIUS|OBJECTIUS D APRENENTATGE)$/, 'OBJECTIUS D’APRENENTATGE'],
+    [/^(COMPETENCIES CLAU I ESPECIFIQUES|COMPETENCIES ESPECIFIQUES|COMPETENCIES CLAU|CE)$/, 'COMPETÈNCIES ESPECÍFIQUES'],
+    [/^(CRITERIS D AVALUACIO|CRITERIS AVALUACIO|CA)$/, 'CRITERIS D’AVALUACIÓ'],
+    [/^(SABERS CONTINGUTS|SABERS I CONTINGUTS|SABERS|CONTINGUTS|SABERS CONCRETS)$/, 'SABERS CONCRETS'],
+    [/^(BLOCS DE SABERS|BLOCS)$/, 'BLOCS DE SABERS'],
+    [/^METODOLOGIA$/, 'METODOLOGIA'],
+    [/^(ORGANITZACIO|ORGANITZACIO DE L AULA)$/, 'ORGANITZACIÓ DE L’AULA'],
+    [/^(RECURSOS|MATERIALS I EINES|MATERIALS|EINES)$/, 'RECURSOS'],
+    [/^(SEQUENCIA D ACTIVITATS|SEQUENCIA D ACTIVITATS D APRENENTATGE I D AVALUACIO|ACTIVITATS D APRENENTATGE I D AVALUACIO)$/, 'SEQÜÈNCIA D’ACTIVITATS'],
+    [/^(ACTIVITATS INICIALS|INICIALS|QUE EN SABEM)$/, 'INICIALS'],
+    [/^(ACTIVITATS DE DESENVOLUPAMENT|DESENVOLUPAMENT|APRENEM NOUS CONTINGUTS)$/, 'DESENVOLUPAMENT'],
+    [/^(ESTRUCTURACIO|ACTIVITATS D ESTRUCTURACIO|QUE HEM APRES)$/, 'ESTRUCTURACIÓ'],
+    [/^(APLICACIO|ACTIVITATS D APLICACIO|APLIQUEM EL QUE HEM APRES)$/, 'APLICACIÓ'],
+    [/^(MESURES I SUPORTS PER A L ATENCIO A LA DIVERSITAT|MESURES I SUPORTS|ATENCIO A LA DIVERSITAT|MESURES UNIVERSALS)$/, 'MESURES I SUPORTS'],
+    [/^(ADAPTACIONS TDAH|TDAH)$/, 'ADAPTACIONS TDAH'], [/^(ADAPTACIONS TEA|TEA)$/, 'ADAPTACIONS TEA'],
+    [/^(ADAPTACIONS DISLEXIA|DISLEXIA)$/, 'ADAPTACIONS DISLÈXIA'], [/^(ADAPTACIONS TDL|TDL)$/, 'ADAPTACIONS TDL'],
+    [/^(EVIDENCIES D APRENENTATGE|EVIDENCIES)$/, 'EVIDÈNCIES'],
+    [/^(INSTRUMENTS D AVALUACIO|INSTRUMENTS)$/, 'INSTRUMENTS'],
+    [/^(RETORN I MILLORA|FEEDBACK I MILLORA|RETORN)$/, 'RETORN I MILLORA'],
+    [/^(VECTORS DEL CURRICULUM|VECTORS)$/, 'VECTORS'],
+    [/^(RUBRICA D AVALUACIO|RUBRICA D AVALUACIO DE LA SITUACIO D APRENENTATGE|RUBRICA)$/, 'RÚBRICA']
+  ];
+  for (const [re, labelOut] of tests) if (re.test(k)) return labelOut;
+  return '';
+}
+
+function splitDraftIntoSections(text) {
+  const raw = String(text || '').replace(/\r/g, '');
+  const lines = raw.split('\n');
+  const sections = {};
+  let current = '';
+  const commit = (label, value) => {
+    const clean = cleanImportedValue(value);
+    if (!label || !clean) return;
+    sections[label] = sections[label] ? `${sections[label]}\n${clean}` : clean;
+  };
+  const switchTo = (label) => { current = label; if (!sections[current]) sections[current] = ''; };
+
+  for (const originalLine of lines) {
+    const line = originalLine.trim();
+    if (!line) { if (current && sections[current] && !sections[current].endsWith('\n')) sections[current] += '\n'; continue; }
+
+    const inline = line.match(/^([^:：]{2,150})[:：]\s*(.*)$/);
+    if (inline) {
+      const header = canonicalHeaderV16(inline[1]);
+      if (header) {
+        switchTo(header);
+        if (inline[2].trim()) commit(header, inline[2]);
+        continue;
+      }
+    }
+
+    const standalone = canonicalHeaderV16(line.replace(/[:：]\s*$/, ''));
+    if (standalone) { switchTo(standalone); continue; }
+
+    // Les entrades de rubrica amb dos punts no son nous apartats; es conserven dins de la rubrica.
+    if (current) commit(current, originalLine);
+  }
+  Object.keys(sections).forEach(k => { sections[k] = cleanImportedValue(sections[k]); });
+  return sections;
+}
+
+function detectSubjectFromText(text, sections) {
+  const rawLine = String(text || '').match(/^\s*Mat[eè]ria\s*[:：]\s*([^\n]+)/im);
+  if (rawLine) {
+    return cleanImportedValue(rawLine[1]
+      .replace(/\([^)]*ESO[^)]*\)/ig, '')
+      .replace(/\bAlineat\s+amb\s+la\s+LOMLOE\b/ig, '')
+      .trim());
+  }
+  const materia = getSection(sections, 'MATÈRIA');
+  if (materia) {
+    return cleanImportedValue(materia.split('\n')[0]
+      .replace(/\([^)]*ESO[^)]*\)/ig, '')
+      .replace(/\bAlineat\s+amb\s+la\s+LOMLOE\b/ig, '')
+      .trim());
+  }
+  return '';
+}
+
+function inferDurationFromTextV16(text) {
+  const explicit = String(text || '').match(/^\s*DURADA\s*[:：]\s*([^\n]+)/im);
+  if (explicit) return cleanImportedValue(explicit[1]);
+  let total = 0;
+  const seen = [];
+  const re = /\b(?:Fase\s*\d+[^\n]*?[(:-]\s*)?(\d+)\s*hores?\b/gi;
+  let m;
+  while ((m = re.exec(String(text || ''))) !== null) {
+    const before = String(text || '').slice(Math.max(0, m.index - 40), m.index);
+    if (/durada\s*[:：]\s*$/i.test(before)) continue;
+    const n = Number(m[1]);
+    if (Number.isFinite(n) && n > 0 && n < 60) { total += n; seen.push(n); }
+  }
+  return total > 0 ? `${total} hores${seen.length > 1 ? `, distribuïdes en ${seen.length} fases` : ''}` : '';
+}
+
+function inferInstrumentsV16(evidencies, rubrica) {
+  const e = String(evidencies || '');
+  const items = [];
+  if (/dossier|bit[aà]cola/i.test(e)) items.push('Dossier d’aula i llibre de bitàcola');
+  if (/pl[aà]nol|croquis/i.test(e)) items.push('Revisió de croquis i plànols tècnics');
+  if (/prototip|maqueta|producte/i.test(e)) items.push('Observació del prototip i prova funcional');
+  if (/presentaci[oó]|oral|exposici[oó]/i.test(e)) items.push('Presentació oral amb pauta d’observació');
+  if (/coavaluaci[oó]/i.test(String(rubrica || '') + e)) items.push('Coavaluació entre equips');
+  items.push('Quadre NA/AS/AN/AE vinculat als criteris LOMLOE');
+  return [...new Set(items)].join('\n');
+}
+
+function inferRetornV16(sequence, evidencies) {
+  return joinNonEmpty([
+    'Feedback formatiu durant el disseny i la construcció.',
+    /test|prova|rectificar|millora/i.test(String(sequence || '') + String(evidencies || '')) ? 'Revisió del prototip després dels testos de funcionament i millora iterativa.' : '',
+    'Coavaluació entre grups i revisió final abans de la presentació.',
+    'Autoavaluació breu sobre el procés, el rol dins l’equip i les millores aplicades.'
+  ]);
+}
+
+function removeRubricAndVectorsFromEvidencesV16(value) {
+  return cleanImportedValue(String(value || '')
+    .replace(/\n?\s*VECTORS\s+DEL\s+CURR[ÍI]CULUM\s*[:：]?[\s\S]*$/i, '')
+    .replace(/\n?\s*R[ÚU]BRICA\s+D['’]?AVALUACI[ÓO][\s\S]*$/i, '')
+    .replace(/\n?\s*CRITERI\s+LOMLOE\s*[:：][\s\S]*$/i, '')
+  );
+}
+
+function mapImportedTemplateText(text) {
+  const sections = splitDraftIntoSections(text);
+  const title = extractImportedTitle(text, sections);
+  const level = normalizeLevel(getSection(sections, 'CURS')) || detectLevelFromText(getSection(sections, 'MATÈRIA')) || detectLevelFromText(text);
+  const subject = detectSubjectFromText(text, sections);
+  const duration = getSection(sections, 'DURADA') || inferDurationFromTextV16(text);
+  const context = getSection(sections, 'CONTEXT');
+  const repte = getSection(sections, 'REPTE');
+  const justificacio = getSection(sections, 'JUSTIFICACIÓ');
+  const producte = getSection(sections, 'PRODUCTE FINAL');
+  const ce = getSection(sections, 'COMPETÈNCIES ESPECÍFIQUES');
+  const ca = getSection(sections, 'CRITERIS D’AVALUACIÓ');
+  const objectius = getSection(sections, 'OBJECTIUS D’APRENENTATGE');
+  const blocs = getSection(sections, 'BLOCS DE SABERS');
+  const sabers = getSection(sections, 'SABERS CONCRETS');
+  const metodologia = getSection(sections, 'METODOLOGIA');
+  const organitzacio = getSection(sections, 'ORGANITZACIÓ DE L’AULA');
+  const recursos = getSection(sections, 'RECURSOS');
+  const sequenciaGlobal = getSection(sections, 'SEQÜÈNCIA D’ACTIVITATS');
+  const phases = extractSequencePhases(sequenciaGlobal);
+  const inicials = getSection(sections, 'INICIALS') || phases.inicials || '';
+  const desenvolupament = getSection(sections, 'DESENVOLUPAMENT') || phases.desenvolupament || '';
+  const estructuracio = getSection(sections, 'ESTRUCTURACIÓ') || phases.estructuracio || '';
+  const aplicacio = getSection(sections, 'APLICACIÓ') || phases.aplicacio || '';
+  const measures = getSection(sections, 'MESURES I SUPORTS');
+  const tdah = getSection(sections, 'ADAPTACIONS TDAH');
+  const tea = getSection(sections, 'ADAPTACIONS TEA');
+  const dislexia = getSection(sections, 'ADAPTACIONS DISLÈXIA');
+  const tdl = getSection(sections, 'ADAPTACIONS TDL');
+  const rawEvidencies = getSection(sections, 'EVIDÈNCIES');
+  const vectors = getSection(sections, 'VECTORS');
+  const rubrica = getSection(sections, 'RÚBRICA');
+  const evidencies = removeRubricAndVectorsFromEvidencesV16(rawEvidencies);
+  const instruments = getSection(sections, 'INSTRUMENTS') || inferInstrumentsV16(evidencies, rubrica);
+  const retorn = getSection(sections, 'RETORN I MILLORA') || inferRetornV16(sequenciaGlobal, evidencies);
+
+  return {
+    title, level, subject, duration,
+    challenge: joinNonEmpty([context && `Context: ${context}`, repte && `Repte: ${repte}`, justificacio && `Justificació: ${justificacio}`, producte && `Producte final: ${producte}`]),
+    competences: joinNonEmpty([ce && `Competències específiques i clau: ${ce}`, ca && `Criteris d’avaluació: ${ca}`, objectius && `Objectius d’aprenentatge: ${objectius}`]),
+    knowledge: joinNonEmpty([blocs && `Blocs de sabers: ${blocs}`, sabers && `Sabers / continguts: ${sabers}`]),
+    sequence: joinNonEmpty([metodologia && `Metodologia: ${metodologia}`, organitzacio && `Organització de l’aula: ${organitzacio}`, recursos && `Recursos: ${recursos}`, phases.global && `Seqüència d’activitats: ${phases.global}`, inicials && `Inicials: ${inicials}`, desenvolupament && `Desenvolupament: ${desenvolupament}`, estructuracio && `Estructuració: ${estructuracio}`, aplicacio && `Aplicació: ${aplicacio}`]),
+    inclusion: joinNonEmpty([measures && `Mesures i suports: ${measures}`, tdah && `TDAH: ${tdah}`, tea && `TEA: ${tea}`, dislexia && `Dislèxia: ${dislexia}`, tdl && `TDL: ${tdl}`]),
+    assessment: joinNonEmpty([evidencies && `Evidències: ${evidencies}`, instruments && `Instruments: ${instruments}`, retorn && `Retorn i millora: ${retorn}`, rubrica && `Rúbrica: ${rubrica}`, vectors && `Vectors: ${vectors}`])
+  };
+}
+
+
+function extractAssessmentParts(text) {
+  return extractLabeled(text, {
+    evidencies: ['Evidències', 'Evidencies'],
+    instruments: ['Instruments'],
+    retorn: ['Retorn i millora', 'Retorn'],
+    rubrica: ['Rúbrica', 'Rubrica'],
+    vectors: ['Vectors']
+  });
 }
 
 init();
