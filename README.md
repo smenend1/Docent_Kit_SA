@@ -1,60 +1,29 @@
 # DocentKit · Generador de situacions i recursos
 
-Versió 1.3 de la PWA educativa en català per a docents.
+Versió 1.5 de la PWA educativa en català per a docents.
 
-## Objectiu de la v1.3
+## Objectiu de la v1.5
 
-Aquesta versió se centra en el flux crític **esborrany IA → formulari → informe SA**. La millora principal és que l'app interpreta millor l'esborrany generat per Gemini encara que el model retorni títols amb Markdown, numeració, dos punts o variants d'etiquetes.
+Aquesta versió corregeix especialment la importació de situacions d’aprenentatge en TXT perquè el contingut no es copiï repetit a tots els apartats.
 
-## Novetats v1.3
+## Millores principals
 
-- Parser d'esborrany IA més robust.
-- Reconeixement de títols amb `##`, negreta, numeració o dos punts.
-- Millor detecció de camps com:
-  - títol;
-  - curs;
-  - matèria;
-  - context, repte, justificació i producte final;
-  - competències i criteris LOMLOE;
-  - objectius;
-  - blocs de sabers i sabers concrets;
-  - metodologia, organització, recursos i seqüència;
-  - mesures i suports;
-  - adaptacions TDAH, TEA, dislèxia i TDL;
-  - evidències, instruments, retorn, vectors i rúbrica.
-- El botó **Aplica l'esborrany al formulari** ara actualitza l'informe i fa validació de qualitat.
-- Si l'esborrany no es pot mapar bé, l'app no el perd: l'enganxa al camp del repte com a esborrany complet pendent de revisió.
-- Prompt de Gemini ajustat perquè retorni etiquetes exactes en línies independents i sense Markdown.
-- Service worker actualitzat a `docentkit-v13`.
-
-## Es manté
-
-- PWA instal·lable i preparada per GitHub Pages.
-- Mode local sense API externa.
-- Mode experimental Google API / Gemini.
-- Assistent guiat per generar una SA completa.
-- Control de qualitat amb validació de camps obligatoris.
-- Botons per completar camps buits, sabers, adaptacions i rúbrica.
-- Exportació HTML, impressió i PDF visual descarregable.
-- Biblioteca local amb `localStorage`.
-- Importació/exportació JSON.
-
-## Fitxers
-
-- `index.html`
-- `styles.css`
-- `app.js`
-- `manifest.json`
-- `sw.js`
+- Detecció del curs dins línies com `Matèria: Tecnologia i Digitalització (2n d'ESO)`.
+- Separació correcta de la matèria i el nivell.
+- Reconeixement de `SITUACIÓ D'APRENENTATGE:` com a títol real de la SA.
+- Mapatge de `SABERS / CONTINGUTS` cap al camp de sabers.
+- Separació de `CRITERIS D'AVALUACIÓ` i `RÚBRICA D'AVALUACIÓ`.
+- Evita que els descriptors NA, AS, AN i AE vagin al camp de competències.
+- Conversió de rúbriques textuals amb `CRITERI LOMLOE`, `ÍTEM`, `NA`, `AS`, `AN` i `AE` a la taula de rúbrica de l’informe.
+- Millor tractament de fases tipus `Fase 1`, `Fase 2`, `Fase 3` i `Fase 4`.
+- Service worker actualitzat a `docentkit-v15`.
 
 ## Ús recomanat
 
-1. Obre l'app.
-2. Ves al mode IA assistida.
-3. Omple l'assistent guiat.
-4. Prem **Construeix instruccions**.
-5. Prem **Genera SA completa assistida**.
-6. Prem **Aplica l'esborrany al formulari**.
-7. Revisa el control de qualitat.
-8. Si falta algun bloc, usa **Completa camps buits** o els botons parcials.
-9. Genera l'informe i exporta'l.
+1. Obre `Exportar / importar`.
+2. Selecciona un fitxer `.txt` amb una SA estructurada.
+3. Prem `Importa i interpreta`.
+4. Ves a `Crear SA` i revisa els camps.
+5. Genera l’informe i exporta a PDF o HTML.
+
+Si la PWA ja estava instal·lada, fes una recàrrega forçada o esborra la memòria cau perquè el navegador no mantingui versions anteriors.

@@ -1,5 +1,5 @@
-const APP_KEY = 'docentkit.resources.v13';
-const SETTINGS_KEY = 'docentkit.settings.v13';
+const APP_KEY = 'docentkit.resources.v15';
+const SETTINGS_KEY = 'docentkit.settings.v15';
 const OLD_KEYS = ['docentkit.resources.v11', 'docentkit.resources.v10', 'docentkit.resources.v9', 'docentkit.resources.v8', 'docentkit.resources.v7', 'docentkit.resources.v6', 'docentkit.resources.v5', 'docentkit.resources.v4', 'docentkit.resources.v3', 'docentkit.resources.v2', 'docentkit.resources.v1'];
 
 const MODULES = [
@@ -1925,6 +1925,248 @@ function applyImportedText(filename, text, kind) {
   }
   renderReport(getFormData());
   renderAiValidation(validateSaQuality(getFormData()));
+}
+
+
+
+// ===== v1.5: importacio TXT robusta per SA completes =====
+function stripInlineMarkup(value) {
+  return String(value || '')
+    .replace(/^\s*[-*•]\s*/, '')
+    .replace(/^\s*\d+(?:\.\d+)*[).:-]?\s*/, '')
+    .replace(/^\s*\*\*|\*\*\s*$/g, '')
+    .replace(/^\s*__|__\s*$/g, '')
+    .trim();
+}
+
+function normalizeHeaderForImport(value) {
+  return stripHeadingDecoration(stripInlineMarkup(value))
+    .replace(/\bDE LA SITUACIO D APRENENTATGE\b/g, '')
+    .replace(/\bDE L APRENENTATGE\b/g, '')
+    .replace(/\bLOMLOE\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function canonicalDraftLabel(line) {
+  const cleaned = stripInlineMarkup(line).replace(/[:：]\s*$/, '').trim();
+  const n = normalizeHeaderForImport(cleaned);
+  const pairs = [
+    ['SITUACIO D APRENENTATGE', 'TÍTOL'], ['TITOL', 'TÍTOL'],
+    ['CURS', 'CURS'], ['NIVELL', 'CURS'], ['NIVELL EDUCATIU', 'CURS'],
+    ['MATERIA', 'MATÈRIA'], ['AREA MATERIA O AMBIT', 'MATÈRIA'], ['AMBIT MATERIA', 'MATÈRIA'],
+    ['DURADA', 'DURADA'], ['TEMPORITZACIO', 'DURADA'],
+    ['CONTEXT', 'CONTEXT'], ['DESCRIPCIO CONTEXT I REPTE', 'CONTEXT'], ['DESCRIPCIO', 'CONTEXT'],
+    ['JUSTIFICACIO', 'JUSTIFICACIÓ'], ['REPTE', 'REPTE'], ['PRODUCTE FINAL', 'PRODUCTE FINAL'],
+    ['OBJECTIUS D APRENENTATGE', 'OBJECTIUS D’APRENENTATGE'], ['OBJECTIUS', 'OBJECTIUS D’APRENENTATGE'],
+    ['COMPETENCIES CLAU I ESPECIFIQUES', 'COMPETÈNCIES ESPECÍFIQUES'], ['COMPETENCIES ESPECIFIQUES', 'COMPETÈNCIES ESPECÍFIQUES'], ['COMPETENCIES CLAU', 'COMPETÈNCIES ESPECÍFIQUES'], ['CE', 'COMPETÈNCIES ESPECÍFIQUES'],
+    ['CRITERIS D AVALUACIO', 'CRITERIS D’AVALUACIÓ'], ['CRITERIS AVALUACIO', 'CRITERIS D’AVALUACIÓ'], ['CA', 'CRITERIS D’AVALUACIÓ'],
+    ['SABERS CONTINGUTS', 'SABERS CONCRETS'], ['SABERS I CONTINGUTS', 'SABERS CONCRETS'], ['SABERS', 'SABERS CONCRETS'], ['CONTINGUTS', 'SABERS CONCRETS'], ['SABERS CONCRETS', 'SABERS CONCRETS'], ['BLOCS DE SABERS', 'BLOCS DE SABERS'], ['BLOCS', 'BLOCS DE SABERS'],
+    ['METODOLOGIA', 'METODOLOGIA'], ['ORGANITZACIO DE L AULA', 'ORGANITZACIÓ DE L’AULA'], ['ORGANITZACIO', 'ORGANITZACIÓ DE L’AULA'], ['RECURSOS', 'RECURSOS'], ['MATERIALS I EINES', 'RECURSOS'],
+    ['SEQUENCIA D ACTIVITATS', 'SEQÜÈNCIA D’ACTIVITATS'], ['SEQUENCIA D ACTIVITATS D APRENENTATGE I D AVALUACIO', 'SEQÜÈNCIA D’ACTIVITATS'], ['ACTIVITATS D APRENENTATGE I D AVALUACIO', 'SEQÜÈNCIA D’ACTIVITATS'],
+    ['FASE 1', 'SEQÜÈNCIA D’ACTIVITATS'], ['FASE 2', 'SEQÜÈNCIA D’ACTIVITATS'], ['FASE 3', 'SEQÜÈNCIA D’ACTIVITATS'], ['FASE 4', 'SEQÜÈNCIA D’ACTIVITATS'],
+    ['INICIALS', 'INICIALS'], ['ACTIVITATS INICIALS', 'INICIALS'], ['QUE EN SABEM', 'INICIALS'],
+    ['DESENVOLUPAMENT', 'DESENVOLUPAMENT'], ['ACTIVITATS DE DESENVOLUPAMENT', 'DESENVOLUPAMENT'],
+    ['ESTRUCTURACIO', 'ESTRUCTURACIÓ'], ['QUE HEM APRES', 'ESTRUCTURACIÓ'],
+    ['APLICACIO', 'APLICACIÓ'], ['APLIQUEM EL QUE HEM APRES', 'APLICACIÓ'],
+    ['MESURES I SUPORTS PER A L ATENCIO A LA DIVERSITAT', 'MESURES I SUPORTS'], ['MESURES I SUPORTS', 'MESURES I SUPORTS'], ['ATENCIO A LA DIVERSITAT', 'MESURES I SUPORTS'], ['MESURES UNIVERSALS', 'MESURES I SUPORTS'],
+    ['ADAPTACIONS TDAH', 'ADAPTACIONS TDAH'], ['TDAH', 'ADAPTACIONS TDAH'], ['ADAPTACIONS TEA', 'ADAPTACIONS TEA'], ['TEA', 'ADAPTACIONS TEA'], ['ADAPTACIONS DISLEXIA', 'ADAPTACIONS DISLÈXIA'], ['DISLEXIA', 'ADAPTACIONS DISLÈXIA'], ['ADAPTACIONS TDL', 'ADAPTACIONS TDL'], ['TDL', 'ADAPTACIONS TDL'],
+    ['EVIDENCIES D APRENENTATGE', 'EVIDÈNCIES'], ['EVIDENCIES', 'EVIDÈNCIES'], ['INSTRUMENTS D AVALUACIO', 'INSTRUMENTS'], ['INSTRUMENTS', 'INSTRUMENTS'], ['RETORN I MILLORA', 'RETORN I MILLORA'], ['FEEDBACK I MILLORA', 'RETORN I MILLORA'],
+    ['VECTORS DEL CURRICULUM', 'VECTORS'], ['VECTORS', 'VECTORS'],
+    ['RUBRICA D AVALUACIO', 'RÚBRICA'], ['RUBRICA', 'RÚBRICA']
+  ];
+  for (const [key, val] of pairs) {
+    if (n === key) return val;
+    if (key.length > 14 && n.startsWith(key + ' ')) return val;
+  }
+  return '';
+}
+
+function splitDraftIntoSections(text) {
+  const normalized = normalizeDraftForParsing(text).replace(/\r/g, '');
+  const lines = normalized.split('\n');
+  const sections = {};
+  let current = '';
+  const add = (label, value) => {
+    const clean = cleanImportedValue(value);
+    if (!label || !clean) return;
+    sections[label] = sections[label] ? `${sections[label]}\n${clean}` : clean;
+  };
+  const setCurrent = (label) => {
+    current = label;
+    if (!sections[current]) sections[current] = '';
+  };
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      if (current && sections[current] && !sections[current].endsWith('\n')) sections[current] += '\n';
+      continue;
+    }
+
+    const inline = trimmed.match(/^([^:：]{2,140})[:：]\s*(.*)$/);
+    if (inline) {
+      const label = canonicalDraftLabel(inline[1]);
+      if (label) {
+        setCurrent(label);
+        if (inline[2].trim()) add(label, inline[2]);
+        continue;
+      }
+    }
+
+    const label = canonicalDraftLabel(trimmed);
+    if (label) {
+      setCurrent(label);
+      continue;
+    }
+
+    if (current) add(current, line);
+  }
+
+  Object.keys(sections).forEach(k => { sections[k] = cleanImportedValue(sections[k]); });
+  return sections;
+}
+
+function detectLevelFromText(text) {
+  const raw = String(text || '');
+  const candidates = [
+    raw.match(/\b([1234][rnrt])\s*(?:d['’]?\s*)?ESO\b/i),
+    raw.match(/\bESO\s*([1234])\b/i),
+    raw.match(/\beso([1234])\b/i)
+  ];
+  for (const m of candidates) {
+    if (!m) continue;
+    const v = m[1].toLowerCase();
+    if (v === '1' || v === '1r') return '1r ESO';
+    if (v === '2' || v === '2n') return '2n ESO';
+    if (v === '3' || v === '3r') return '3r ESO';
+    if (v === '4' || v === '4t') return '4t ESO';
+  }
+  return '';
+}
+
+function detectSubjectFromText(text, sections) {
+  const materia = getSection(sections, 'MATÈRIA');
+  if (materia) return materia.split('\n')[0].replace(/\s*\([^)]*ESO[^)]*\)\s*/i, '').trim();
+  const m = String(text || '').match(/^\s*Mat[eè]ria\s*[:：]\s*([^\n(]+)(?:\s*\([^)]*\))?/im);
+  return m ? cleanImportedValue(m[1]) : '';
+}
+
+function extractImportedTitle(text, sections) {
+  const fromSection = getSection(sections, 'TÍTOL');
+  if (fromSection) return cleanImportedValue(fromSection.split('\n')[0]);
+  const m = String(text || '').match(/^\s*SITUACI[ÓO]\s+D['’]?APRENENTATGE\s*[:：]\s*(.+)$/im);
+  return m ? cleanImportedValue(m[1]) : '';
+}
+
+function extractSequencePhases(value) {
+  const txt = cleanImportedValue(value);
+  if (!txt) return {};
+  const phaseRegex = /^\s*-?\s*(Fase\s*\d+\s*[:：][^\n]*)\n?/gim;
+  const matches = [...txt.matchAll(phaseRegex)];
+  if (!matches.length) return { global: txt };
+  const out = {};
+  for (let i = 0; i < matches.length; i++) {
+    const start = matches[i].index;
+    const end = i + 1 < matches.length ? matches[i + 1].index : txt.length;
+    const block = cleanImportedValue(txt.slice(start, end));
+    const idx = i === 0 ? 'inicials' : i === 1 ? 'desenvolupament' : i === 2 ? 'estructuracio' : 'aplicacio';
+    out[idx] = block;
+  }
+  return out;
+}
+
+function mapImportedTemplateText(text) {
+  const sections = splitDraftIntoSections(text);
+  const title = extractImportedTitle(text, sections);
+  const level = normalizeLevel(getSection(sections, 'CURS')) || detectLevelFromText(getSection(sections, 'MATÈRIA')) || detectLevelFromText(text);
+  const subject = detectSubjectFromText(text, sections);
+  const duration = getSection(sections, 'DURADA');
+  const context = getSection(sections, 'CONTEXT');
+  const repte = getSection(sections, 'REPTE');
+  const justificacio = getSection(sections, 'JUSTIFICACIÓ');
+  const producte = getSection(sections, 'PRODUCTE FINAL');
+  const ce = getSection(sections, 'COMPETÈNCIES ESPECÍFIQUES');
+  const ca = getSection(sections, 'CRITERIS D’AVALUACIÓ');
+  const objectius = getSection(sections, 'OBJECTIUS D’APRENENTATGE');
+  const blocs = getSection(sections, 'BLOCS DE SABERS');
+  const sabers = getSection(sections, 'SABERS CONCRETS');
+  const metodologia = getSection(sections, 'METODOLOGIA');
+  const organitzacio = getSection(sections, 'ORGANITZACIÓ DE L’AULA');
+  const recursos = getSection(sections, 'RECURSOS');
+  const sequenciaGlobal = getSection(sections, 'SEQÜÈNCIA D’ACTIVITATS');
+  const phases = extractSequencePhases(sequenciaGlobal);
+  const inicials = getSection(sections, 'INICIALS') || phases.inicials || '';
+  const desenvolupament = getSection(sections, 'DESENVOLUPAMENT') || phases.desenvolupament || '';
+  const estructuracio = getSection(sections, 'ESTRUCTURACIÓ') || phases.estructuracio || '';
+  const aplicacio = getSection(sections, 'APLICACIÓ') || phases.aplicacio || '';
+  const measures = getSection(sections, 'MESURES I SUPORTS');
+  const tdah = getSection(sections, 'ADAPTACIONS TDAH');
+  const tea = getSection(sections, 'ADAPTACIONS TEA');
+  const dislexia = getSection(sections, 'ADAPTACIONS DISLÈXIA');
+  const tdl = getSection(sections, 'ADAPTACIONS TDL');
+  const evidencies = getSection(sections, 'EVIDÈNCIES');
+  const instruments = getSection(sections, 'INSTRUMENTS');
+  const retorn = getSection(sections, 'RETORN I MILLORA');
+  const vectors = getSection(sections, 'VECTORS');
+  const rubrica = getSection(sections, 'RÚBRICA');
+
+  return {
+    title, level, subject, duration,
+    challenge: joinNonEmpty([context && `Context: ${context}`, repte && `Repte: ${repte}`, justificacio && `Justificació: ${justificacio}`, producte && `Producte final: ${producte}`]),
+    competences: joinNonEmpty([ce && `Competències específiques i clau: ${ce}`, ca && `Criteris d’avaluació: ${ca}`, objectius && `Objectius d’aprenentatge: ${objectius}`]),
+    knowledge: joinNonEmpty([blocs && `Blocs de sabers: ${blocs}`, sabers && `Sabers / continguts: ${sabers}`]),
+    sequence: joinNonEmpty([metodologia && `Metodologia: ${metodologia}`, organitzacio && `Organització de l’aula: ${organitzacio}`, recursos && `Recursos: ${recursos}`, phases.global && `Seqüència d’activitats: ${phases.global}`, inicials && `Inicials: ${inicials}`, desenvolupament && `Desenvolupament: ${desenvolupament}`, estructuracio && `Estructuració: ${estructuracio}`, aplicacio && `Aplicació: ${aplicacio}`]),
+    inclusion: joinNonEmpty([measures && `Mesures i suports: ${measures}`, tdah && `TDAH: ${tdah}`, tea && `TEA: ${tea}`, dislexia && `Dislèxia: ${dislexia}`, tdl && `TDL: ${tdl}`]),
+    assessment: joinNonEmpty([evidencies && `Evidències: ${evidencies}`, instruments && `Instruments: ${instruments}`, retorn && `Retorn i millora: ${retorn}`, vectors && `Vectors: ${vectors}`, rubrica && `Rúbrica: ${rubrica}`])
+  };
+}
+
+function parseRubricRowsFromAssessment(text) {
+  const src = String(text || '');
+  const rubricStart = src.search(/R[úu]brica\s*:/i);
+  const rubricText = rubricStart >= 0 ? src.slice(rubricStart) : src;
+  const blocks = rubricText.split(/(?=CRITERI\s+LOMLOE\s*[:：])/i).filter(b => /CRITERI\s+LOMLOE/i.test(b));
+  const rows = [];
+  for (const block of blocks) {
+    const criteri = cleanImportedValue((block.match(/CRITERI\s+LOMLOE\s*[:：]\s*([^\n]+)/i) || [,''])[1]);
+    const item = cleanImportedValue((block.match(/[ÍI]TEM\s*[:：]\s*([^\n]+)/i) || [,''])[1]);
+    const pick = (label) => {
+      const re = new RegExp('(?:No\\s+Assolit\\s*\\(NA\\)|Assolit\\s+Satisfactori\\s*\\(AS\\)|Assolit\\s+Notable\\s*\\(AN\\)|Assolit\\s+Excel[·l\\.]*lent\\s*\\(AE\\)|' + label + ')\\s*[:：]\\s*([\\s\\S]*?)(?=\\n\\s*-?\\s*(?:No\\s+Assolit\\s*\\(NA\\)|Assolit\\s+Satisfactori\\s*\\(AS\\)|Assolit\\s+Notable\\s*\\(AN\\)|Assolit\\s+Excel[·l\\.]*lent\\s*\\(AE\\)|CRITERI\\s+LOMLOE|ÍTEM|ITEM)\\s*[:：]|$)', 'i');
+      const m = block.match(re);
+      return cleanImportedValue(m ? m[1].replace(/^[-*]\s*/, '') : '');
+    };
+    let na = '', as = '', an = '', ae = '';
+    const lines = block.split('\n');
+    for (const line of lines) {
+      const l = line.trim().replace(/^[-*]\s*/, '');
+      if (/^No\s+Assolit\s*\(NA\)\s*[:：]/i.test(l)) na = cleanImportedValue(l.replace(/^No\s+Assolit\s*\(NA\)\s*[:：]\s*/i, ''));
+      if (/^Assolit\s+Satisfactori\s*\(AS\)\s*[:：]/i.test(l)) as = cleanImportedValue(l.replace(/^Assolit\s+Satisfactori\s*\(AS\)\s*[:：]\s*/i, ''));
+      if (/^Assolit\s+Notable\s*\(AN\)\s*[:：]/i.test(l)) an = cleanImportedValue(l.replace(/^Assolit\s+Notable\s*\(AN\)\s*[:：]\s*/i, ''));
+      if (/^Assolit\s+Excel[·l\.]*lent\s*\(AE\)\s*[:：]/i.test(l)) ae = cleanImportedValue(l.replace(/^Assolit\s+Excel[·l\.]*lent\s*\(AE\)\s*[:：]\s*/i, ''));
+    }
+    if (!na) na = pick('NA');
+    if (!as) as = pick('AS');
+    if (!an) an = pick('AN');
+    if (!ae) ae = pick('AE');
+    if (criteri || item || na || as || an || ae) rows.push({ criteri: criteri || '—', item: item || 'Ítem d’avaluació', na, as, an, ae });
+  }
+  return rows;
+}
+
+function buildRubricRows(data, criteriaCodes) {
+  const imported = parseRubricRowsFromAssessment(data && data.assessment);
+  if (imported.length) return imported;
+  const codes = criteriaCodes && criteriaCodes.length ? criteriaCodes : ['1.1', '2.1', '3.1', '4.1', '5.1', '6.1'];
+  const base = [
+    ['Comprensió del repte', 'identifica parcialment el problema i necessita molta guia', 'identifica els elements bàsics del repte', 'analitza el repte i justifica decisions amb evidències', 'analitza amb profunditat, transfereix i proposa millores'],
+    ['Aplicació de sabers', 'aplica sabers de manera incompleta o amb errors importants', 'aplica procediments bàsics amb suport', 'aplica sabers de manera coherent i força autònoma', 'aplica sabers amb autonomia, precisió i criteri'],
+    ['Planificació i procés', 'planifica poc i registra poques evidències', 'segueix una planificació bàsica', 'organitza el procés, revisa i millora', 'planifica amb rigor i anticipa riscos o alternatives'],
+    ['Producte final', 'el producte és incomplet o poc funcional', 'el producte respon parcialment al repte', 'el producte és funcional i ben justificat', 'el producte és funcional, creatiu i molt ben optimitzat'],
+    ['Comunicació', 'comunica amb poca claredat i vocabulari limitat', 'explica les idees principals', 'comunica amb estructura, evidències i vocabulari adequat', 'comunica amb rigor, fluïdesa i llenguatge tècnic ric'],
+    ['Reflexió i millora', 'identifica poques millores', 'accepta retorn i fa algun ajust', 'usa el retorn per millorar el procés i el producte', 'integra retorn, autoavaluació i proposta de transferència']
+  ];
+  return base.map((row, i) => ({ criteri: codes[i] || codes[codes.length - 1] || '—', item: row[0], na: row[1], as: row[2], an: row[3], ae: row[4] }));
 }
 
 init();
