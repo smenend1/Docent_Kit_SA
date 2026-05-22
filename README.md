@@ -1,64 +1,45 @@
 # DocentKit · Generador de situacions i recursos
 
-Versió 1.2 de la PWA educativa en català per a docents.
+Versió 1.3 de la PWA educativa en català per a docents.
 
-## Objectiu de la v1.2
+## Objectiu de la v1.3
 
-Aquesta versió millora la fiabilitat del mode d'IA assistida. Ja no depèn només d'una única resposta llarga de Gemini: incorpora validació de camps obligatoris i botons per completar apartats concrets quan han quedat buits o massa febles.
+Aquesta versió se centra en el flux crític **esborrany IA → formulari → informe SA**. La millora principal és que l'app interpreta millor l'esborrany generat per Gemini encara que el model retorni títols amb Markdown, numeració, dos punts o variants d'etiquetes.
 
-## Novetats v1.2
+## Novetats v1.3
 
-- Nou bloc **Control de qualitat** dins el mode IA.
-- Botó **Valida camps obligatoris** per comprovar:
-  - sabers;
-  - criteris LOMLOE;
-  - seqüència didàctica;
+- Parser d'esborrany IA més robust.
+- Reconeixement de títols amb `##`, negreta, numeració o dos punts.
+- Millor detecció de camps com:
+  - títol;
+  - curs;
+  - matèria;
+  - context, repte, justificació i producte final;
+  - competències i criteris LOMLOE;
+  - objectius;
+  - blocs de sabers i sabers concrets;
+  - metodologia, organització, recursos i seqüència;
+  - mesures i suports;
   - adaptacions TDAH, TEA, dislèxia i TDL;
-  - avaluació;
-  - rúbrica.
-- Botó **Completa camps buits** per regenerar només els blocs febles.
-- Botó **Genera només sabers**.
-- Botó **Genera només adaptacions**.
-- Botó **Genera només rúbrica**.
-- Les generacions parcials responen amb etiquetes interpretables per l'app.
-- El mapatge d'importació IA ara reconeix millor:
-  - `BLOCS DE SABERS`;
-  - `SABERS CONCRETS`;
-  - `MESURES I SUPORTS`;
-  - `ADAPTACIONS TDAH`;
-  - `ADAPTACIONS TEA`;
-  - `ADAPTACIONS DISLÈXIA`;
-  - `ADAPTACIONS TDL`;
-  - `RÚBRICA`.
-- Quan s'aplica un esborrany parcial, l'app evita sobreescriure el títol i intenta conservar el contingut existent.
-- Service worker actualitzat a `docentkit-v12`.
+  - evidències, instruments, retorn, vectors i rúbrica.
+- El botó **Aplica l'esborrany al formulari** ara actualitza l'informe i fa validació de qualitat.
+- Si l'esborrany no es pot mapar bé, l'app no el perd: l'enganxa al camp del repte com a esborrany complet pendent de revisió.
+- Prompt de Gemini ajustat perquè retorni etiquetes exactes en línies independents i sense Markdown.
+- Service worker actualitzat a `docentkit-v13`.
 
 ## Es manté
 
 - PWA instal·lable i preparada per GitHub Pages.
 - Mode local sense API externa.
 - Mode experimental Google API / Gemini.
-- Selector de model Gemini.
-- Prova de connexió API.
-- Assistent guiat per construir instruccions completes.
-- Plantilles internes.
-- Importació TXT, Markdown, JSON, DOCX i PDF amb text seleccionable.
-- Exportació PDF visual descarregable sense pop-up.
-- Vista HTML/impressió neta.
+- Assistent guiat per generar una SA completa.
+- Control de qualitat amb validació de camps obligatoris.
+- Botons per completar camps buits, sabers, adaptacions i rúbrica.
+- Exportació HTML, impressió i PDF visual descarregable.
 - Biblioteca local amb `localStorage`.
-- Exportació/importació JSON.
+- Importació/exportació JSON.
 
-## Notes honestes
-
-- El validador no substitueix la revisió docent: detecta absències o apartats febles, però no garanteix que el contingut sigui curricularment perfecte.
-- El mode Gemini depèn de la clau API, permisos, quota, restriccions de domini i models disponibles.
-- La clau API es desa només al navegador amb `localStorage`; no s'ha de posar mai dins el codi del repositori.
-- La importació PDF no fa OCR en documents escanejats.
-- El PDF descarregable és real i estructurat, però no replica sempre exactament la maquetació HTML.
-
-## Publicació a GitHub Pages
-
-Puja aquests fitxers a la branca configurada per Pages:
+## Fitxers
 
 - `index.html`
 - `styles.css`
@@ -66,4 +47,14 @@ Puja aquests fitxers a la branca configurada per Pages:
 - `manifest.json`
 - `sw.js`
 
-Després obre la URL de GitHub Pages i força una recàrrega o reinstal·la la PWA si el navegador conserva una versió antiga.
+## Ús recomanat
+
+1. Obre l'app.
+2. Ves al mode IA assistida.
+3. Omple l'assistent guiat.
+4. Prem **Construeix instruccions**.
+5. Prem **Genera SA completa assistida**.
+6. Prem **Aplica l'esborrany al formulari**.
+7. Revisa el control de qualitat.
+8. Si falta algun bloc, usa **Completa camps buits** o els botons parcials.
+9. Genera l'informe i exporta'l.

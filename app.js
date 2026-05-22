@@ -1,5 +1,5 @@
-const APP_KEY = 'docentkit.resources.v12';
-const SETTINGS_KEY = 'docentkit.settings.v12';
+const APP_KEY = 'docentkit.resources.v13';
+const SETTINGS_KEY = 'docentkit.settings.v13';
 const OLD_KEYS = ['docentkit.resources.v11', 'docentkit.resources.v10', 'docentkit.resources.v9', 'docentkit.resources.v8', 'docentkit.resources.v7', 'docentkit.resources.v6', 'docentkit.resources.v5', 'docentkit.resources.v4', 'docentkit.resources.v3', 'docentkit.resources.v2', 'docentkit.resources.v1'];
 
 const MODULES = [
@@ -1493,6 +1493,261 @@ function applyImportedText(filename, text, kind) {
   if (els.importStatus) els.importStatus.textContent = `${kind} importat: ${filename}. Text recuperat: ${text.length.toLocaleString('ca-ES')} caràcters. Camps detectats: ${Object.values(mapped).filter(Boolean).length}.`;
   renderReport(getFormData());
   renderAiValidation(validateSaQuality(getFormData()));
+}
+
+
+
+// ===== v1.3: aplicacio robusta d'esborrany IA al formulari =====
+function normalizeDraftForParsing(text) {
+  return String(text || '')
+    .replace(/\r/g, '')
+    .replace(/[“”]/g, '"')
+    .replace(/[’]/g, "'")
+    .replace(/^\s{0,3}(#{1,6})\s*/gm, '')
+    .replace(/^\s{0,3}(\d+|\d+\.\d+)\.\s+(?=[A-ZÀ-Ú])/gm, '')
+    .replace(/^\s*[-*]\s+\*\*([^*\n]{2,80})\*\*\s*:?\s*$/gm, '$1')
+    .replace(/^\s*\*\*([^*\n]{2,90})\*\*\s*:?\s*$/gm, '$1')
+    .replace(/^\s*__([^_\n]{2,90})__\s*:?\s*$/gm, '$1')
+    .trim();
+}
+
+function stripHeadingDecoration(value) {
+  return String(value || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[’']/g, ' ')
+    .replace(/[^A-Za-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toUpperCase();
+}
+
+function canonicalDraftLabel(line) {
+  const raw = String(line || '').trim()
+    .replace(/^[-*•]\s*/, '')
+    .replace(/^\d+(?:\.\d+)*[).:-]?\s*/, '')
+    .replace(/^\*\*|\*\*$/g, '')
+    .replace(/[:：]\s*$/, '')
+    .trim();
+  const n = stripHeadingDecoration(raw);
+  const map = [
+    ['TITOL', 'TÍTOL'], ['TITOL DE LA SITUACIO D APRENENTATGE', 'TÍTOL'],
+    ['CURS', 'CURS'], ['NIVELL', 'CURS'], ['NIVELL EDUCATIU', 'CURS'],
+    ['MATERIA', 'MATÈRIA'], ['AREA MATERIA O AMBIT', 'MATÈRIA'], ['AREA MATERIA AMBIT', 'MATÈRIA'],
+    ['DURADA', 'DURADA'], ['TEMPORITZACIO', 'DURADA'],
+    ['CONTEXT', 'CONTEXT'], ['DESCRIPCIO', 'CONTEXT'], ['DESCRIPCIO I CONTEXT', 'CONTEXT'],
+    ['REPTE', 'REPTE'], ['PREGUNTA REPTE', 'REPTE'],
+    ['JUSTIFICACIO', 'JUSTIFICACIÓ'], ['PRODUCTE FINAL', 'PRODUCTE FINAL'],
+    ['COMPETENCIES ESPECIFIQUES', 'COMPETÈNCIES ESPECÍFIQUES'], ['COMPETENCIA ESPECIFICA', 'COMPETÈNCIES ESPECÍFIQUES'], ['CE', 'COMPETÈNCIES ESPECÍFIQUES'],
+    ['CRITERIS D AVALUACIO', 'CRITERIS D’AVALUACIÓ'], ['CRITERIS AVALUACIO', 'CRITERIS D’AVALUACIÓ'], ['CA', 'CRITERIS D’AVALUACIÓ'],
+    ['OBJECTIUS D APRENENTATGE', 'OBJECTIUS D’APRENENTATGE'], ['OBJECTIUS', 'OBJECTIUS D’APRENENTATGE'],
+    ['BLOCS DE SABERS', 'BLOCS DE SABERS'], ['BLOCS', 'BLOCS DE SABERS'], ['SABERS', 'SABERS CONCRETS'], ['SABERS CONCRETS', 'SABERS CONCRETS'], ['CONTINGUTS', 'SABERS CONCRETS'],
+    ['METODOLOGIA', 'METODOLOGIA'], ['ORGANITZACIO DE L AULA', 'ORGANITZACIÓ DE L’AULA'], ['ORGANITZACIO', 'ORGANITZACIÓ DE L’AULA'], ['RECURSOS', 'RECURSOS'], ['MATERIALS I EINES', 'RECURSOS'],
+    ['INICIALS', 'INICIALS'], ['ACTIVITATS INICIALS', 'INICIALS'], ['QUE EN SABEM', 'INICIALS'],
+    ['DESENVOLUPAMENT', 'DESENVOLUPAMENT'], ['ACTIVITATS DE DESENVOLUPAMENT', 'DESENVOLUPAMENT'],
+    ['ESTRUCTURACIO', 'ESTRUCTURACIÓ'], ['ACTIVITATS D ESTRUCTURACIO', 'ESTRUCTURACIÓ'], ['QUE HEM APRES', 'ESTRUCTURACIÓ'],
+    ['APLICACIO', 'APLICACIÓ'], ['ACTIVITATS D APLICACIO', 'APLICACIÓ'], ['APLIQUEM EL QUE HEM APRES', 'APLICACIÓ'],
+    ['MESURES I SUPORTS', 'MESURES I SUPORTS'], ['MESURES UNIVERSALS', 'MESURES I SUPORTS'], ['SUPORTS', 'MESURES I SUPORTS'],
+    ['ADAPTACIONS TDAH', 'ADAPTACIONS TDAH'], ['TDAH', 'ADAPTACIONS TDAH'],
+    ['ADAPTACIONS TEA', 'ADAPTACIONS TEA'], ['TEA', 'ADAPTACIONS TEA'],
+    ['ADAPTACIONS DISLEXIA', 'ADAPTACIONS DISLÈXIA'], ['DISLEXIA', 'ADAPTACIONS DISLÈXIA'],
+    ['ADAPTACIONS TDL', 'ADAPTACIONS TDL'], ['TDL', 'ADAPTACIONS TDL'],
+    ['EVIDENCIES', 'EVIDÈNCIES'], ['EVIDENCIES D APRENENTATGE', 'EVIDÈNCIES'],
+    ['INSTRUMENTS', 'INSTRUMENTS'], ['INSTRUMENTS D AVALUACIO', 'INSTRUMENTS'],
+    ['RETORN I MILLORA', 'RETORN I MILLORA'], ['FEEDBACK I MILLORA', 'RETORN I MILLORA'],
+    ['VECTORS', 'VECTORS'], ['VECTORS DEL CURRICULUM', 'VECTORS'],
+    ['RUBRICA', 'RÚBRICA'], ['RUBRICA D AVALUACIO', 'RÚBRICA']
+  ];
+  for (const [key, value] of map) {
+    if (n === key || n.startsWith(key + ' ')) return value;
+  }
+  return '';
+}
+
+function splitDraftIntoSections(text) {
+  const normalized = normalizeDraftForParsing(text);
+  const lines = normalized.split('\n');
+  const sections = {};
+  let current = '';
+  const push = (label, value) => {
+    if (!label) return;
+    const clean = cleanImportedValue(value);
+    if (!clean) return;
+    sections[label] = sections[label] ? sections[label] + '\n\n' + clean : clean;
+  };
+  for (let line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      if (current) sections[current] = (sections[current] || '') + '\n';
+      continue;
+    }
+    let inline = trimmed.match(/^(.{2,90}?)[\s]*[:：][\s]*(.+)$/);
+    if (inline) {
+      const label = canonicalDraftLabel(inline[1]);
+      if (label) {
+        current = label;
+        push(current, inline[2]);
+        continue;
+      }
+    }
+    const label = canonicalDraftLabel(trimmed);
+    if (label) {
+      current = label;
+      if (!sections[current]) sections[current] = '';
+      continue;
+    }
+    if (current) sections[current] = (sections[current] || '') + line + '\n';
+  }
+  Object.keys(sections).forEach(k => { sections[k] = cleanImportedValue(sections[k]); });
+  return sections;
+}
+
+function getSection(sections, label) {
+  return cleanImportedValue(sections[label] || '');
+}
+
+function mapImportedTemplateText(text) {
+  const sections = splitDraftIntoSections(text);
+  const title = getSection(sections, 'TÍTOL');
+  const level = normalizeLevel(getSection(sections, 'CURS'));
+  const subject = getSection(sections, 'MATÈRIA');
+  const duration = getSection(sections, 'DURADA');
+  const context = getSection(sections, 'CONTEXT');
+  const repte = getSection(sections, 'REPTE');
+  const justificacio = getSection(sections, 'JUSTIFICACIÓ');
+  const producte = getSection(sections, 'PRODUCTE FINAL');
+  const ce = getSection(sections, 'COMPETÈNCIES ESPECÍFIQUES');
+  const ca = getSection(sections, 'CRITERIS D’AVALUACIÓ');
+  const objectius = getSection(sections, 'OBJECTIUS D’APRENENTATGE');
+  const blocs = getSection(sections, 'BLOCS DE SABERS');
+  const sabers = getSection(sections, 'SABERS CONCRETS');
+  const metodologia = getSection(sections, 'METODOLOGIA');
+  const organitzacio = getSection(sections, 'ORGANITZACIÓ DE L’AULA');
+  const recursos = getSection(sections, 'RECURSOS');
+  const inicials = getSection(sections, 'INICIALS');
+  const desenvolupament = getSection(sections, 'DESENVOLUPAMENT');
+  const estructuracio = getSection(sections, 'ESTRUCTURACIÓ');
+  const aplicacio = getSection(sections, 'APLICACIÓ');
+  const mesures = getSection(sections, 'MESURES I SUPORTS');
+  const tdah = getSection(sections, 'ADAPTACIONS TDAH');
+  const tea = getSection(sections, 'ADAPTACIONS TEA');
+  const dislexia = getSection(sections, 'ADAPTACIONS DISLÈXIA');
+  const tdl = getSection(sections, 'ADAPTACIONS TDL');
+  const evidencies = getSection(sections, 'EVIDÈNCIES');
+  const instruments = getSection(sections, 'INSTRUMENTS');
+  const retorn = getSection(sections, 'RETORN I MILLORA');
+  const vectors = getSection(sections, 'VECTORS');
+  const rubrica = getSection(sections, 'RÚBRICA');
+  return {
+    title, level, subject, duration,
+    challenge: joinNonEmpty([context && `Context: ${context}`, repte && `Repte: ${repte}`, justificacio && `Justificació: ${justificacio}`, producte && `Producte final: ${producte}`]),
+    competences: joinNonEmpty([ce && `Competències específiques: ${ce}`, ca && `Criteris d’avaluació: ${ca}`, objectius && `Objectius d’aprenentatge: ${objectius}`]),
+    knowledge: joinNonEmpty([blocs && `Blocs de sabers: ${blocs}`, sabers && `Sabers concrets: ${sabers}`]),
+    sequence: joinNonEmpty([metodologia && `Metodologia: ${metodologia}`, organitzacio && `Organització de l’aula: ${organitzacio}`, recursos && `Recursos: ${recursos}`, inicials && `Inicials: ${inicials}`, desenvolupament && `Desenvolupament: ${desenvolupament}`, estructuracio && `Estructuració: ${estructuracio}`, aplicacio && `Aplicació: ${aplicacio}`]),
+    inclusion: joinNonEmpty([mesures && `Mesures i suports: ${mesures}`, tdah && `TDAH: ${tdah}`, tea && `TEA: ${tea}`, dislexia && `Dislèxia: ${dislexia}`, tdl && `TDL: ${tdl}`]),
+    assessment: joinNonEmpty([evidencies && `Evidències: ${evidencies}`, instruments && `Instruments: ${instruments}`, retorn && `Retorn i millora: ${retorn}`, vectors && `Vectors: ${vectors}`, rubrica && `Rúbrica: ${rubrica}`])
+  };
+}
+
+function applyImportedText(filename, text, kind) {
+  const mapped = mapImportedTemplateText(text);
+  const isAi = String(kind || '').toLowerCase().includes('ia');
+  const detected = Object.values(mapped).filter(Boolean).length;
+  const isPartialAi = isAi && !mapped.title && !mapped.challenge && (mapped.knowledge || mapped.inclusion || mapped.assessment || mapped.competences);
+  if (mapped.title) els.title.value = mapped.title;
+  else if (!isAi && filename) els.title.value = filename.replace(/\.[^.]+$/, '');
+  if (mapped.level) els.level.value = mapped.level;
+  if (mapped.subject) els.subject.value = mapped.subject;
+  if (mapped.duration) els.duration.value = mapped.duration;
+  if (mapped.challenge) els.challenge.value = mapped.challenge;
+  if (mapped.competences) els.competences.value = isPartialAi && els.competences.value.trim() ? joinNonEmpty([els.competences.value, mapped.competences]) : mapped.competences;
+  if (mapped.knowledge) els.knowledge.value = mapped.knowledge;
+  if (mapped.sequence) els.sequence.value = mapped.sequence;
+  if (mapped.inclusion) els.inclusion.value = mapped.inclusion;
+  if (mapped.assessment) els.assessment.value = isPartialAi && els.assessment.value.trim() && !/evid[eè]nc|instrument|retorn/i.test(mapped.assessment) ? joinNonEmpty([els.assessment.value, mapped.assessment]) : mapped.assessment;
+  if (isAi && detected < 2 && text) {
+    const existing = els.challenge.value.trim();
+    els.challenge.value = joinNonEmpty([existing, `Esborrany IA complet pendent de mapatge automàtic:\n\n${text.slice(0, 12000)}`]);
+  } else if (!mapped.challenge && text && !isPartialAi && !isAi) {
+    els.challenge.value = `${kind} importat: ${filename}\n\n${text.slice(0, 5000)}`;
+  }
+  if (els.importStatus) {
+    const msg = `${kind} importat: ${filename}. Text recuperat: ${String(text || '').length.toLocaleString('ca-ES')} caràcters. Camps detectats: ${detected}.`;
+    els.importStatus.textContent = isAi && detected < 2 ? msg + ' He enganxat l’esborrany complet al camp del repte perquè no es perdi.' : msg;
+  }
+  renderReport(getFormData());
+  renderAiValidation(validateSaQuality(getFormData()));
+}
+
+function applyAiDraftToForm() {
+  const text = els.aiOutput.textContent.trim();
+  if (!text || text === 'Encara no hi ha cap esborrany.') return alert('Primer genera o enganxa un esborrany.');
+  applyImportedText('esborrany-ia.txt', text, els.aiProvider.value === 'google' ? 'IA Google' : 'IA local');
+  const result = validateSaQuality(getFormData());
+  renderAiValidation(result);
+  if (result.missing.length && els.importStatus) {
+    els.importStatus.textContent += ` Validació parcial: falten o són febles ${result.missing.map(m => m.label).join(', ')}.`;
+  }
+  try { document.getElementById('reportPreview')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch {}
+}
+
+function buildAiPrompt() {
+  const data = getFormData();
+  const guided = buildGuidedInstructionText();
+  const manualContext = els.aiContext.value.trim();
+  const context = manualContext || guided;
+  return `Ets un assistent docent expert en currículum LOMLOE a Catalunya. Escriu en català formal, clar i útil per a docents d’ESO.
+
+Objectiu: generar una situació d’aprenentatge completa, coherent i importable per DocentKit. Desenvolupa tots els apartats amb detall suficient per portar-la a l’aula.
+
+Dades del formulari actual:
+Tipus: ${data.type}
+Títol provisional: ${data.title}
+Nivell: ${data.level}
+Matèria: ${data.subject || 'pendent'}
+Durada: ${data.duration || 'pendent'}
+
+Instruccions guiades de l’usuari:
+${context}
+
+Instruccions de format obligatòries:
+- No facis servir Markdown en els títols dels apartats.
+- Escriu cada etiqueta exactament en una línia independent, sense numeració ni dos punts.
+- Després de cada etiqueta, escriu el contingut corresponent.
+- No deixis cap apartat buit.
+- Les adaptacions per TDAH, TEA, dislèxia i TDL han d’anar en apartats separats.
+- La rúbrica ha de tenir com a mínim 6 files amb aquest format: criteri LOMLOE | ítem d’avaluació | NA | AS | AN | AE.
+
+Etiquetes exactes, en aquest ordre:
+TÍTOL
+CURS
+MATÈRIA
+DURADA
+CONTEXT
+REPTE
+JUSTIFICACIÓ
+PRODUCTE FINAL
+COMPETÈNCIES ESPECÍFIQUES
+CRITERIS D’AVALUACIÓ
+OBJECTIUS D’APRENENTATGE
+BLOCS DE SABERS
+SABERS CONCRETS
+METODOLOGIA
+ORGANITZACIÓ DE L’AULA
+RECURSOS
+INICIALS
+DESENVOLUPAMENT
+ESTRUCTURACIÓ
+APLICACIÓ
+MESURES I SUPORTS
+ADAPTACIONS TDAH
+ADAPTACIONS TEA
+ADAPTACIONS DISLÈXIA
+ADAPTACIONS TDL
+EVIDÈNCIES
+INSTRUMENTS
+RETORN I MILLORA
+VECTORS
+RÚBRICA`;
 }
 
 init();

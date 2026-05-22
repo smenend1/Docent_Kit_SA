@@ -278,7 +278,7 @@ button.small {
   .check-grid { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
 }
 
-/* v1.2 · Control de qualitat IA */
+/* v1.3 · Control de qualitat IA */
 .ai-quality-card {
   margin-top: 16px;
   border: 1px solid #d8ead9;
