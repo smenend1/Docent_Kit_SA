@@ -1750,4 +1750,181 @@ VECTORS
 RÚBRICA`;
 }
 
+
+// ===== v1.4: importacio TXT/IA per seccions sense duplicar tot el document =====
+function canonicalDraftLabel(line) {
+  const raw = String(line || '').trim()
+    .replace(/^[-*•]\s*/, '')
+    .replace(/^\d+(?:\.\d+)*[).:-]?\s*/, '')
+    .replace(/^\*\*|\*\*$/g, '')
+    .replace(/[:：]\s*$/, '')
+    .trim();
+  const n = stripHeadingDecoration(raw);
+  const exact = new Map([
+    ['SITUACIO D APRENENTATGE', 'TÍTOL'],
+    ['TITOL', 'TÍTOL'], ['TITOL DE LA SITUACIO D APRENENTATGE', 'TÍTOL'],
+    ['CURS', 'CURS'], ['NIVELL', 'CURS'], ['NIVELL EDUCATIU', 'CURS'],
+    ['MATERIA', 'MATÈRIA'], ['AREA MATERIA O AMBIT', 'MATÈRIA'], ['AREA MATERIA AMBIT', 'MATÈRIA'],
+    ['DURADA', 'DURADA'], ['TEMPORITZACIO', 'DURADA'],
+    ['CONTEXT', 'CONTEXT'], ['DESCRIPCIO', 'CONTEXT'], ['DESCRIPCIO I CONTEXT', 'CONTEXT'],
+    ['REPTE', 'REPTE'], ['PREGUNTA REPTE', 'REPTE'],
+    ['JUSTIFICACIO', 'JUSTIFICACIÓ'], ['PRODUCTE FINAL', 'PRODUCTE FINAL'],
+    ['COMPETENCIES CLAU I ESPECIFIQUES LOMLOE', 'COMPETÈNCIES ESPECÍFIQUES'],
+    ['COMPETENCIES CLAU I ESPECIFIQUES', 'COMPETÈNCIES ESPECÍFIQUES'],
+    ['COMPETENCIES ESPECIFIQUES', 'COMPETÈNCIES ESPECÍFIQUES'], ['COMPETENCIA ESPECIFICA', 'COMPETÈNCIES ESPECÍFIQUES'], ['CE', 'COMPETÈNCIES ESPECÍFIQUES'],
+    ['CRITERIS D AVALUACIO', 'CRITERIS D’AVALUACIÓ'], ['CRITERIS AVALUACIO', 'CRITERIS D’AVALUACIÓ'], ['CA', 'CRITERIS D’AVALUACIÓ'],
+    ['OBJECTIUS D APRENENTATGE', 'OBJECTIUS D’APRENENTATGE'], ['OBJECTIUS', 'OBJECTIUS D’APRENENTATGE'],
+    ['BLOCS DE SABERS', 'BLOCS DE SABERS'], ['BLOCS', 'BLOCS DE SABERS'],
+    ['SABERS', 'SABERS CONCRETS'], ['SABERS CONCRETS', 'SABERS CONCRETS'], ['CONTINGUTS', 'SABERS CONCRETS'], ['SABERS CONTINGUTS', 'SABERS CONCRETS'],
+    ['METODOLOGIA', 'METODOLOGIA'], ['ORGANITZACIO DE L AULA', 'ORGANITZACIÓ DE L’AULA'], ['ORGANITZACIO', 'ORGANITZACIÓ DE L’AULA'], ['RECURSOS', 'RECURSOS'], ['MATERIALS I EINES', 'RECURSOS'],
+    ['SEQÜENCIA D ACTIVITATS', 'SEQÜÈNCIA D’ACTIVITATS'], ['SEQUENCIA D ACTIVITATS', 'SEQÜÈNCIA D’ACTIVITATS'], ['SEQÜENCIA D ACTIVITATS D APRENENTATGE', 'SEQÜÈNCIA D’ACTIVITATS'], ['SEQUENCIA D ACTIVITATS D APRENENTATGE', 'SEQÜÈNCIA D’ACTIVITATS'],
+    ['INICIALS', 'INICIALS'], ['ACTIVITATS INICIALS', 'INICIALS'], ['QUE EN SABEM', 'INICIALS'],
+    ['DESENVOLUPAMENT', 'DESENVOLUPAMENT'], ['ACTIVITATS DE DESENVOLUPAMENT', 'DESENVOLUPAMENT'],
+    ['ESTRUCTURACIO', 'ESTRUCTURACIÓ'], ['ACTIVITATS D ESTRUCTURACIO', 'ESTRUCTURACIÓ'], ['QUE HEM APRES', 'ESTRUCTURACIÓ'],
+    ['APLICACIO', 'APLICACIÓ'], ['ACTIVITATS D APLICACIO', 'APLICACIÓ'], ['APLIQUEM EL QUE HEM APRES', 'APLICACIÓ'],
+    ['MESURES I SUPORTS', 'MESURES I SUPORTS'], ['MESURES UNIVERSALS', 'MESURES I SUPORTS'], ['SUPORTS', 'MESURES I SUPORTS'],
+    ['MESURES I SUPORTS PER A L ATENCIO A LA DIVERSITAT', 'MESURES I SUPORTS'], ['ATENCIO A LA DIVERSITAT', 'MESURES I SUPORTS'],
+    ['ADAPTACIONS TDAH', 'ADAPTACIONS TDAH'], ['TDAH', 'ADAPTACIONS TDAH'],
+    ['ADAPTACIONS TEA', 'ADAPTACIONS TEA'], ['TEA', 'ADAPTACIONS TEA'],
+    ['ADAPTACIONS DISLEXIA', 'ADAPTACIONS DISLÈXIA'], ['DISLEXIA', 'ADAPTACIONS DISLÈXIA'],
+    ['ADAPTACIONS TDL', 'ADAPTACIONS TDL'], ['TDL', 'ADAPTACIONS TDL'],
+    ['EVIDENCIES', 'EVIDÈNCIES'], ['EVIDENCIES D APRENENTATGE', 'EVIDÈNCIES'],
+    ['INSTRUMENTS', 'INSTRUMENTS'], ['INSTRUMENTS D AVALUACIO', 'INSTRUMENTS'],
+    ['RETORN I MILLORA', 'RETORN I MILLORA'], ['FEEDBACK I MILLORA', 'RETORN I MILLORA'],
+    ['VECTORS', 'VECTORS'], ['VECTORS DEL CURRICULUM', 'VECTORS'],
+    ['RUBRICA', 'RÚBRICA'], ['RUBRICA D AVALUACIO', 'RÚBRICA'], ['RUBRICA D AVALUACIO DE LA SITUACIO D APRENENTATGE', 'RÚBRICA']
+  ]);
+  if (exact.has(n)) return exact.get(n);
+  if (n.startsWith('SITUACIO D APRENENTATGE')) return 'TÍTOL';
+  if (n.startsWith('COMPETENCIES CLAU I ESPECIFIQUES')) return 'COMPETÈNCIES ESPECÍFIQUES';
+  if (n.startsWith('SABERS CONTINGUTS') || n.startsWith('SABERS I CONTINGUTS')) return 'SABERS CONCRETS';
+  if (n.startsWith('SEQÜENCIA D ACTIVITATS') || n.startsWith('SEQUENCIA D ACTIVITATS')) return 'SEQÜÈNCIA D’ACTIVITATS';
+  if (n.startsWith('MESURES I SUPORTS')) return 'MESURES I SUPORTS';
+  if (n.startsWith('RUBRICA D AVALUACIO')) return 'RÚBRICA';
+  if (n.startsWith('VECTORS DEL CURRICULUM')) return 'VECTORS';
+  return '';
+}
+
+function splitDraftIntoSections(text) {
+  const normalized = normalizeDraftForParsing(text);
+  const lines = normalized.split('\n');
+  const sections = {};
+  let current = '';
+  const add = (label, value) => {
+    if (!label) return;
+    const clean = cleanImportedValue(value);
+    if (!clean) return;
+    sections[label] = sections[label] ? `${sections[label]}\n${clean}` : clean;
+  };
+  const setCurrent = (label) => {
+    current = label;
+    if (!sections[current]) sections[current] = '';
+  };
+
+  for (let line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      if (current && sections[current] && !sections[current].endsWith('\n')) sections[current] += '\n';
+      continue;
+    }
+
+    const inline = trimmed.match(/^([^:：]{2,120})[:：]\s*(.*)$/);
+    if (inline) {
+      const label = canonicalDraftLabel(inline[1]);
+      if (label) {
+        setCurrent(label);
+        if (inline[2].trim()) add(label, inline[2]);
+        continue;
+      }
+    }
+
+    const label = canonicalDraftLabel(trimmed);
+    if (label) {
+      setCurrent(label);
+      continue;
+    }
+
+    if (current) add(current, line);
+  }
+  Object.keys(sections).forEach(k => { sections[k] = cleanImportedValue(sections[k]); });
+  return sections;
+}
+
+function mapImportedTemplateText(text) {
+  const sections = splitDraftIntoSections(text);
+  const title = getSection(sections, 'TÍTOL');
+  const level = normalizeLevel(getSection(sections, 'CURS')) || normalizeLevel((getSection(sections, 'MATÈRIA').match(/\(([^)]*ESO)\)/i) || [])[1] || '');
+  let subject = getSection(sections, 'MATÈRIA').replace(/\s*\([^)]*\)\s*/g, '').trim();
+  const duration = getSection(sections, 'DURADA');
+  const context = getSection(sections, 'CONTEXT');
+  const repte = getSection(sections, 'REPTE');
+  const justificacio = getSection(sections, 'JUSTIFICACIÓ');
+  const producte = getSection(sections, 'PRODUCTE FINAL');
+  const ce = getSection(sections, 'COMPETÈNCIES ESPECÍFIQUES');
+  const ca = getSection(sections, 'CRITERIS D’AVALUACIÓ');
+  const objectius = getSection(sections, 'OBJECTIUS D’APRENENTATGE');
+  const blocs = getSection(sections, 'BLOCS DE SABERS');
+  const sabers = getSection(sections, 'SABERS CONCRETS');
+  const metodologia = getSection(sections, 'METODOLOGIA');
+  const organitzacio = getSection(sections, 'ORGANITZACIÓ DE L’AULA');
+  const recursos = getSection(sections, 'RECURSOS');
+  const sequenciaGlobal = getSection(sections, 'SEQÜÈNCIA D’ACTIVITATS');
+  const inicials = getSection(sections, 'INICIALS');
+  const desenvolupament = getSection(sections, 'DESENVOLUPAMENT');
+  const estructuracio = getSection(sections, 'ESTRUCTURACIÓ');
+  const aplicacio = getSection(sections, 'APLICACIÓ');
+  const mesures = getSection(sections, 'MESURES I SUPORTS');
+  const tdah = getSection(sections, 'ADAPTACIONS TDAH');
+  const tea = getSection(sections, 'ADAPTACIONS TEA');
+  const dislexia = getSection(sections, 'ADAPTACIONS DISLÈXIA');
+  const tdl = getSection(sections, 'ADAPTACIONS TDL');
+  const evidencies = getSection(sections, 'EVIDÈNCIES');
+  const instruments = getSection(sections, 'INSTRUMENTS');
+  const retorn = getSection(sections, 'RETORN I MILLORA');
+  const vectors = getSection(sections, 'VECTORS');
+  const rubrica = getSection(sections, 'RÚBRICA');
+  return {
+    title, level, subject, duration,
+    challenge: joinNonEmpty([context && `Context: ${context}`, repte && `Repte: ${repte}`, justificacio && `Justificació: ${justificacio}`, producte && `Producte final: ${producte}`]),
+    competences: joinNonEmpty([ce && `Competències específiques i clau: ${ce}`, ca && `Criteris d’avaluació: ${ca}`, objectius && `Objectius d’aprenentatge: ${objectius}`]),
+    knowledge: joinNonEmpty([blocs && `Blocs de sabers: ${blocs}`, sabers && `Sabers / continguts: ${sabers}`]),
+    sequence: joinNonEmpty([metodologia && `Metodologia: ${metodologia}`, organitzacio && `Organització de l’aula: ${organitzacio}`, recursos && `Recursos: ${recursos}`, sequenciaGlobal && `Seqüència d’activitats: ${sequenciaGlobal}`, inicials && `Inicials: ${inicials}`, desenvolupament && `Desenvolupament: ${desenvolupament}`, estructuracio && `Estructuració: ${estructuracio}`, aplicacio && `Aplicació: ${aplicacio}`]),
+    inclusion: joinNonEmpty([mesures && `Mesures i suports: ${mesures}`, tdah && `TDAH: ${tdah}`, tea && `TEA: ${tea}`, dislexia && `Dislèxia: ${dislexia}`, tdl && `TDL: ${tdl}`]),
+    assessment: joinNonEmpty([evidencies && `Evidències: ${evidencies}`, instruments && `Instruments: ${instruments}`, retorn && `Retorn i millora: ${retorn}`, vectors && `Vectors: ${vectors}`, rubrica && `Rúbrica: ${rubrica}`])
+  };
+}
+
+function applyImportedText(filename, text, kind) {
+  const mapped = mapImportedTemplateText(text);
+  const isAi = String(kind || '').toLowerCase().includes('ia');
+  const detected = Object.entries(mapped).filter(([k, v]) => k !== 'duration' && v).length;
+  const isPartialAi = isAi && !mapped.title && !mapped.challenge && (mapped.knowledge || mapped.inclusion || mapped.assessment || mapped.competences);
+
+  if (mapped.title) els.title.value = mapped.title;
+  else if (!isAi && filename && detected < 2) els.title.value = filename.replace(/\.[^.]+$/, '');
+  if (mapped.level) els.level.value = mapped.level;
+  if (mapped.subject) els.subject.value = mapped.subject;
+  if (mapped.duration) els.duration.value = mapped.duration;
+  if (mapped.challenge) els.challenge.value = mapped.challenge;
+  if (mapped.competences) els.competences.value = isPartialAi && els.competences.value.trim() ? joinNonEmpty([els.competences.value, mapped.competences]) : mapped.competences;
+  if (mapped.knowledge) els.knowledge.value = mapped.knowledge;
+  if (mapped.sequence) els.sequence.value = mapped.sequence;
+  if (mapped.inclusion) els.inclusion.value = mapped.inclusion;
+  if (mapped.assessment) els.assessment.value = isPartialAi && els.assessment.value.trim() && !/evid[eè]nc|instrument|retorn/i.test(mapped.assessment) ? joinNonEmpty([els.assessment.value, mapped.assessment]) : mapped.assessment;
+
+  if (isAi && detected < 2 && text) {
+    const existing = els.challenge.value.trim();
+    els.challenge.value = joinNonEmpty([existing, `Esborrany IA complet pendent de mapatge automàtic:\n\n${text.slice(0, 12000)}`]);
+  } else if (!isAi && detected < 2 && text) {
+    els.challenge.value = `${kind} importat: ${filename}\n\n${text.slice(0, 5000)}`;
+  }
+
+  if (els.importStatus) {
+    const msg = `${kind} importat: ${filename}. Text recuperat: ${String(text || '').length.toLocaleString('ca-ES')} caràcters. Camps detectats: ${detected}.`;
+    els.importStatus.textContent = detected < 2 ? msg + ' No he pogut separar prou apartats; he conservat el text complet al repte.' : msg + ' Importació per seccions aplicada.';
+  }
+  renderReport(getFormData());
+  renderAiValidation(validateSaQuality(getFormData()));
+}
+
 init();
