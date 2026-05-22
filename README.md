@@ -52,3 +52,14 @@ Si després d’actualitzar encara veus una versió antiga, cal recarregar forç
 - Importació de paquets de biblioteca JSON.
 - Accions noves per recurs: duplicar i exportar JSON individual.
 - Cache actualitzada a `docentkit-v20`.
+
+
+## v2.1
+
+Afegeix un validador pedagògic específic per a situacions d’aprenentatge de Tecnologia i Digitalització.
+
+Novetats:
+- Botó **Revisa coherència pedagògica** dins del control de qualitat.
+- Comprovació de repte contextualitzat, producte final observable, alineació criteris-rúbrica, seqüència didàctica, evidències, retorn formatiu, inclusió, seguretat de taller i durada.
+- Puntuació global 0-100 amb recomanacions prioritàries.
+- Cache actualitzada a `docentkit-v21`.

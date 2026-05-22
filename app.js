@@ -209,6 +209,8 @@ function bindEvents() {
   document.getElementById('aiApplyBtn').addEventListener('click', applyAiDraftToForm);
   const aiValidateBtn = document.getElementById('aiValidateBtn');
   if (aiValidateBtn) aiValidateBtn.addEventListener('click', () => renderAiValidation(validateSaQuality(getFormData())));
+  const pedagogicAuditBtn = document.getElementById('pedagogicAuditBtn');
+  if (pedagogicAuditBtn) pedagogicAuditBtn.addEventListener('click', () => renderPedagogicAudit(validateSaPedagogy(getFormData())));
   const aiCompleteMissingBtn = document.getElementById('aiCompleteMissingBtn');
   if (aiCompleteMissingBtn) aiCompleteMissingBtn.addEventListener('click', () => generatePartialAiDraft('missing'));
   const aiKnowledgeBtn = document.getElementById('aiKnowledgeBtn');
@@ -1679,6 +1681,58 @@ function renderAiValidation(result) {
     return;
   }
   els.aiValidationPanel.innerHTML = `<p class="warn">Validació parcial: ${result.score}/${result.total} blocs complets.</p><div class="validation-chip-row">${chips}</div><ul>${result.missing.map(m => `<li><span class="missing">${escapeHtml(m.label)}:</span> ${escapeHtml(m.reason)}</li>`).join('')}</ul>`;
+}
+
+
+function validateSaPedagogy(data) {
+  const challengeParts = extractSaParts(data.challenge || '');
+  const competenceParts = extractCompetenceParts(data.competences || '');
+  const sequenceParts = extractSequenceParts(data.sequence || '');
+  const assessmentParts = extractAssessmentParts(data.assessment || '');
+  const inclusionParts = extractInclusionParts(data.inclusion || '');
+  const criteriaCodes = competenceParts.criteriaCodes || [];
+  const rubricRows = buildRubricRows(data, criteriaCodes);
+  const challengeText = [challengeParts.context, challengeParts.repte, challengeParts.justificacio, challengeParts.producte, data.challenge].join('\n');
+  const productText = challengeParts.producte || '';
+  const sequenceText = data.sequence || '';
+  const assessmentText = data.assessment || '';
+  const knowledgeText = data.knowledge || '';
+  const inclusionText = data.inclusion || '';
+  const lowerAll = [challengeText, productText, sequenceText, assessmentText, knowledgeText].join('\n').toLowerCase();
+  const activityMoments = ['inicial', 'desenvolupament', 'estructuraci', 'aplicaci'].filter(token => lowerAll.includes(token)).length;
+  const hasEvidence = /evid[eè]nc|producte|prototip|dossier|mem[oò]ria|presentaci[oó]|fitxa|registre|portafoli|codi|pl[aà]nol|croquis/i.test(assessmentText + '\n' + sequenceText);
+  const hasReturn = /retorn|feedback|millora|revisi[oó]|coavaluaci[oó]|autoavaluaci[oó]|prova|iteraci[oó]|depuraci[oó]/i.test(assessmentText + '\n' + sequenceText);
+  const hasWorkshopSafety = /seguretat|eina|taller|material|risc|norma|epi|electric|impressora|arduino|circuit|tall|sold/i.test(inclusionText + '\n' + knowledgeText + '\n' + sequenceText + '\n' + assessmentText);
+  const hasRealContext = (challengeParts.context || '').length > 120 && /centre|aula|barri|comunitat|entorn|necessitat|problema|ODS|sostenibil/i.test(challengeText);
+  const hasClearProduct = productText.length > 50 && /prototip|producte|maqueta|model|app|web|circuit|robot|mem[oò]ria|presentaci[oó]|informe|pe[cç]a|sistema/i.test(productText);
+  const hasCriteriaAlignment = criteriaCodes.length >= 2 && rubricRows.length >= Math.min(3, criteriaCodes.length);
+  const hasRubricLevels = rubricRows.length >= 3 && rubricRows.every(row => row.NA && row.AS && row.AN && row.AE);
+  const hasInclusionQuality = /TDAH/i.test(inclusionText) && /TEA/i.test(inclusionText) && /disl[eè]xia/i.test(inclusionText) && /TDL/i.test(inclusionText) && /instruccions|visual|temps|anticipaci|glossari|rol|suport/i.test(inclusionText);
+  const checks = [
+    { id: 'repte', label: 'Repte contextualitzat', ok: hasRealContext && /repte|pregunta|com podem|problema|necessitat/i.test(challengeText), advice: 'Concreta un context proper i formula el repte com una pregunta o necessitat real.' },
+    { id: 'producte', label: 'Producte final observable', ok: hasClearProduct, advice: 'Defineix què lliurarà o mostrarà l’alumnat: prototip, memòria, codi, model, presentació, etc.' },
+    { id: 'alignment', label: 'Alineació criteris-rúbrica', ok: hasCriteriaAlignment && hasRubricLevels, advice: 'Relaciona cada fila de rúbrica amb criteris LOMLOE i completa NA, AS, AN i AE.' },
+    { id: 'sequence', label: 'Seqüència didàctica completa', ok: activityMoments >= 4 && sequenceText.length > 300, advice: 'Inclou activitats inicials, desenvolupament, estructuració i aplicació amb activitats concretes.' },
+    { id: 'assessment', label: 'Evidències i retorn formatiu', ok: hasEvidence && hasReturn, advice: 'Afegeix evidències observables, instruments i moments de feedback/millora.' },
+    { id: 'inclusion', label: 'Inclusió aplicable', ok: hasInclusionQuality, advice: 'Concreta mesures universals i adaptacions per TDAH, TEA, dislèxia i TDL sense rebaixar objectius.' },
+    { id: 'workshop', label: 'Seguretat i organització de taller', ok: hasWorkshopSafety, advice: 'En Tecnologia convé explicitar eines, materials, normes de seguretat, riscos i organització de l’espai.' },
+    { id: 'duration', label: 'Durada realista', ok: /\d+\s*(h|hores|sessions)/i.test(data.duration || '') || /\d+\s*(h|hores|sessions)/i.test(sequenceText), advice: 'Indica durada global i, si és possible, distribució per fases o sessions.' }
+  ];
+  const passed = checks.filter(c => c.ok).length;
+  const score = Math.round((passed / checks.length) * 100);
+  let level = 'Cal revisar';
+  if (score >= 85) level = 'Molt sòlida';
+  else if (score >= 65) level = 'Bona base';
+  else if (score >= 45) level = 'Parcial';
+  const recommendations = checks.filter(c => !c.ok).map(c => c.advice);
+  return { checks, score, level, recommendations };
+}
+
+function renderPedagogicAudit(result) {
+  if (!els.aiValidationPanel) return;
+  const chips = result.checks.map(c => `<span class="validation-chip ${c.ok ? 'ok' : 'missing'}">${c.ok ? '✓' : '!' } ${escapeHtml(c.label)}</span>`).join('');
+  const recs = result.recommendations.length ? `<h4>Recomanacions prioritàries</h4><ol>${result.recommendations.map(r => `<li>${escapeHtml(r)}</li>`).join('')}</ol>` : '<p class="ok">La SA és coherent i està prou alineada per generar informe i PDF.</p>';
+  els.aiValidationPanel.innerHTML = `<p class="${result.score >= 65 ? 'ok' : 'warn'}">Revisió pedagògica: ${result.score}/100 · ${escapeHtml(result.level)}</p><div class="validation-chip-row">${chips}</div>${recs}`;
 }
 
 function buildPartialPrompt(kind) {
