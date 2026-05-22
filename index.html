@@ -177,14 +177,15 @@
           </div>
           <span id="aiModeStatus" class="pill">Mode local</span>
         </div>
-        <p>Aquesta secció permet generar un esborrany amb plantilles intel·ligents sense enviar dades fora del navegador. Opcionalment, pots activar una API de Google per provar generació assistida.</p>
+        <p>Aquesta secció permet generar un esborrany amb un mode local sense API externa o amb Gemini si introdueixes la teva API key. Aquest selector només tria com es genera l’esborrany; les plantilles de SA són a Crear SA > Plantilla.</p>
         <div class="ai-grid">
           <label class="field">
             <span>Mode</span>
             <select id="aiProvider">
-              <option value="local">Plantilles intel·ligents locals</option>
-              <option value="google">Google API / Gemini experimental</option>
+              <option value="local">Mode local · sense API externa</option>
+              <option value="google">Mode Gemini · usa la meva API key</option>
             </select>
+            <small class="hint">Això no carrega plantilles: només decideix si l’esborrany es genera localment o amb Gemini.</small>
           </label>
           <label class="field">
             <span>Google API key opcional</span>

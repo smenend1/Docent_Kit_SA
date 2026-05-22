@@ -1274,7 +1274,7 @@ function updateAiStatus() {
   if (!els.aiModeStatus || !els.aiProvider) return;
   const provider = els.aiProvider.value;
   const isGoogle = provider === 'google';
-  els.aiModeStatus.textContent = isGoogle ? 'Mode Gemini / Google API' : 'Mode local';
+  els.aiModeStatus.textContent = isGoogle ? 'Mode Gemini · API key' : 'Mode local · sense API';
   els.aiModeStatus.classList.toggle('google-mode', isGoogle);
   els.aiModeStatus.classList.toggle('local-mode', !isGoogle);
   els.aiModeStatus.style.background = isGoogle ? '#fff7ed' : '#ecfdf3';
@@ -1483,7 +1483,7 @@ async function callGeminiText(prompt) {
 
 async function testGeminiConnection() {
   if (els.aiProvider.value !== 'google') {
-    els.aiOutput.textContent = 'El mode seleccionat és local. Tria “Google API / Gemini experimental” per provar la connexió.';
+    els.aiOutput.textContent = 'El mode seleccionat és local. Tria “Mode Gemini · usa la meva API key” per provar la connexió.';
     return;
   }
   els.aiOutput.textContent = `Provant connexió amb ${getSelectedGeminiModel()}...`;

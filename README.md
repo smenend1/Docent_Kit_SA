@@ -2,7 +2,7 @@
 
 Versió 1.9 de la PWA educativa en català per a docents.
 
-## Objectiu de la v1.9
+## Objectiu de la v1.9.1
 
 Aquesta versió busca deixar una base més estable per a Tecnologia i Digitalització: importació JSON DocentKit fiable, plantilles locals de SA de Tecnologia i informe net per exportar.
 
@@ -34,3 +34,10 @@ Aquesta versió busca deixar una base més estable per a Tecnologia i Digitalitz
 ## Nota
 
 Si després d’actualitzar encara veus una versió antiga, cal recarregar forçadament o esborrar la cache de la PWA.
+
+
+## Canvi v1.9.1
+
+- S'ha aclarit el selector del mode IA: ara diferencia entre “Mode local · sense API externa” i “Mode Gemini · usa la meva API key”.
+- S'ha afegit una nota per evitar confondre el mode de generació amb el selector de plantilles de SA.
+- Cache actualitzada a `docentkit-v191`.
