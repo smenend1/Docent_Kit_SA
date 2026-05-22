@@ -1,41 +1,36 @@
 # DocentKit · Generador de situacions i recursos
 
-Versió 1.5 de la PWA educativa en català per a docents.
+Versió 1.9 de la PWA educativa en català per a docents.
 
-## Objectiu de la v1.8
+## Objectiu de la v1.9
 
-Aquesta versió corregeix especialment la importació de situacions d’aprenentatge en TXT perquè el contingut no es copiï repetit a tots els apartats.
+Aquesta versió busca deixar una base més estable per a Tecnologia i Digitalització: importació JSON DocentKit fiable, plantilles locals de SA de Tecnologia i informe net per exportar.
 
 ## Millores principals
 
-- Detecció del curs dins línies com `Matèria: Tecnologia i Digitalització (2n d'ESO)`.
-- Separació correcta de la matèria i el nivell.
-- Reconeixement de `SITUACIÓ D'APRENENTATGE:` com a títol real de la SA.
-- Mapatge de `SABERS / CONTINGUTS` cap al camp de sabers.
-- Separació de `CRITERIS D'AVALUACIÓ` i `RÚBRICA D'AVALUACIÓ`.
-- Evita que els descriptors NA, AS, AN i AE vagin al camp de competències.
-- Conversió de rúbriques textuals amb `CRITERI LOMLOE`, `ÍTEM`, `NA`, `AS`, `AN` i `AE` a la taula de rúbrica de l’informe.
-- Millor tractament de fases tipus `Fase 1`, `Fase 2`, `Fase 3` i `Fase 4`.
-- Service worker actualitzat a `docentkit-v18`.
+- Importació JSON DocentKit més directa i robusta.
+- Reconeixement de `schema: "docentkit.sa.v1"` i `tipus: "situacio_aprenentatge"`.
+- Suport per paquets JSON amb arrays a `recursos`, `resources`, `situacions`, `items`, `plantilles` o `templates`.
+- Càrrega directa del JSON al formulari de Crear SA.
+- Desa també la SA importada a la biblioteca local.
+- Actualització immediata de l’informe després d’importar.
+- Plantilles locals SA1-SA6 de Tecnologia i Digitalització 2n ESO:
+  - SA1 · Dibuix assistit per ordinador i impressió 3D
+  - SA2 · Podem fabricar d’una altra manera?
+  - SA3 · Són elèctricament dependents?
+  - SA4 · Podem generar energia verda?
+  - SA5 · La comunicació té límit?
+  - SA6 · Passem a conversar amb una màquina?
+- Service worker actualitzat a `docentkit-v19`.
 
 ## Ús recomanat
 
-1. Obre `Exportar / importar`.
-2. Selecciona un fitxer `.txt` amb una SA estructurada.
-3. Prem `Importa i interpreta`.
-4. Ves a `Crear SA` i revisa els camps.
+1. Obre la PWA.
+2. Per usar una plantilla local, ves a Crear SA i tria una SA del desplegable Plantilla.
+3. Per importar una SA, ves a Exportar / importar, selecciona un JSON DocentKit i prem Importa i interpreta.
+4. Revisa el formulari de Crear SA.
 5. Genera l’informe i exporta a PDF o HTML.
 
-Si la PWA ja estava instal·lada, fes una recàrrega forçada o esborra la memòria cau perquè el navegador no mantingui versions anteriors.
+## Nota
 
-
-## v1.8
-
-- Importació JSON DocentKit SA (`schema: docentkit.sa.v1`) aplicada directament al formulari.
-- Mapatge de títol, curs, matèria, durada, context, repte, sabers, seqüència, mesures, avaluació, vectors i rúbrica.
-- Accepta també llistes de SA en JSON i les carrega a la biblioteca.
-
-
-## v1.8
-
-Correcció de la importació JSON DocentKit SA: els fitxers amb `schema: docentkit.sa.v1` i `tipus: situacio_aprenentatge` es carreguen directament al formulari, es desen a biblioteca i actualitzen l'informe sense quedar com a recurs genèric.
+Si després d’actualitzar encara veus una versió antiga, cal recarregar forçadament o esborrar la cache de la PWA.

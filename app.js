@@ -919,39 +919,39 @@ function exportCurrentJson() { const data = getFormData(); downloadJson(data, sl
 function downloadJson(data, filename) { downloadBlob(JSON.stringify(data, null, 2), filename, 'application/json;charset=utf-8'); }
 
 async function importFile() {
-  const file = els.fileInput.files[0];
+  const file = els.fileInput && els.fileInput.files ? els.fileInput.files[0] : null;
   if (!file) return alert('Selecciona un fitxer TXT, JSON, DOCX o PDF.');
   const lowerName = file.name.toLowerCase();
+
   if (lowerName.endsWith('.json')) {
     const text = await file.text();
     try {
       const parsed = JSON.parse(text);
-      const items = Array.isArray(parsed) ? parsed : [parsed];
-      if (items.length === 1 && isDocentKitSaJson(items[0])) {
+      const items = extractJsonSaItems(parsed);
+
+      if (items.length === 1) {
         applyImportedJson(file.name, items[0]);
-      } else if (items.length && items.every(isDocentKitSaJson)) {
+      } else if (items.length > 1) {
         const mappedItems = items.map(jsonSaToFormResource);
-        resources = [...mappedItems, ...resources];
+        resources = [...mappedItems, ...resources.filter(r => !mappedItems.some(m => m.id === r.id))];
         persistResources();
         renderLibrary();
-        if (mappedItems[0]) {
-          setModule('sa');
-          loadResource(mappedItems[0].id);
-        }
-        if (els.importStatus) els.importStatus.textContent = `JSON DocentKit importat: ${file.name}. ${items.length} situacions d’aprenentatge carregades a la biblioteca. S’ha obert la primera.`;
+        applyImportedJson(file.name, items[0], { fromPack: true, count: items.length });
       } else {
-        resources = [...items.map(normalizeImportedResource), ...resources];
+        const generic = normalizeImportedResource(parsed);
+        resources = [generic, ...resources];
         persistResources();
         renderLibrary();
-        loadResource(resources[0].id);
-        if (els.importStatus) els.importStatus.textContent = `JSON importat: ${file.name}. Format genèric carregat a la biblioteca.`;
+        loadResource(generic.id);
+        if (els.importStatus) els.importStatus.textContent = `JSON importat: ${file.name}. No és un JSON de SA DocentKit; s'ha carregat com a recurs genèric.`;
       }
     } catch (error) {
       console.error(error);
-      alert('El JSON no és vàlid o no s’ha pogut interpretar.');
+      alert('El JSON no és vàlid o no s’ha pogut interpretar. Revisa comes, claus i cometes.');
     }
     return;
   }
+
   if (lowerName.endsWith('.docx')) {
     try {
       const text = await extractDocxText(file);
@@ -976,8 +976,27 @@ async function importFile() {
   applyImportedText(file.name, text, 'TXT');
 }
 
+function extractJsonSaItems(parsed) {
+  const pools = [];
+  if (Array.isArray(parsed)) pools.push(parsed);
+  if (parsed && typeof parsed === 'object') {
+    ['recursos','resources','situacions','situacions_aprenentatge','items','plantilles','templates'].forEach(key => {
+      if (Array.isArray(parsed[key])) pools.push(parsed[key]);
+    });
+    if (isDocentKitSaJson(parsed)) pools.push([parsed]);
+  }
+  const flat = pools.flat().filter(isDocentKitSaJson);
+  const seen = new Set();
+  return flat.filter(item => {
+    const key = item.id || item.titol || item.title || JSON.stringify(item).slice(0, 120);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function normalizeImportedResource(item) {
-  return { ...getFormData(), ...item, id: item.id || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())), createdAt: item.createdAt || new Date().toISOString(), tags: Array.isArray(item.tags) ? item.tags : [] };
+  return { ...getFormData(), ...(item || {}), id: item?.id || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())), createdAt: item?.createdAt || new Date().toISOString(), tags: Array.isArray(item?.tags) ? item.tags : [] };
 }
 
 
@@ -991,36 +1010,51 @@ function isDocentKitSaJson(item) {
   return schema.includes('docentkit.sa') || tipus.includes('situacio_aprenentatge') || tipus.includes('situacio') || hasSaFields;
 }
 
-function applyImportedJson(filename, item) {
+function applyImportedJson(filename, item, options = {}) {
   const mapped = jsonSaToFormResource(item);
 
-  // v1.8: importació directa i robusta. El JSON DocentKit no es tracta com a recurs genèric:
-  // es converteix en recurs SA, es desa a la biblioteca, s'obre al formulari i es renderitza l'informe.
   setModule('sa');
   currentModule = MODULES.find(m => m.id === 'sa') || currentModule;
 
-  resources = [mapped, ...resources.filter(r => r.id !== mapped.id)];
+  resources = [mapped, ...resources.filter(r => r.id !== mapped.id && r.title !== mapped.title)];
   persistResources();
   renderLibrary();
 
-  ['title','level','subject','duration','type','challenge','knowledge','competences','sequence','inclusion','assessment'].forEach(key => {
-    if (els[key]) els[key].value = mapped[key] || '';
+  const fieldMap = {
+    title: mapped.title,
+    level: mapped.level,
+    subject: mapped.subject,
+    duration: mapped.duration,
+    type: mapped.type,
+    challenge: mapped.challenge,
+    knowledge: mapped.knowledge,
+    competences: mapped.competences,
+    sequence: mapped.sequence,
+    inclusion: mapped.inclusion,
+    assessment: mapped.assessment,
+    tags: (mapped.tags || []).join(', ')
+  };
+  Object.entries(fieldMap).forEach(([key, value]) => {
+    if (els[key]) els[key].value = value || '';
   });
-  if (els.tags) els.tags.value = (mapped.tags || []).join(', ');
 
-  // Renderitzem amb l'objecte mapejat, no amb una lectura posterior del formulari, per evitar valors per defecte.
-  renderReport(mapped);
+  const liveData = getFormData();
+  liveData.id = mapped.id;
+  liveData.createdAt = mapped.createdAt;
+  renderReport(liveData);
   if (typeof renderAiValidation === 'function' && typeof validateSaQuality === 'function') {
-    renderAiValidation(validateSaQuality(mapped));
+    renderAiValidation(validateSaQuality(liveData));
   }
 
   if (els.importStatus) {
-    els.importStatus.textContent = `JSON DocentKit importat: ${filename}. S'ha carregat al formulari i s'ha actualitzat l'informe: ${mapped.title} · ${mapped.level} · ${mapped.subject || 'sense matèria'}.`;
+    const prefix = options.fromPack ? `Paquet JSON DocentKit importat: ${filename}. ${options.count} SA carregades; oberta la primera.` : `JSON DocentKit importat: ${filename}.`;
+    els.importStatus.textContent = `${prefix} S'ha carregat al formulari: ${liveData.title} · ${liveData.level} · ${liveData.subject || 'sense matèria'}.`;
   }
 
-  // Doble comprovació visual: alguns navegadors amb service worker poden aplicar canvis amb retard.
-  setTimeout(() => renderReport(getFormData()), 0);
+  const formCard = document.querySelector('.form-card');
+  if (formCard) formCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
+
 
 function jsonSaToFormResource(item) {
   const title = item.titol || item.title || 'Recurs sense títol';
@@ -2621,5 +2655,73 @@ function extractAssessmentParts(text) {
     vectors: ['Vectors']
   });
 }
+
+// ===== v1.9: paquet local de plantilles Tecnologia i Digitalització 2n ESO =====
+const LOCAL_TECH_2ESO_SA = [
+  {
+    schema: 'docentkit.sa.v1', tipus: 'situacio_aprenentatge', idioma: 'ca', normativa: 'LOMLOE',
+    titol: 'Dibuix assistit per ordinador i impressió 3D', subtitol: 'Del model digital a l’objecte físic', etapa: 'ESO', curs: '2n ESO', materia: 'Tecnologia i Digitalització', ambit: 'Tecnologia',
+    durada: { total: '16 hores', sessions: 8 },
+    context: 'L’alumnat parteix d’objectes quotidians i del disseny digital per comprendre com una idea es pot transformar en un model 3D i posteriorment en una peça física. La situació connecta el CAD, la impressió 3D, l’accessibilitat del centre i la sostenibilitat dels processos de fabricació.',
+    justificacio: 'El treball amb CAD i impressió 3D desenvolupa la visió espacial, el dibuix tècnic, el procés tecnològic i la fabricació digital. Permet abordar el disseny com a resposta a una necessitat real i fomenta l’ús responsable de tecnologies emergents.',
+    repte: 'Com podem dissenyar un clauer personalitzat i fabricar-lo de manera eficient amb una impressora 3D?',
+    producte_final: 'Clauer funcional fabricat amb impressió 3D, acompanyat del model digital, croquis, fitxa tècnica i una breu justificació del disseny.',
+    competencies_especifiques: [
+      { codi: 'CE2', materia: 'Tecnologia i Digitalització', descripcio: 'Abordar problemes tecnològics amb autonomia, treballant en equip en la recerca i disseny de solucions.' },
+      { codi: 'CE3', materia: 'Tecnologia i Digitalització', descripcio: 'Dissenyar, construir i avaluar prototips aplicant coneixements tecnològics.' }
+    ],
+    criteris_avaluacio: [
+      { codi: '2.1', competencia: 'CE2', descripcio: 'Identificar necessitats i proposar solucions creatives mitjançant tecnologies de disseny i fabricació.' },
+      { codi: '3.1', competencia: 'CE3', descripcio: 'Dissenyar models, croquis, vistes i acotacions amb criteris tècnics.' },
+      { codi: '3.2', competencia: 'CE3', descripcio: 'Construir o fabricar prototips utilitzant eines digitals de manera segura i eficient.' }
+    ],
+    objectius_aprenentatge: [
+      { id: 'OA1', objectiu: 'Comprendre els fonaments del dibuix tècnic aplicats al CAD.', criteris_relacionats: ['3.1'] },
+      { id: 'OA2', objectiu: 'Crear un model 3D imprimible respectant dimensions i requisits funcionals.', criteris_relacionats: ['3.1','3.2'] },
+      { id: 'OA3', objectiu: 'Valorar aplicacions i impactes de la impressió 3D en contextos reals.', criteris_relacionats: ['2.1'] }
+    ],
+    sabers: { blocs: ['Dibuix tècnic i CAD', 'Fabricació digital', 'Procés tecnològic', 'Sostenibilitat'], continguts: ['Dibuix assistit per ordinador.', 'Fonaments del dibuix tècnic.', 'Disseny 3D: de la idea al model.', 'Introducció a la impressió 3D.', 'Del model digital a l’objecte.', 'Aplicacions i impacte de la impressió 3D.', 'Navegació pel World Wide Web.'] },
+    sequencia_activitats: [
+      { fase: 'Inicials', titol: 'Context i exploració', durada: '4 hores', activitats: ['Presentació del repte.', 'Anàlisi de clauers i peces impreses.', 'Recerca d’aplicacions d’impressió 3D i ODS.', 'Sopa de lletres o mapa mental de conceptes.'], evidencies: ['Fitxa d’anàlisi', 'Mapa mental inicial'] },
+      { fase: 'Desenvolupament', titol: 'Disseny CAD', durada: '4 hores', activitats: ['Aprenentatge d’eines bàsiques CAD.', 'Croquis i acotació.', 'Modelatge del clauer.', 'Exportació STL.'], evidencies: ['Croquis acotat', 'Model 3D'] },
+      { fase: 'Estructuració', titol: 'Preparació i impressió', durada: '4 hores', activitats: ['Laminat del model.', 'Revisió de paràmetres.', 'Impressió i control de qualitat.', 'Registre d’incidències.'], evidencies: ['G-code o configuració', 'Peça impresa'] },
+      { fase: 'Aplicació', titol: 'Accessibilitat i millora', durada: '4 hores', activitats: ['Projecte “Un institut més accessible gràcies a la impressió 3D”.', 'DAFO del disseny.', 'Presentació del producte.', 'Autoavaluació i coavaluació.'], evidencies: ['Informe DAFO', 'Presentació final'] }
+    ],
+    mesures_i_suports: { universals: ['Guies visuals pas a pas.', 'Models d’exemple.', 'Checklists de seguretat.', 'Rols cooperatius.'], tdah: ['Tasques curtes i temporitzades.', 'Objectius visibles per sessió.'], tea: ['Anticipació de la interfície i del procés.', 'Mides i requisits molt explícits.'], dislexia: ['Icones i suport visual.', 'Possibilitat de vídeo explicatiu.'], tdl: ['Glossari visual de termes CAD.', 'Frases model per descriure el disseny.'] },
+    avaluacio: { evidencies: ['Croquis acotat.', 'Model 3D.', 'Clauer imprès.', 'DAFO i presentació.'], instruments: ['Rúbrica de disseny 3D.', 'Llista de control de seguretat.', 'Autoavaluació i coavaluació.'], retorn_i_millora: ['Feedback durant el modelatge.', 'Revisió abans d’imprimir.', 'Millores després del primer prototip.'] },
+    vectors: { aprenentatges_competencials: 'Resolució d’un repte real amb procés CAD/CAM.', perspectiva_genere: 'Ús equitatiu de programari i impressora.', universalitat_curriculum: 'Tasques graduades i suports visuals.', qualitat_llengues: 'Vocabulari tècnic i presentació oral.', ciutadania_democratica_consciencia_global: 'Disseny inclusiu i sostenibilitat.', benestar_emocional: 'Gestió de la frustració davant errors de disseny.' },
+    rubrica: [
+      { criteri_lomloe: '2.1', competencia: 'CE2', item: 'Investigació i proposta', NA: 'No identifica una necessitat ni proposa una solució viable.', AS: 'Proposa una solució simple amb ajuda.', AN: 'Proposa una solució adequada i justificada.', AE: 'Justifica una solució creativa, inclusiva i viable.' },
+      { criteri_lomloe: '3.1', competencia: 'CE3', item: 'Disseny CAD', NA: 'No genera un model comprensible.', AS: 'Crea un model bàsic amb errors.', AN: 'Crea un model correcte i acotat.', AE: 'Crea un model optimitzat i molt ben documentat.' },
+      { criteri_lomloe: '3.2', competencia: 'CE3', item: 'Fabricació 3D', NA: 'La peça no és imprimible o no respecta la seguretat.', AS: 'Imprimeix amb defectes importants.', AN: 'Obté una peça funcional.', AE: 'Optimitza material, temps i acabat.' }
+    ]
+  },
+  {
+    schema: 'docentkit.sa.v1', tipus: 'situacio_aprenentatge', idioma: 'ca', normativa: 'LOMLOE', titol: 'Podem fabricar d’una altra manera?', subtitol: 'Materials sostenibles i ecodisseny', etapa: 'ESO', curs: '2n ESO', materia: 'Tecnologia i Digitalització', ambit: 'Tecnologia', durada: { total: '12 hores', sessions: 6 },
+    context: 'La crisi climàtica i l’ús intensiu de recursos obliguen a repensar els materials que fem servir i la manera com fabriquem objectes. L’alumnat analitza materials convencionals i sostenibles per proposar alternatives de menor impacte.', justificacio: 'El treball dels materials sostenibles connecta tecnologia, medi ambient, consum responsable i presa de decisions informada.', repte: 'Com podem redissenyar un objecte quotidià perquè sigui més sostenible durant tot el seu cicle de vida?', producte_final: 'Proposta d’ecodisseny d’un objecte amb fitxa tècnica, justificació de materials i prototip o maqueta.',
+    competencies_especifiques: [{ codi:'CE2', materia:'Tecnologia i Digitalització', descripcio:'Abordar problemes tecnològics amb criteris de sostenibilitat.' }, { codi:'CE3', materia:'Tecnologia i Digitalització', descripcio:'Dissenyar, construir i avaluar productes o prototips.' }], criteris_avaluacio: [{ codi:'2.1', competencia:'CE2', descripcio:'Analitzar necessitats i proposar solucions sostenibles.' }, { codi:'3.1', competencia:'CE3', descripcio:'Planificar i documentar el disseny d’un producte.' }, { codi:'3.2', competencia:'CE3', descripcio:'Construir o representar prototips amb materials adequats.' }],
+    objectius_aprenentatge: [{ id:'OA1', objectiu:'Comparar materials convencionals i sostenibles.', criteris_relacionats:['2.1'] }, { id:'OA2', objectiu:'Analitzar el cicle de vida d’un producte.', criteris_relacionats:['2.1'] }, { id:'OA3', objectiu:'Proposar una millora d’ecodisseny viable.', criteris_relacionats:['3.1','3.2'] }],
+    sabers: { blocs:['Materials i sostenibilitat','Procés tecnològic','Impactes ambientals'], continguts:['Materials convencionals i sostenibles.', 'Cicle de vida dels materials.', 'Aplicacions i reptes dels materials sostenibles.', 'Impactes en el medi i la societat.', 'Política i normativa ambiental.', 'Cerca d’informació a internet.'] },
+    sequencia_activitats: [{ fase:'Inicials', titol:'Materials del nostre entorn', durada:'3 hores', activitats:['Anàlisi d’objectes quotidians.', 'Debat sobre crisi climàtica i materials.', 'Cerca guiada d’informació.'], evidencies:['Fitxa d’anàlisi'] }, { fase:'Desenvolupament', titol:'Cicle de vida i ecodisseny', durada:'3 hores', activitats:['Comparació de materials.', 'Estudi del cicle de vida.', 'DAFO de materials sostenibles.'], evidencies:['DAFO i taula comparativa'] }, { fase:'Estructuració', titol:'Disseny de proposta', durada:'3 hores', activitats:['Croquis de redisseny.', 'Tria argumentada de materials.', 'Planificació del prototip.'], evidencies:['Croquis i fitxa tècnica'] }, { fase:'Aplicació', titol:'Presentació d’ecodisseny', durada:'3 hores', activitats:['Construcció de maqueta o prototip.', 'Presentació i coavaluació.', 'Reflexió final.'], evidencies:['Prototip i presentació'] }],
+    mesures_i_suports: { universals:['Plantilles de comparació.', 'Exemples visuals de materials.', 'Rols cooperatius.'], tdah:['Tasques breus i checklist.', 'Rol manipulatiu.'], tea:['Anticipació de passos i criteris.', 'Models concrets.'], dislexia:['Text simplificat i esquemes.', 'Alternativa oral.'], tdl:['Glossari de materials.', 'Frases model per argumentar.'] },
+    avaluacio: { evidencies:['Fitxa de materials.', 'DAFO.', 'Croquis.', 'Prototip o maqueta.', 'Presentació.'], instruments:['Rúbrica d’ecodisseny.', 'Llista de control.', 'Coavaluació.'], retorn_i_millora:['Feedback en la tria de materials.', 'Revisió del prototip.', 'Millora després de la coavaluació.'] }, vectors: { aprenentatges_competencials:'Aplicació de criteris de sostenibilitat a un objecte real.', perspectiva_genere:'Distribució equitativa de rols.', universalitat_curriculum:'Opcions de prototip de diferents complexitats.', qualitat_llengues:'Argumentació tècnica.', ciutadania_democratica_consciencia_global:'Consum responsable i ODS 12/13.', benestar_emocional:'Treball cooperatiu i presa de decisions compartida.' }, rubrica: [{ criteri_lomloe:'2.1', competencia:'CE2', item:'Anàlisi sostenible', NA:'No analitza l’impacte dels materials.', AS:'Identifica alguns impactes amb ajuda.', AN:'Compara materials de forma raonada.', AE:'Justifica amb profunditat una proposta sostenible.' }, { criteri_lomloe:'3.1', competencia:'CE3', item:'Disseny i planificació', NA:'No presenta disseny coherent.', AS:'Presenta una proposta bàsica.', AN:'Planifica una proposta viable.', AE:'Elabora un ecodisseny molt complet i justificat.' }, { criteri_lomloe:'3.2', competencia:'CE3', item:'Prototip i comunicació', NA:'No construeix ni comunica adequadament.', AS:'Presenta un prototip simple.', AN:'Presenta un prototip funcional.', AE:'Presenta una proposta molt ben acabada i comunicada.' }]
+  },
+  {
+    schema:'docentkit.sa.v1', tipus:'situacio_aprenentatge', idioma:'ca', normativa:'LOMLOE', titol:'Són elèctricament dependents?', subtitol:'Electricitat i circuits elèctrics', etapa:'ESO', curs:'2n ESO', materia:'Tecnologia i Digitalització', ambit:'Tecnologia', durada:{ total:'16 hores', sessions:8 }, context:'L’alumnat utilitza dispositius elèctrics constantment, però sovint desconeix com funcionen els circuits que els fan possibles i quin impacte té el consum elèctric.', justificacio:'La comprensió dels circuits elèctrics és bàsica per interpretar sistemes tecnològics, actuar amb seguretat i prendre decisions de consum responsable.', repte:'Com podem analitzar i millorar una instal·lació elèctrica senzilla de l’institut perquè sigui segura i eficient?', producte_final:'Circuit elèctric funcional o maqueta d’instal·lació, esquema normalitzat, càlculs bàsics i proposta de millora energètica.', competencies_especifiques:[{codi:'CE2', materia:'Tecnologia i Digitalització', descripcio:'Analitzar problemes tecnològics de l’entorn i proposar solucions.'},{codi:'CE3', materia:'Tecnologia i Digitalització', descripcio:'Dissenyar, construir i avaluar prototips i circuits.'}], criteris_avaluacio:[{codi:'2.1', competencia:'CE2', descripcio:'Identificar necessitats i proposar solucions tècniques.'},{codi:'3.1', competencia:'CE3', descripcio:'Representar esquemes elèctrics amb simbologia adequada.'},{codi:'3.2', competencia:'CE3', descripcio:'Construir circuits de manera segura i eficient.'}], objectius_aprenentatge:[{id:'OA1', objectiu:'Comprendre corrent, tensió, resistència i consum.', criteris_relacionats:['2.1']},{id:'OA2', objectiu:'Representar i interpretar esquemes elèctrics.', criteris_relacionats:['3.1']},{id:'OA3', objectiu:'Muntar circuits amb seguretat.', criteris_relacionats:['3.2']}], sabers:{blocs:['Electricitat','Circuits','Seguretat i consum'], continguts:['Composició de la matèria i electricitat.', 'Corrent elèctric.', 'Circuit elèctric.', 'Esquemes elèctrics.', 'Components.', 'Magnituds elèctriques.', 'Consum elèctric i medi ambient.', 'Connexió de components.']}, sequencia_activitats:[{fase:'Inicials', titol:'Què fem servir que necessita electricitat?', durada:'4 hores', activitats:['Inventari de dispositius.', 'Debat sobre dependència energètica.', 'Introducció a magnituds.'], evidencies:['Inventari i preguntes inicials']},{fase:'Desenvolupament', titol:'Components i esquemes', durada:'4 hores', activitats:['Identificació de components.', 'Dibuix d’esquemes.', 'Pràctica amb simulador.'], evidencies:['Esquemes i simulacions']},{fase:'Estructuració', titol:'Muntatge i mesures', durada:'4 hores', activitats:['Muntatge de circuits.', 'Mesures bàsiques.', 'Anàlisi d’errors.'], evidencies:['Circuit funcional i registre']},{fase:'Aplicació', titol:'Instal·lació elèctrica de l’institut', durada:'4 hores', activitats:['Proposta de millora.', 'Presentació.', 'Coavaluació.'], evidencies:['Informe i presentació']}], mesures_i_suports:{universals:['Esquemes visuals.', 'Simuladors.', 'Normes de seguretat visibles.'], tdah:['Passos curts.', 'Rol de muntatge.'], tea:['Protocol fix de taller.', 'Reducció d’estímuls.'], dislexia:['Simbologia visual.', 'Text breu.'], tdl:['Glossari de magnituds.', 'Frases model per explicar el circuit.']}, avaluacio:{evidencies:['Esquemes.', 'Circuit.', 'Mesures.', 'Informe de millora.'], instruments:['Rúbrica de circuit.', 'Llista de seguretat.', 'Observació docent.'], retorn_i_millora:['Feedback durant muntatge.', 'Correcció d’errors.', 'Millora final.']}, vectors:{aprenentatges_competencials:'Aplicació de sabers elèctrics a un cas real.', perspectiva_genere:'Rols equitatius al taller.', universalitat_curriculum:'Simulació i muntatge amb diferents suports.', qualitat_llengues:'Explicació tècnica de circuits.', ciutadania_democratica_consciencia_global:'Consum energètic responsable.', benestar_emocional:'Seguretat i confiança al taller.'}, rubrica:[{criteri_lomloe:'3.1', competencia:'CE3', item:'Esquemes elèctrics', NA:'No representa el circuit.', AS:'Fa un esquema bàsic amb errors.', AN:'Fa un esquema correcte.', AE:'Fa un esquema rigorós i justificat.'},{criteri_lomloe:'3.2', competencia:'CE3', item:'Muntatge i seguretat', NA:'No munta el circuit o no respecta la seguretat.', AS:'Munta amb ajuda.', AN:'Munta correctament i segur.', AE:'Munta, comprova i millora amb autonomia.'}]
+  }
+];
+
+LOCAL_TECH_2ESO_SA.push(
+  { ...LOCAL_TECH_2ESO_SA[2], titol: 'Podem generar energia verda?', subtitol: 'Energia i tecnologia sostenible', repte: 'Com podem dissenyar i construir un aerogenerador escolar que expliqui la generació d’energia verda?', producte_final: 'Aerogenerador o maqueta funcional amb memòria tècnica i proposta d’ús d’energia verda al centre.', sabers: { blocs: ['Energia', 'Tecnologia sostenible', 'Procés tecnològic'], continguts: ['Fonts d’energia.', 'Energia elèctrica i centrals elèctriques.', 'Energies convencionals i medi ambient.', 'Desenvolupament sostenible.', 'Tecnologies sostenibles.', 'Disseny i construcció d’un aerogenerador.', 'Cerques i tractament d’informació digital.'] }, vectors: { ...LOCAL_TECH_2ESO_SA[2].vectors, ciutadania_democratica_consciencia_global: 'Reflexió sobre el futur energètic i les energies renovables.' } },
+  { ...LOCAL_TECH_2ESO_SA[2], titol: 'La comunicació té límit?', subtitol: 'Xarxes, comunicacions i Arduino', repte: 'Com podem construir un sistema de comunicació senzill i entendre les xarxes que fan possible internet?', producte_final: 'Telègraf o sistema de comunicació amb Arduino, esquema, codi i demostració de transmissió de missatges.', sabers: { blocs: ['Sistemes de comunicació', 'Xarxes', 'Programació i Arduino'], continguts: ['La comunicació, les TIC i internet.', 'Tipus de senyals.', 'Comunicacions amb i sense fil.', 'Telefonia, ràdio i televisió.', 'Xarxes locals i internet.', 'Seguretat a la xarxa.', 'Internet de les coses.', 'Construcció d’un telègraf amb Arduino.', 'Impremta digital.'] } },
+  { ...LOCAL_TECH_2ESO_SA[2], titol: 'Passem a conversar amb una màquina?', subtitol: 'Sistemes de control i intel·ligència artificial', repte: 'Com podem programar un assistent senzill que respongui a ordres o preguntes en un context escolar?', producte_final: 'Prototip d’assistent o chatbot amb App Inventor, documentació del flux de conversa i presentació.', sabers: { blocs: ['Tecnologies emergents', 'Sistemes de control', 'Programació', 'IA'], continguts: ['Tecnologies emergents.', 'Sistemes de control programat.', 'Aplicacions mòbils i programació.', 'App Inventor.', 'Instruccions d’un programa.', 'Assistents de veu i chatbots.', 'Programació d’un assistent de veu.', 'Emmagatzematge segur de la informació.'] } }
+);
+
+LOCAL_TECH_2ESO_SA.forEach((sa, index) => {
+  const id = `sa_tec_2eso_${index + 1}`;
+  if (!TEMPLATE_LIBRARY.some(t => t.id === id)) {
+    TEMPLATE_LIBRARY.push({ id, module: 'sa', label: `SA${index + 1} · ${sa.titol}`, data: jsonSaToFormResource(sa) });
+  }
+});
 
 init();
