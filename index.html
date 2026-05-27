@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#2563eb" />
-  <title>DocentKit · Generador de situacions i recursos</title>
+  <title>DocentKit v2.4.0 · Generador de situacions i recursos</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -13,7 +13,7 @@
     <div>
       <p class="eyebrow">PWA educativa · català · offline</p>
       <h1>DocentKit</h1>
-      <p class="subtitle">Generador docent de situacions d’aprenentatge, projectes, sessions, rúbriques i activitats.</p>
+      <p class="subtitle">Generador docent de situacions d’aprenentatge, projectes, sessions, rúbriques i activitats. <strong>v2.4.0</strong></p>
     </div>
     <div class="header-actions">
       <button id="installBtn" class="secondary hidden">Instal·la</button>
@@ -148,7 +148,27 @@
           <button id="saveBtn" class="secondary">Desa a la biblioteca</button>
           <button id="exportPdfBtn" class="secondary">Obre informe / PDF</button>
           <button id="exportJsonBtn" class="secondary">Exporta JSON</button>
+          <button id="exportProgramacioBtn" class="secondary">Exporta per Programació LOMLOE</button>
+          <button id="reviewSaBtn" class="secondary">Revisa SA</button>
         </div>
+        <div id="saReviewPanel" class="validation-panel sa-review-panel">Prem “Revisa SA” per comprovar si la situació està completa abans d’exportar-la.</div>
+
+        <section class="rubric-workshop" aria-label="Taller de rúbrica NA AS AN AE">
+          <div class="card-title-row compact-title">
+            <div>
+              <p class="eyebrow">Rúbrica millorada · v2.4.0</p>
+              <h3>Taller de rúbrica NA / AS / AN / AE</h3>
+              <p class="hint">Genera, revisa i exporta una rúbrica criterial compatible amb Programació LOMLOE. Es basa en els criteris detectats al camp “Competències i criteris d’avaluació”.</p>
+            </div>
+          </div>
+          <div class="actions-row compact-actions">
+            <button id="rubricBuildBtn" class="secondary small" type="button">Genera rúbrica criterial</button>
+            <button id="rubricReviewBtn" class="secondary small" type="button">Revisa rúbrica</button>
+            <button id="rubricApplyBtn" class="secondary small" type="button">Afegeix a avaluació</button>
+            <button id="rubricExportBtn" class="secondary small" type="button">Exporta rúbrica JSON</button>
+          </div>
+          <div id="rubricWorkshopPanel" class="rubric-workshop-panel">Encara no s’ha generat cap rúbrica. Pots escriure criteris al formulari i prémer “Genera rúbrica criterial”.</div>
+        </section>
       </section>
 
       <section class="output-card">
@@ -180,6 +200,11 @@
         <div class="import-actions">
           <input id="fileInput" type="file" accept=".txt,.md,.json,.docx,.pdf" />
           <button id="importBtn" class="secondary">Importa i interpreta</button>
+          <label class="secondary small file-label">Importa projecte de Tecnologia/Reptes<input id="techProjectInput" type="file" accept="application/json,.json" /></label>
+        </div>
+        <div class="tech-import-box">
+          <strong>Connexió Tecnologia i reptes → DocentKit</strong>
+          <p class="hint">Importa un JSON exportat des de Tecnologia ESO · Projectes i reptes i converteix-lo en una SA editable. Quedarà marcada com a esborrany pendent de revisar abans d’exportar-la a Programació LOMLOE.</p>
         </div>
       </section>
 
@@ -308,6 +333,25 @@
         <pre id="aiOutput" class="ai-output" aria-live="polite">Encara no hi ha cap esborrany.</pre>
       </section>
 
+
+      <section class="maintenance-card" aria-label="Manteniment tècnic i còpies de seguretat">
+        <div class="card-title-row">
+          <div>
+            <p class="eyebrow">Manteniment</p>
+            <h2>Diagnòstic, còpies i especificació JSON</h2>
+            <p class="hint">Eines locals per comprovar la versió, exportar dades i conservar un format tècnic reutilitzable.</p>
+          </div>
+        </div>
+        <div class="actions-row compact-actions">
+          <button id="dkDiagBtn" class="secondary small" type="button">Mostra diagnòstic</button>
+          <button id="dkRunSelfTestBtn" class="secondary small" type="button">Proves bàsiques</button>
+          <button id="dkExportBackupBtn" class="secondary small" type="button">Exporta còpia local</button>
+          <label class="secondary small file-label">Importa còpia local<input id="dkImportBackupInput" type="file" accept="application/json,.json" /></label>
+          <button id="dkSchemaBtn" class="secondary small" type="button">Descarrega especificació JSON</button>
+        </div>
+        <pre id="dkMaintenanceOutput" class="maintenance-output">Encara no s’ha executat cap diagnòstic.</pre>
+      </section>
+
       <section class="library-card">
         <div class="card-title-row">
           <div>
@@ -353,6 +397,7 @@
         <button class="secondary load-item">Obre</button>
         <button class="secondary duplicate-item">Duplica</button>
         <button class="secondary export-item">JSON</button>
+        <button class="secondary export-programacio-item">Prog. LOMLOE</button>
         <button class="danger delete-item">Elimina</button>
       </div>
     </article>

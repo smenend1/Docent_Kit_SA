@@ -87,3 +87,82 @@ Novetats:
 - Millora la barra d’exportació en mòbil i evita que la sortida quedi amagada dins el mode IA.
 - Ajusta l’estil visual de l’informe de SA perquè sigui més clar i atractiu.
 - Service worker actualitzat a docentkit-v214.
+
+
+## v2.2 · Estabilització tècnica
+
+Aquesta versió afegeix un panell de manteniment amb diagnòstic, proves bàsiques, exportació/importació de còpia local i descàrrega de l'especificació JSON `docentkit.sa.v1`. L'objectiu és facilitar la recuperació de dades, la reconstrucció tècnica i el control de cache/service worker.
+
+
+## Versió 2.2.1
+
+Aquesta revisió afegeix interoperabilitat directa amb la futura PWA **Programació LOMLOE · Matèries i Situacions d’Aprenentatge**.
+
+Novetats:
+
+- Nou botó **Exporta per Programació LOMLOE** al formulari principal.
+- L’exportació JSON principal passa a prioritzar l’esquema `docentkit.sa.v1` quan el recurs és una situació d’aprenentatge.
+- El paquet exportat per programació usa `programacio.lomloe.sa.import.v1` i inclou la SA dins de `situacio`.
+- Això permet que la futura PWA de programació anual pugui importar SA creades o millorades amb DocentKit sense perdre repte, sabers, seqüència, inclusió ni avaluació.
+
+## v2.3.1 · Exportació cap a Programació LOMLOE
+
+- Afegeix exportació directa de la SA actual amb el botó **Exporta per Programació LOMLOE**.
+- Afegeix exportació compatible també des de cada recurs de la biblioteca amb **Prog. LOMLOE**.
+- El JSON resultant és pla i compatible amb **Programació LOMLOE → Gestor de SA → Importa SA JSON**.
+- Conserva també l’objecte original DocentKit dins de `docentkitOriginal` per no perdre informació.
+
+
+Actualització recent:
+- DocentKit v2.3.1: exportació Programació LOMLOE ampliada amb metadades de curs/matèria, rúbrica i avaluació quan existeixen.
+
+## v2.3.1 · Revisió de qualitat de SA
+
+- Afegit el botó **Revisa SA** al formulari principal.
+- L'informe comprova títol, curs/matèria, durada, context i repte, producte final, sabers, CE/CA, seqüència d'activitats, inclusió/DUA, avaluació, instruments i rúbrica NA/AS/AN/AE.
+- L'exportació **Exporta per Programació LOMLOE** incorpora una metadada `validacioDocentKit` amb puntuació, errors i avisos.
+- L'exportació continua sent compatible amb **Programació LOMLOE → Gestor de SA → Importa SA JSON**.
+
+## v2.3.1 · Rúbrica millorada NA/AS/AN/AE
+
+Aquesta versió afegeix un taller específic de rúbrica dins del formulari principal:
+
+- **Genera rúbrica criterial**: crea una rúbrica amb ítems i nivells NA, AS, AN i AE a partir dels criteris detectats.
+- **Revisa rúbrica**: comprova si hi ha criteris, ítems i descriptors complets.
+- **Afegeix a avaluació**: insereix la rúbrica estructurada dins del camp d’avaluació.
+- **Exporta rúbrica JSON**: genera un fitxer de rúbrica reutilitzable.
+
+L’exportació cap a **Programació LOMLOE** també envia la rúbrica normalitzada amb els camps `criteri_lomloe`, `item`, `NA`, `AS`, `AN` i `AE`.
+
+
+## v2.3.1 · Correcció del taller de rúbrica
+
+- Corregeix el generador de rúbrica criterial perquè no generi files buides amb `NA / AS / AN / AE`.
+- El botó **Genera rúbrica criterial** crea descriptors complets i diferenciats.
+- El botó **Revisa rúbrica** revisa la rúbrica generada en pantalla, no una plantilla antiga buida.
+- El botó **Afegeix a avaluació** insereix una rúbrica textual estructurada compatible amb Programació LOMLOE.
+
+## v2.4.0 · Importar projectes de Tecnologia i reptes
+
+Aquesta versió connecta millor DocentKit amb **Tecnologia ESO · Projectes i reptes**.
+
+Novetats:
+- Nou botó **Importa projecte de Tecnologia/Reptes** dins d'Importació avançada.
+- Accepta JSON exportats des de Tecnologia ESO · Projectes i reptes.
+- Converteix un projecte o repte tecnològic en una situació d'aprenentatge editable dins DocentKit.
+- Carrega títol, curs, matèria, repte, producte final, sabers, CE, CA, seqüència, materials, evidències i rúbrica quan existeixin.
+- Marca la SA com a **pendent de revisar** abans d'exportar-la a Programació LOMLOE.
+- La importació JSON genèrica també intenta reconèixer paquets de Tecnologia/Reptes automàticament.
+
+Flux recomanat:
+
+```text
+Tecnologia ESO · Projectes i reptes
+→ Exporta projecte / SA JSON
+→ DocentKit
+→ Importa projecte de Tecnologia/Reptes
+→ Revisa SA
+→ Exporta per Programació LOMLOE
+```
+
+Aquesta versió no substitueix DocentKit com a generador de SA: Tecnologia/Reptes continua fent de banc de projectes i idees tècniques.

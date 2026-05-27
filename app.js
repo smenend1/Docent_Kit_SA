@@ -157,7 +157,7 @@ const els = {
   aiCourse: document.getElementById('aiCourse'), aiSubject: document.getElementById('aiSubject'), aiTopic: document.getElementById('aiTopic'), aiProduct: document.getElementById('aiProduct'),
   aiDuration: document.getElementById('aiDuration'), aiTools: document.getElementById('aiTools'), aiKnowledge: document.getElementById('aiKnowledge'), aiCriteria: document.getElementById('aiCriteria'),
   aiInclTdah: document.getElementById('aiInclTdah'), aiInclTea: document.getElementById('aiInclTea'), aiInclDislexia: document.getElementById('aiInclDislexia'), aiInclTdl: document.getElementById('aiInclTdl'),
-  aiValidationPanel: document.getElementById('aiValidationPanel'), pedagogicAuditPanel: document.getElementById('pedagogicAuditPanel'), importStatus: document.getElementById('importStatus')
+  aiValidationPanel: document.getElementById('aiValidationPanel'), pedagogicAuditPanel: document.getElementById('pedagogicAuditPanel'), importStatus: document.getElementById('importStatus'), saReviewPanel: document.getElementById('saReviewPanel')
 };
 
 function init() {
@@ -184,6 +184,10 @@ function bindEvents() {
   document.getElementById('printSamePageBtn').addEventListener('click', printCurrentReport);
   document.getElementById('downloadHtmlBtn').addEventListener('click', downloadCurrentHtml);
   document.getElementById('exportJsonBtn').addEventListener('click', exportCurrentJson);
+  const exportProgramacioBtn = document.getElementById('exportProgramacioBtn');
+  if (exportProgramacioBtn) exportProgramacioBtn.addEventListener('click', exportCurrentForProgramacio);
+  const reviewSaBtn = document.getElementById('reviewSaBtn');
+  if (reviewSaBtn) reviewSaBtn.addEventListener('click', () => renderSaReview(validateSaForExport(getFormData()), true));
   document.getElementById('copyBtn').addEventListener('click', copyReportText);
   const updateReportBtn = document.getElementById('updateReportBtn');
   if (updateReportBtn) updateReportBtn.addEventListener('click', () => { renderReport(getFormData()); scrollReportIntoView(); });
@@ -597,6 +601,8 @@ function renderLibrary() {
     node.querySelector('.load-item').addEventListener('click', () => loadResource(item.id));
     node.querySelector('.duplicate-item').addEventListener('click', () => duplicateResource(item.id));
     node.querySelector('.export-item').addEventListener('click', () => exportSingleResource(item.id));
+    const exportProgramacioItem = node.querySelector('.export-programacio-item');
+    if (exportProgramacioItem) exportProgramacioItem.addEventListener('click', () => exportSingleForProgramacio(item.id));
     node.querySelector('.delete-item').addEventListener('click', () => deleteResource(item.id));
     els.library.appendChild(node);
   });
@@ -1097,7 +1103,199 @@ function showTransientMessage(message) {
   }
 }
 
-function exportCurrentJson() { const data = getFormData(); downloadJson(data, slugify(data.title) + '.json'); }
+
+
+// ===== DocentKit v2.2.4: revisio de qualitat de SA abans d'exportar =====
+function validateSaForExport(data) {
+  const d = data || {};
+  const competenceParts = extractCompetenceParts(d.competences || d.competencies || '');
+  const challengeParts = extractSaParts(d.challenge || d.repte || d.context || '');
+  const sequenceParts = extractSequenceParts(d.sequence || d.sequencia || '');
+  const assessmentParts = extractAssessmentParts(d.assessment || d.avaluacio || '');
+  const inclusionParts = extractInclusionParts(d.inclusion || d.inclusio || '');
+  const criteriaCodes = competenceParts.criteriaCodes || [];
+  const rubrics = buildRubricRows(d, criteriaCodes);
+  const checks = [];
+  const add = (level, label, ok, message, fix='') => checks.push({ level, label, ok: !!ok, message, fix });
+
+  const title = (d.title || d.titol || '').trim();
+  const level = (d.level || d.curs || '').trim();
+  const subject = (d.subject || d.materia || '').trim();
+  const duration = (d.duration || d.durada || '').trim();
+  const challengeText = [d.challenge, challengeParts.context, challengeParts.repte, challengeParts.producte, d.context].filter(Boolean).join('\n');
+  const knowledgeText = String(d.knowledge || flattenSabers(d.sabers) || '').trim();
+  const competencesText = String(d.competences || d.competencies || '').trim();
+  const sequenceText = String(d.sequence || d.sequencia || '').trim();
+  const inclusionText = String(d.inclusion || d.inclusio || '').trim();
+  const assessmentText = String(d.assessment || d.avaluacio || '').trim();
+  const instrumentsText = String(assessmentParts.instruments || assessmentText || '').trim();
+  const product = (challengeParts.producte || d.producteFinal || d.producte_final || '').trim();
+  const hasPhases = ['inicial','desenvolupament','estructuraci','aplicaci'].filter(x => sequenceText.toLowerCase().includes(x)).length;
+  const hasDua = /DUA|representaci[oó]|expressi[oó]|implicaci[oó]|TDAH|TEA|disl[eè]xia|TDL|universal/i.test(inclusionText);
+  const hasRubricLevels = /NA/i.test(assessmentText) && /AS/i.test(assessmentText) && /AN/i.test(assessmentText) && /AE/i.test(assessmentText);
+
+  add('error', 'Títol', title.length > 4, 'Falta un títol clar de la situació d’aprenentatge.', 'Escriu un títol concret i reconeixible.');
+  add('error', 'Curs i matèria', level && subject, 'Falta el curs o la matèria.', 'Indica curs i matèria per exportar-la bé cap a Programació LOMLOE.');
+  add('warning', 'Durada', /\d+/.test(duration), 'La durada no està indicada o és massa ambigua.', 'Afegeix sessions, hores o setmanes.');
+  add('error', 'Context i repte', challengeText.length > 120 && /repte|necessitat|problema|com podem|context|situaci/i.test(challengeText), 'Falta context o repte prou desenvolupat.', 'Formula un context proper i un repte tipus pregunta o necessitat.');
+  add('warning', 'Producte final', product.length > 20 || /producte final|prototip|maqueta|document|presentaci|informe|circuit|robot|app|web/i.test(challengeText), 'El producte final no queda prou clar.', 'Especifica què lliurarà o mostrarà l’alumnat.');
+  add('error', 'Sabers', knowledgeText.length > 100, 'Falten sabers o continguts clau prou concrets.', 'Afegeix blocs de sabers i continguts/procediments treballats.');
+  add('error', 'CE i CA', competencesText.length > 80 && (/CE\d/i.test(competencesText) || criteriaCodes.length || /criteri|compet[eè]ncia/i.test(competencesText)), 'Falten competències específiques o criteris d’avaluació.', 'Inclou CE desenvolupades i CA/codis quan sigui possible.');
+  add('error', 'Seqüència d’activitats', sequenceText.length > 180, 'La seqüència d’activitats és massa curta o buida.', 'Descriu activitats inicials, desenvolupament, estructuració i aplicació.');
+  add('warning', 'Fases didàctiques', hasPhases >= 3, 'No es detecten prou fases didàctiques.', 'Inclou inicials, desenvolupament, estructuració i aplicació/transferència.');
+  add('warning', 'Inclusió / DUA', inclusionText.length > 120 && hasDua, 'Les mesures d’inclusió o DUA són febles o inexistents.', 'Afegeix suports universals i adaptacions concretes.');
+  add('error', 'Avaluació i evidències', assessmentText.length > 120 && /evid[eè]nc|instrument|rubric|rúbric|retorn|coavaluaci|autoavaluaci|prova|fitxa/i.test(assessmentText), 'Falten evidències, instruments o retorn d’avaluació.', 'Inclou instruments, evidències i moments de feedback.');
+  add('warning', 'Instruments', instrumentsText.length > 30 && /rúbric|rubric|fitxa|observaci|prova|llista|portafoli|presentaci|document/i.test(instrumentsText), 'No es detecten instruments d’avaluació prou clars.', 'Concreta rúbrica, fitxa, observació, prova, checklist, portafoli, etc.');
+  add('warning', 'Rúbrica NA/AS/AN/AE', rubrics.length >= 3 || hasRubricLevels, 'La rúbrica no sembla completa amb nivells NA/AS/AN/AE.', 'Afegeix una rúbrica amb criteris i descriptors NA, AS, AN i AE.');
+
+  const errors = checks.filter(c => c.level === 'error' && !c.ok);
+  const warnings = checks.filter(c => c.level === 'warning' && !c.ok);
+  const ok = checks.filter(c => c.ok);
+  const total = checks.length;
+  const score = Math.round((ok.length / total) * 100);
+  let status = 'Cal revisar';
+  if (!errors.length && warnings.length <= 1) status = 'A punt per exportar';
+  else if (!errors.length) status = 'Exportable amb avisos';
+  else if (score >= 60) status = 'Bona base, però incompleta';
+  return { checks, errors, warnings, ok, score, status };
+}
+
+function renderSaReview(result, scroll=false) {
+  const target = els.saReviewPanel || els.aiValidationPanel;
+  if (!target) return;
+  const badgeClass = result.errors.length ? 'missing' : result.warnings.length ? 'warn' : 'ok';
+  const summary = `<p class="${result.errors.length ? 'warn' : 'ok'}"><strong>${escapeHtml(result.status)}</strong> · ${result.score}/100 · ${result.errors.length} errors · ${result.warnings.length} avisos</p>`;
+  const list = (items, title, cls) => items.length ? `<h4>${escapeHtml(title)}</h4><ul>${items.map(i => `<li><strong>${escapeHtml(i.label)}:</strong> ${escapeHtml(i.message)}${i.fix ? `<br><small>${escapeHtml(i.fix)}</small>` : ''}</li>`).join('')}</ul>` : '';
+  const chips = result.checks.map(c => `<span class="validation-chip ${c.ok ? 'ok' : c.level === 'error' ? 'missing' : 'warn'}">${c.ok ? '✓' : c.level === 'error' ? '!' : '⚠'} ${escapeHtml(c.label)}</span>`).join('');
+  target.innerHTML = `${summary}<div class="validation-chip-row">${chips}</div>${list(result.errors,'Errors a corregir','missing')}${list(result.warnings,'Avisos de millora','warn')}${result.errors.length || result.warnings.length ? '<p class="hint">Pots exportar igualment, però és recomanable revisar aquests punts abans d’enviar la SA a Programació LOMLOE.</p>' : '<p class="ok">La SA té els blocs essencials i és una bona candidata per exportar a Programació LOMLOE.</p>'}`;
+  if (scroll && target.scrollIntoView) target.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+function exportCurrentForProgramacio() {
+  const form = getFormData();
+  const validation = validateSaForExport(form);
+  renderSaReview(validation, false);
+  const payload = buildProgramacioLomloeExport(form);
+  payload.validacioDocentKit = {
+    status: validation.status,
+    score: validation.score,
+    errors: validation.errors.map(e => ({ camp: e.label, missatge: e.message })),
+    avisos: validation.warnings.map(w => ({ camp: w.label, missatge: w.message }))
+  };
+  downloadJson(payload, `sa-programacio-lomloe-${slugify(payload.titol || form.title || 'situacio')}.json`);
+  showTransientMessage(`S'ha exportat “${payload.titol || form.title}” en format compatible amb Programació LOMLOE. Validació: ${validation.status} (${validation.score}/100).`);
+}
+
+function exportSingleForProgramacio(id) {
+  const item = resources.find(r => r.id === id);
+  if (!item) return;
+  const validation = validateSaForExport(item);
+  const payload = buildProgramacioLomloeExport(item);
+  payload.validacioDocentKit = {
+    status: validation.status,
+    score: validation.score,
+    errors: validation.errors.map(e => ({ camp: e.label, missatge: e.message })),
+    avisos: validation.warnings.map(w => ({ camp: w.label, missatge: w.message }))
+  };
+  downloadJson(payload, `sa-programacio-lomloe-${slugify(payload.titol || item.title || 'situacio')}.json`);
+  showTransientMessage(`S'ha exportat “${payload.titol || item.title}” des de la biblioteca en format Programació LOMLOE. Validació: ${validation.status} (${validation.score}/100).`);
+}
+
+function buildProgramacioLomloeExport(item) {
+  const data = item || {};
+  const challengeParts = extractSaParts(data.challenge || data.repte || data.context || '');
+  const competenceParts = extractCompetenceParts(data.competences || data.competencies || '');
+  const sequenceParts = extractSequenceParts(data.sequence || data.sequencia || '');
+  const assessmentParts = extractAssessmentParts(data.assessment || data.avaluacio || '');
+  const inclusionParts = extractInclusionParts(data.inclusion || data.inclusio || '');
+  const docentkit = formResourceToDocentKitJson(data);
+  const title = data.title || data.titol || docentkit.titol || '';
+  const sabers = textLines(data.knowledge || flattenSabers(docentkit.sabers));
+  const competencies = textLines(competenceParts.competencies || data.competenciesEspecifiques || data.competencies || '');
+  const criteris = textLines(competenceParts.criteria || data.criterisAvaluacio || data.criteris || '');
+  const activitats = sequenceToLines(sequenceParts, data.sequence || data.sequencia || docentkit.sequencia_activitats);
+  const instruments = textLines(assessmentParts.instruments || assessmentParts.evidencies || data.assessment || '');
+  const dua = textLines(inclusionParts.universals || data.inclusion || '');
+  return {
+    type: 'situacio-aprenentatge',
+    schema: 'programacio.lomloe.sa.import.v2',
+    version: '1.1',
+    source: 'DocentKit',
+    target: 'ProgramacioLOMLOE',
+    exportedAt: new Date().toISOString(),
+    titol: title,
+    etapa: docentkit.etapa || data.etapa || '',
+    curs: docentkit.curs || data.level || data.curs || '',
+    materia: docentkit.materia || data.subject || data.materia || '',
+    trimestre: data.trimestre || '',
+    durada: normalizeDurationForProgramacio(data.duration || data.durada || docentkit.durada),
+    context: challengeParts.context || data.context || data.descripcio || data.challenge || docentkit.context || '',
+    descripcio: challengeParts.context || data.descripcio || data.challenge || docentkit.context || '',
+    repte: challengeParts.repte || data.repte || docentkit.repte || firstSentence(data.challenge || ''),
+    producteFinal: challengeParts.producte || data.producteFinal || data.producte_final || docentkit.producte_final || '',
+    sabers,
+    competenciesEspecifiques: competencies,
+    criterisAvaluacio: criteris,
+    activitats,
+    instruments,
+    recursos: textLines(data.recursos || data.materials || docentkit.recursos || ''),
+    dua,
+    mesuresInclusives: docentkit.mesures_i_suports || data.mesures_i_suports || data.inclusion || data.inclusio || '',
+    avaluacio: docentkit.avaluacio || data.avaluacio || {},
+    rubrica: docentkit.rubrica || data.rubric || data.rubrica || [],
+    objectius: docentkit.objectius_aprenentatge || data.objectius || [],
+    observacions: 'Exportat des de DocentKit. Revisa i assigna el trimestre a Programació LOMLOE si cal.',
+    docentkitOriginal: docentkit
+  };
+}
+
+function textLines(value) {
+  if (Array.isArray(value)) {
+    return value.map(v => {
+      if (typeof v === 'string') return v;
+      if (!v || typeof v !== 'object') return '';
+      if (v.codi || v.text) return [v.codi, v.text].filter(Boolean).join('. ');
+      if (v.titol || v.activitats) return [v.titol, Array.isArray(v.activitats) ? v.activitats.join('; ') : v.activitats].filter(Boolean).join(': ');
+      return JSON.stringify(v);
+    }).map(v => String(v).trim()).filter(Boolean);
+  }
+  if (value && typeof value === 'object') return textLines(Object.values(value).flat());
+  return String(value || '').split(/\n+/).map(v => v.replace(/^[-•]\s*/, '').trim()).filter(Boolean);
+}
+
+function flattenSabers(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'object') {
+    const out = [];
+    if (Array.isArray(value.blocs)) out.push(...value.blocs);
+    if (Array.isArray(value.continguts)) out.push(...value.continguts);
+    return out;
+  }
+  return value;
+}
+
+function normalizeDurationForProgramacio(value) {
+  if (!value) return '';
+  if (typeof value === 'object') return value.total || value.sessions || '';
+  return String(value);
+}
+
+function sequenceToLines(parts, original) {
+  const collected = [];
+  ['inicials', 'desenvolupament', 'estructuracio', 'aplicacio', 'metodologia'].forEach(key => {
+    if (parts && parts[key]) collected.push(`${labelSequencePart(key)}: ${parts[key]}`);
+  });
+  if (collected.length) return collected;
+  if (Array.isArray(original)) return textLines(original);
+  return textLines(original);
+}
+
+function labelSequencePart(key) {
+  return ({ inicials: 'Inicials', desenvolupament: 'Desenvolupament', estructuracio: 'Estructuració', aplicacio: 'Aplicació', metodologia: 'Metodologia' })[key] || key;
+}
+
+function exportCurrentJson() { const data = formResourceToDocentKitJson(getFormData()); downloadJson(data, slugify(data.titol || data.title || 'docentkit-sa') + '.json'); }
 function downloadJson(data, filename) { downloadBlob(JSON.stringify(data, null, 2), filename, 'application/json;charset=utf-8'); }
 
 async function importFile() {
@@ -1205,23 +1403,37 @@ function extractJsonFormResources(parsed) {
 function formResourceToDocentKitJson(item) {
   if (!item) return {};
   if (isDocentKitSaJson(item) && item.titol) return item;
-  const isSa = String(item.type || '').toLowerCase().includes('situació') || String(item.type || '').toLowerCase().includes('situacio');
+  const isSa = String(item.type || '').toLowerCase().includes('situació') || String(item.type || '').toLowerCase().includes('situacio') || item.challenge || item.knowledge || item.sequence;
   if (!isSa) return { ...item, schema: 'docentkit.resource.v1' };
+  const lines = value => String(value || '').split(/\n+/).map(v => v.trim()).filter(Boolean);
+  const duration = item.duration || '';
   return {
     schema: 'docentkit.sa.v1',
     tipus: 'situacio_aprenentatge',
     idioma: 'ca',
     normativa: 'LOMLOE',
+    origen: 'DocentKit',
     titol: item.title || item.titol || '',
+    subtitol: '',
+    etapa: String(item.level || item.curs || '').includes('ESO') ? 'ESO' : '',
     curs: item.level || item.curs || '',
     materia: item.subject || item.materia || '',
-    durada: { total: item.duration || '' },
+    ambit: item.subject || item.materia || '',
+    durada: { total: duration, sessions: null },
+    context: '',
+    justificacio: '',
     repte: item.challenge || '',
-    sabers_continguts: item.knowledge ? item.knowledge.split(/\n+/).filter(Boolean) : [],
-    competencies: item.competences || '',
-    sequencia: item.sequence || '',
-    mesures_suports: item.inclusion || '',
-    avaluacio: item.assessment || '',
+    producte_final: '',
+    competencies_especifiques: [],
+    criteris_avaluacio: [],
+    objectius_aprenentatge: [],
+    sabers: { blocs: [], continguts: lines(item.knowledge) },
+    metodologia: { enfocament: '', organitzacio_aula: '', recursos: [] },
+    sequencia_activitats: lines(item.sequence).map((text, index) => ({ fase: index === 0 ? 'Inicials' : index === 1 ? 'Desenvolupament' : index === 2 ? 'Estructuració' : 'Aplicació', titol: '', durada: '', activitats: [text], evidencies: [] })),
+    mesures_i_suports: { universals: lines(item.inclusion), tdah: [], tea: [], dislexia: [], tdl: [] },
+    avaluacio: { evidencies: lines(item.assessment), instruments: [], retorn_i_millora: [] },
+    vectors: {},
+    rubrica: buildRubricRows(item, []).map(row => ({ criteri_lomloe: row.criteri_lomloe || row.criteria || '', competencia: row.competencia || '', item: row.item || 'Ítem d’avaluació', NA: row.NA || row.levels?.NA || '', AS: row.AS || row.levels?.AS || '', AN: row.AN || row.levels?.AN || '', AE: row.AE || row.levels?.AE || '' })),
     tags: item.tags || []
   };
 }
@@ -3224,3 +3436,575 @@ LOCAL_TECH_2ESO_SA.forEach((sa, index) => {
 });
 
 init();
+
+
+/* DocentKit v2.2 · manteniment tècnic, còpies i especificació JSON */
+(function(){
+  const VERSION = '2.3.0';
+  const PREFIX = 'docentkit.';
+  const $ = id => document.getElementById(id);
+  const out = () => $('dkMaintenanceOutput');
+  function write(msg){ const box=out(); if(box) box.textContent = msg; }
+  function downloadJson(name, data){
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+  }
+  function localDocentKitKeys(){ return Object.keys(localStorage).filter(k => k.startsWith(PREFIX)).sort(); }
+  function exportBackup(){
+    const keys = localDocentKitKeys(); const data = {};
+    keys.forEach(k => { data[k] = localStorage.getItem(k); });
+    downloadJson(`docentkit-backup-v${VERSION}-${new Date().toISOString().slice(0,10)}.json`, { schema:'docentkit.backup.v1', app:'DocentKit', version:VERSION, exportedAt:new Date().toISOString(), keys:data });
+    write(`Còpia exportada amb ${keys.length} claus locals. Recomanació: guarda aquest fitxer fora del navegador.`);
+  }
+  async function importBackup(file){
+    if(!file) return; const data = JSON.parse(await file.text()); const keys = data.keys || data.localStorage || {};
+    const names = Object.keys(keys).filter(k => k.startsWith(PREFIX));
+    if(!names.length) { write('El fitxer no conté dades DocentKit reconegudes.'); return; }
+    if(!confirm(`S'importaran ${names.length} claus locals de DocentKit. Vols continuar?`)) return;
+    names.forEach(k => localStorage.setItem(k, String(keys[k])));
+    write(`Còpia importada: ${names.length} claus. Recarrega la PWA per veure tots els canvis.`);
+  }
+  function schema(){
+    downloadJson('docentkit-sa-schema-v1.json', {
+      schema:'docentkit.sa.schema.v1', tipus:'situacio_aprenentatge', idioma:'ca', normativa:'LOMLOE',
+      camps_obligatoris:['titol','curs','materia','context','repte','producte_final','criteris_avaluacio','sabers','sequencia_activitats','avaluacio','rubrica'],
+      curs:'1r ESO | 2n ESO | 3r ESO | 4t ESO',
+      durada:{ total:'16 hores', sessions:8 },
+      sabers:{ blocs:['...'], continguts:['...'] },
+      sequencia_activitats:[{ fase:'Inicials | Desenvolupament | Estructuració | Aplicació', titol:'', durada:'', activitats:['...'], evidencies:['...'] }],
+      mesures_i_suports:{ universals:['...'], tdah:['...'], tea:['...'], dislexia:['...'], tdl:['...'] },
+      avaluacio:{ evidencies:['...'], instruments:['...'], retorn_i_millora:['...'] },
+      rubrica:[{ criteri_lomloe:'2.1', competencia:'CE2', item:'', NA:'', AS:'', AN:'', AE:'' }]
+    });
+    write('Especificació JSON descarregada. Serveix com a plantilla tècnica per reconstruir o importar SA.');
+  }
+  async function diagnostics(){
+    const keys = localDocentKitKeys(); let cachesList = [];
+    try { if('caches' in window) cachesList = await caches.keys(); } catch(e) {}
+    let resources = 0; try { resources = JSON.parse(localStorage.getItem('docentkit.resources.v20')||'[]').length; } catch(e) {}
+    write([
+      'DocentKit · diagnòstic tècnic',
+      `Versió declarada: ${VERSION}`,
+      `URL: ${location.href}`,
+      `Connexió: ${navigator.onLine ? 'en línia' : 'offline'}`,
+      `Service worker actiu: ${navigator.serviceWorker?.controller ? 'sí' : 'pendent o no instal·lat'}`,
+      `Caches detectades: ${cachesList.join(', ') || 'cap/pendent'}`,
+      `Claus locals DocentKit: ${keys.length}`,
+      `Recursos biblioteca: ${resources}`,
+      `Espai local aproximat: ${Math.round(keys.reduce((n,k)=>n+(localStorage.getItem(k)||'').length,0)/1024)} KB`,
+      'Consell: si veus una versió antiga, esborra dades del lloc o reinstal·la la PWA.'
+    ].join('\n'));
+  }
+  function selfTest(){
+    const checks = [
+      ['Formulari principal', !!$('resourceForm')], ['Vista informe', !!$('reportPreview')], ['Importació', !!$('fileInput') && !!$('importBtn')], ['Biblioteca', !!$('libraryList')], ['Manteniment', !!$('dkMaintenanceOutput')], ['localStorage', (()=>{try{localStorage.setItem('__dk_test','1');localStorage.removeItem('__dk_test');return true}catch(e){return false}})()]
+    ];
+    write('Proves bàsiques DocentKit v2.2\n' + checks.map(([n,ok]) => `${ok?'✓':'✗'} ${n}`).join('\n'));
+  }
+  function bind(){
+    $('dkDiagBtn')?.addEventListener('click', diagnostics);
+    $('dkRunSelfTestBtn')?.addEventListener('click', selfTest);
+    $('dkExportBackupBtn')?.addEventListener('click', exportBackup);
+    $('dkSchemaBtn')?.addEventListener('click', schema);
+    $('dkImportBackupInput')?.addEventListener('change', e => importBackup(e.target.files?.[0]));
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind); else bind();
+})();
+
+/* DocentKit v2.3.0 · Taller de rubrica NA/AS/AN/AE */
+(function(){
+  const VERSION = '2.3.0';
+  const $ = id => document.getElementById(id);
+  const previousBuildRubricRows = typeof buildRubricRows === 'function' ? buildRubricRows : null;
+  const previousFormResourceToDocentKitJson = typeof formResourceToDocentKitJson === 'function' ? formResourceToDocentKitJson : null;
+
+  function clean(value){ return String(value || '').replace(/\s+/g,' ').trim(); }
+  function esc(value){ return typeof escapeHtml === 'function' ? escapeHtml(value) : String(value||'').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+  function splitLines(value){ return String(value || '').split(/\n+/).map(v => v.trim()).filter(Boolean); }
+  function unique(values){ return [...new Set(values.map(v => clean(v)).filter(Boolean))]; }
+  function getCriteriaCodesFromForm(data){
+    const text = [data?.competences, data?.criteria, data?.criteris, data?.criterisAvaluacio].join('\n');
+    if (typeof extractCriteriaCodes === 'function') return extractCriteriaCodes(text);
+    return unique((text.match(/\b\d+\.\d+\b/g) || []));
+  }
+  function normalizeRubricRow(row, fallbackCode, index){
+    const levels = row?.levels || row?.nivells || {};
+    const criteri = clean(row?.criteri_lomloe || row?.criteri || row?.criteria || row?.codi || fallbackCode || '');
+    const item = clean(row?.item || row?.descriptor || row?.evidencia || row?.evidència || `Ítem d'avaluació ${index + 1}`);
+    return {
+      criteri,
+      criteri_lomloe: criteri,
+      competencia: clean(row?.competencia || row?.competència || row?.ce || ''),
+      item,
+      na: clean(row?.na || row?.NA || levels.NA || levels.na || row?.noAssolit || row?.no_assolit || ''),
+      as: clean(row?.as || row?.AS || levels.AS || levels.as || row?.assolitSatisfactori || row?.assolit_satisfactori || ''),
+      an: clean(row?.an || row?.AN || levels.AN || levels.an || row?.assolitNotable || row?.assolit_notable || ''),
+      ae: clean(row?.ae || row?.AE || levels.AE || levels.ae || row?.assolitExcellent || row?.assolit_excel_lent || row?.assolitExcel·lent || '')
+    };
+  }
+  function parsePipeRubric(text){
+    const rows = [];
+    const lines = String(text || '').split('\n').map(l => l.trim()).filter(l => l.includes('|'));
+    for (const line of lines) {
+      if (/criteri\s*\|\s*[íi]tem/i.test(line) || /^[-|\s]+$/.test(line)) continue;
+      const cells = line.split('|').map(c => clean(c)).filter(c => c && !/^[-:]+$/.test(c));
+      if (cells.length >= 6) rows.push(normalizeRubricRow({ criteri: cells[0], item: cells[1], na: cells[2], as: cells[3], an: cells[4], ae: cells.slice(5).join(' ') }, '', rows.length));
+    }
+    return rows;
+  }
+  function parseLooseRubric(text){
+    const src = String(text || '');
+    const blocks = src.split(/(?=\n?\s*(?:CRITERI\s+LOMLOE|Criteri|CA|\d+\.\d+)\s*[:：])/i).filter(b => /NA|AS|AN|AE|No\s+Assolit|Satisfactori/i.test(b));
+    const rows = [];
+    for (const block of blocks) {
+      const criteri = clean((block.match(/(?:CRITERI\s+LOMLOE|Criteri|CA)\s*[:：]\s*([^\n]+)/i)||[,''])[1]) || clean((block.match(/^\s*(\d+\.\d+[^\n]*)/m)||[,''])[1]);
+      const item = clean((block.match(/(?:ÍTEM|ITEM|Item|Evid[eè]ncia)\s*[:：]\s*([^\n]+)/i)||[,''])[1]) || 'Ítem d’avaluació';
+      const level = label => {
+        const m = block.match(new RegExp('(?:'+label+'|'+(label==='NA'?'No\\s+Assolit':label==='AS'?'Assolit\\s+Satisfactori':label==='AN'?'Assolit\\s+Notable':'Assolit\\s+Excel[·l\\.]*lent')+')\\s*(?:\\([^)]*\\))?\\s*[:：-]\\s*([\\s\\S]*?)(?=\\n\\s*(?:NA|AS|AN|AE|No\\s+Assolit|Assolit\\s+Satisfactori|Assolit\\s+Notable|Assolit\\s+Excel|CRITERI|Criteri|ÍTEM|ITEM)\\b|$)', 'i'));
+        return clean(m ? m[1] : '');
+      };
+      const row = normalizeRubricRow({ criteri, item, na: level('NA'), as: level('AS'), an: level('AN'), ae: level('AE') }, '', rows.length);
+      if (row.criteri || row.na || row.as || row.an || row.ae) rows.push(row);
+    }
+    return rows;
+  }
+  function makeDefaultRubricRows(data, criteriaCodes){
+    const codes = criteriaCodes && criteriaCodes.length ? criteriaCodes : ['1.1','2.1','3.1','4.1','5.1','6.1'];
+    const subject = clean(data?.subject || data?.materia || 'la matèria');
+    const product = clean((data?.challenge || '').match(/Producte\s+final\s*[:：]\s*([^\n]+)/i)?.[1] || 'el producte final');
+    const base = [
+      ['Comprensió del repte i del context', 'No identifica clarament el repte ni la necessitat.', 'Identifica el repte amb ajuda i en descriu alguns elements.', 'Analitza el repte i el relaciona amb els sabers treballats.', 'Analitza el repte amb profunditat, justifica decisions i proposa millores transferibles.'],
+      ['Aplicació de sabers i procediments', 'Aplica els sabers de manera incompleta o amb errors importants.', 'Aplica procediments bàsics amb suport i corregeix alguns errors.', 'Aplica els sabers de manera coherent, ordenada i força autònoma.', 'Aplica els sabers amb autonomia, precisió i criteri tècnic.'],
+      ['Planificació i procés de treball', 'Mostra poca planificació i registra poques evidències del procés.', 'Segueix una planificació bàsica i documenta algunes fases.', 'Organitza el procés, pren decisions justificades i incorpora millores.', 'Planifica amb rigor, anticipa dificultats i documenta decisions i millores.'],
+      ['Producte final o evidència', `El ${product} és incomplet o no respon al repte.`, `El ${product} respon parcialment al repte i compleix els mínims.`, `El ${product} és funcional, coherent i ben justificat.`, `El ${product} és complet, creatiu, ben acabat i optimitzat segons criteris de ${subject}.`],
+      ['Comunicació i documentació', 'Comunica el procés amb poca claredat i vocabulari limitat.', 'Explica les idees principals amb una estructura bàsica.', 'Documenta i comunica el procés amb claredat, evidències i vocabulari adequat.', 'Comunica amb rigor, evidències ben seleccionades i llenguatge tècnic ric.'],
+      ['Reflexió, retorn i millora', 'Fa una reflexió molt simple i identifica poques millores.', 'Accepta el retorn i incorpora algun ajust.', 'Utilitza el retorn per millorar el procés i el resultat final.', 'Integra autoavaluació, coavaluació i retorn per justificar millores concretes.']
+    ];
+    return base.map((r,i)=>normalizeRubricRow({ criteri: codes[i] || codes[codes.length-1] || '', item: r[0], na: r[1], as: r[2], an: r[3], ae: r[4] }, '', i));
+  }
+
+  buildRubricRows = function(data, criteriaCodes){
+    const d = data || {};
+    const codes = criteriaCodes && criteriaCodes.length ? criteriaCodes : getCriteriaCodesFromForm(d);
+    if (Array.isArray(d.rubrica) && d.rubrica.length) return d.rubrica.map((r,i)=>normalizeRubricRow(r, codes[i], i));
+    if (Array.isArray(d.rubric) && d.rubric.length) return d.rubric.map((r,i)=>normalizeRubricRow(r, codes[i], i));
+    const text = [d.assessment, d.avaluacio, d.rubricaText, d.rubricText].join('\n');
+    const pipe = parsePipeRubric(text);
+    if (pipe.length) return pipe;
+    const loose = parseLooseRubric(text);
+    if (loose.length) return loose;
+    const previous = previousBuildRubricRows ? previousBuildRubricRows(d, codes) : [];
+    if (previous && previous.length) return previous.map((r,i)=>normalizeRubricRow(r, codes[i], i));
+    return makeDefaultRubricRows(d, codes);
+  };
+
+  function rubricRowsForCurrent(){ return buildRubricRows(typeof getFormData === 'function' ? getFormData() : {}, getCriteriaCodesFromForm(typeof getFormData === 'function' ? getFormData() : {})); }
+  function reviewRows(rows){
+    const warnings = [];
+    if (rows.length < 4) warnings.push('La rúbrica té menys de 4 ítems. Per a una SA completa és recomanable tenir entre 4 i 6 ítems.');
+    rows.forEach((r,i)=>{
+      if (!r.criteri) warnings.push(`Fila ${i+1}: falta criteri LOMLOE.`);
+      if (!r.item || r.item.length < 5) warnings.push(`Fila ${i+1}: falta ítem d’avaluació clar.`);
+      ['na','as','an','ae'].forEach(level => { if (!r[level] || r[level].length < 18) warnings.push(`Fila ${i+1}: descriptor ${level.toUpperCase()} massa curt o buit.`); });
+      const desc = [r.na,r.as,r.an,r.ae].map(v => v.toLowerCase());
+      if (new Set(desc).size < 4) warnings.push(`Fila ${i+1}: els descriptors NA/AS/AN/AE són massa semblants.`);
+    });
+    return { ok: warnings.length === 0, warnings };
+  }
+  function rowsToAssessmentText(rows){
+    return 'RÚBRICA NA/AS/AN/AE:\n\n' + rows.map(r => [
+      `CRITERI LOMLOE: ${r.criteri || '—'}`,
+      `ÍTEM: ${r.item || 'Ítem d’avaluació'}`,
+      `NA: ${r.na}`,
+      `AS: ${r.as}`,
+      `AN: ${r.an}`,
+      `AE: ${r.ae}`
+    ].join('\n')).join('\n\n');
+  }
+  function renderRubricWorkshop(rows, doReview){
+    const panel = $('rubricWorkshopPanel'); if (!panel) return;
+    const review = doReview ? reviewRows(rows) : null;
+    const summary = `<div class="rubric-summary"><span class="${review && !review.ok ? 'pill-warn':'pill-ok'}">${review && !review.ok ? '⚠ Revisió amb avisos':'✓ Rúbrica generada'}</span><span class="pill-ok">${rows.length} ítems</span></div>`;
+    const table = `<table><thead><tr><th>Criteri</th><th>Ítem</th><th>NA</th><th>AS</th><th>AN</th><th>AE</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.criteri||'—')}</td><td>${esc(r.item)}</td><td>${esc(r.na)}</td><td>${esc(r.as)}</td><td>${esc(r.an)}</td><td>${esc(r.ae)}</td></tr>`).join('')}</tbody></table>`;
+    const warnings = review && review.warnings.length ? `<p class="rubric-warn">Avisos:</p><ul>${review.warnings.map(w=>`<li>${esc(w)}</li>`).join('')}</ul>` : (review ? '<p class="rubric-ok">La rúbrica té criteris, ítems i descriptors NA/AS/AN/AE complets.</p>' : '<p class="hint">Pots afegir aquesta rúbrica al camp d’avaluació o exportar-la en JSON.</p>');
+    panel.innerHTML = summary + table + warnings;
+  }
+  function buildRubric(){
+    const data = typeof getFormData === 'function' ? getFormData() : {};
+    const rows = makeDefaultRubricRows(data, getCriteriaCodesFromForm(data));
+    renderRubricWorkshop(rows, false);
+  }
+  function reviewRubric(){ const rows = rubricRowsForCurrent(); renderRubricWorkshop(rows, true); }
+  function applyRubric(){
+    const rows = rubricRowsForCurrent();
+    const text = rowsToAssessmentText(rows);
+    const current = $('assessment')?.value || '';
+    const cleaned = current.replace(/\n{0,2}R[úu]BRICA(?:\s+NA\/AS\/AN\/AE)?\s*[:：][\s\S]*$/i, '').trim();
+    if ($('assessment')) $('assessment').value = (cleaned ? cleaned + '\n\n' : '') + text;
+    renderRubricWorkshop(rows, true);
+    if (typeof renderReport === 'function' && typeof getFormData === 'function') renderReport(getFormData());
+    if (typeof showTransientMessage === 'function') showTransientMessage('Rúbrica NA/AS/AN/AE afegida al camp d’avaluació.');
+  }
+  function exportRubric(){
+    const data = typeof getFormData === 'function' ? getFormData() : {};
+    const rows = rubricRowsForCurrent();
+    const payload = { schema:'docentkit.rubrica.v2', version: VERSION, exportedAt: new Date().toISOString(), titol: data.title || '', curs: data.level || '', materia: data.subject || '', rubrica: rows.map(r => ({ criteri_lomloe:r.criteri, item:r.item, NA:r.na, AS:r.as, AN:r.an, AE:r.ae })) };
+    if (typeof downloadJson === 'function') downloadJson(payload, `rubrica-docentkit-${(typeof slugify==='function'?slugify(data.title||'sa'): 'sa')}.json`);
+  }
+
+  if (previousFormResourceToDocentKitJson) {
+    formResourceToDocentKitJson = function(item){
+      const out = previousFormResourceToDocentKitJson(item);
+      const rows = buildRubricRows(item || {}, getCriteriaCodesFromForm(item || {}));
+      out.rubrica = rows.map(r => ({ criteri_lomloe: r.criteri || r.criteri_lomloe || '', competencia: r.competencia || '', item: r.item || '', NA: r.na || r.NA || '', AS: r.as || r.AS || '', AN: r.an || r.AN || '', AE: r.ae || r.AE || '' }));
+      return out;
+    };
+  }
+
+  function bindRubricWorkshop(){
+    $('rubricBuildBtn')?.addEventListener('click', buildRubric);
+    $('rubricReviewBtn')?.addEventListener('click', reviewRubric);
+    $('rubricApplyBtn')?.addEventListener('click', applyRubric);
+    $('rubricExportBtn')?.addEventListener('click', exportRubric);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindRubricWorkshop); else bindRubricWorkshop();
+})();
+
+/* DocentKit v2.4.0 · Correcció rúbrica criterial robusta */
+(function(){
+  const VERSION = '2.4.0';
+  const $ = id => document.getElementById(id);
+  let workshopRows = [];
+
+  function clean(value){ return String(value || '').replace(/\s+/g,' ').trim(); }
+  function esc(value){ return typeof escapeHtml === 'function' ? escapeHtml(value) : String(value||'').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+  function unique(values){ return [...new Set(values.map(clean).filter(Boolean))]; }
+  function getData(){ return typeof getFormData === 'function' ? getFormData() : {}; }
+  function getCriteriaCodes(data){
+    const text = [data?.competences, data?.criteria, data?.criteris, data?.criterisAvaluacio, data?.assessment].join('\n');
+    const found = unique((text.match(/\b\d+\.\d+\b/g) || []));
+    return found.length ? found : ['1.1','2.1','3.1','4.1','5.1','6.1'];
+  }
+  function productName(data){
+    const text = [data?.challenge, data?.assessment, data?.sequence].join('\n');
+    const m = text.match(/Producte\s+final\s*[:：]\s*([^\n]+)/i);
+    return clean(m && m[1]) || clean(data?.title) || 'el producte final';
+  }
+  function inferItems(data){
+    const title = clean(data?.title || 'la situació d’aprenentatge');
+    const subject = clean(data?.subject || data?.materia || 'la matèria');
+    const product = productName(data);
+    const seq = String(data?.sequence || '').toLowerCase();
+    const comp = String(data?.competences || '').toLowerCase();
+    const items = [
+      'Comprensió del repte i del context',
+      'Aplicació dels sabers i procediments',
+      'Planificació i procés de treball',
+      `Qualitat del ${product}`,
+      'Comunicació, documentació i ús del vocabulari tècnic',
+      'Reflexió, retorn i millora'
+    ];
+    if (/equip|cooper|grup|rol/.test(seq + comp)) items.splice(5, 0, 'Treball cooperatiu i responsabilitat individual');
+    if (/digital|tinkercad|floorplanner|simul|program|ordinador|dades/.test(seq + comp)) items.splice(3, 0, 'Ús d’eines digitals i comprovació de resultats');
+    return unique(items).slice(0, 6);
+  }
+  function descriptorsFor(item, data){
+    const subject = clean(data?.subject || data?.materia || 'la matèria');
+    const lower = item.toLowerCase();
+    if (/repte|context/.test(lower)) return [
+      'Identifica parcialment el repte i necessita molta guia per comprendre la necessitat plantejada.',
+      'Identifica el repte i en descriu els elements principals amb suport puntual.',
+      'Analitza el repte, el relaciona amb el context i justifica decisions amb evidències.',
+      'Analitza el repte amb profunditat, en valora condicionants i proposa millores transferibles.'
+    ];
+    if (/saber|procediment/.test(lower)) return [
+      'Aplica els sabers de manera incompleta o amb errors importants que dificulten el resultat.',
+      'Aplica procediments bàsics amb suport i corregeix alguns errors durant el procés.',
+      'Aplica els sabers de manera coherent, ordenada i força autònoma en la resolució de la tasca.',
+      'Aplica els sabers amb autonomia, precisió i criteri propi, fent connexions amb altres situacions.'
+    ];
+    if (/planific|procés|proces/.test(lower)) return [
+      'Planifica poc, segueix el procés de manera irregular i registra poques evidències.',
+      'Segueix una planificació bàsica i documenta algunes fases essencials del treball.',
+      'Organitza el procés, pren decisions justificades i incorpora millores a partir de proves o retorn.',
+      'Planifica amb rigor, anticipa dificultats, documenta decisions i optimitza el procés de treball.'
+    ];
+    if (/digital|eines/.test(lower)) return [
+      'Utilitza l’eina digital amb dificultats i necessita ajuda freqüent per completar la tasca.',
+      'Utilitza l’eina digital per resoldre la tasca bàsica i comparteix o desa el resultat amb suport.',
+      'Utilitza l’eina digital correctament, comprova resultats i documenta el procés de manera clara.',
+      'Utilitza l’eina digital amb autonomia, precisió i criteri, i justifica les decisions preses.'
+    ];
+    if (/qualitat|producte|evidència|evidencia/.test(lower)) return [
+      'El producte és incomplet, poc funcional o no respon prou al repte plantejat.',
+      'El producte respon parcialment al repte i compleix els requisits mínims establerts.',
+      'El producte és funcional, coherent, ben presentat i justificat amb criteris de treball.',
+      `El producte és complet, creatiu, ben acabat i optimitzat segons criteris de ${subject}.`
+    ];
+    if (/comunic|document|vocabulari/.test(lower)) return [
+      'Comunica el procés amb poca claredat, desordre o vocabulari tècnic molt limitat.',
+      'Explica les idees principals amb una estructura bàsica i vocabulari suficient.',
+      'Documenta i comunica el procés amb claredat, evidències i vocabulari adequat.',
+      'Comunica amb rigor, evidències ben seleccionades i llenguatge tècnic ric i precís.'
+    ];
+    if (/cooper|responsabilitat|equip/.test(lower)) return [
+      'Participa poc o necessita molta guia per assumir responsabilitats dins l’equip.',
+      'Participa en les tasques assignades i respecta els acords bàsics del grup.',
+      'Col·labora activament, assumeix responsabilitats i ajuda a resoldre dificultats del grup.',
+      'Impulsa el treball de l’equip, reparteix tasques amb criteri i contribueix a millorar el resultat final.'
+    ];
+    return [
+      'Fa una reflexió molt simple i identifica poques dificultats o millores possibles.',
+      'Accepta el retorn rebut i incorpora algun ajust en el procés o el producte.',
+      'Utilitza el retorn per millorar el procés, el resultat final i la pròpia autonomia.',
+      'Integra autoavaluació, coavaluació i retorn per justificar millores concretes i futures transferències.'
+    ];
+  }
+  function makeRows(data){
+    const codes = getCriteriaCodes(data);
+    return inferItems(data).map((item, i) => {
+      const d = descriptorsFor(item, data);
+      const criteri = codes[i] || codes[codes.length - 1] || '';
+      return { criteri, criteri_lomloe: criteri, item, na: d[0], as: d[1], an: d[2], ae: d[3] };
+    });
+  }
+  function rowsFromAssessment(data){
+    const text = String(data?.assessment || '');
+    const rows = [];
+    const blocks = text.split(/(?=\n?\s*CRITERI\s+LOMLOE\s*[:：])/i).filter(b => /CRITERI\s+LOMLOE/i.test(b));
+    for (const b of blocks) {
+      const pick = (re) => clean((b.match(re) || [,''])[1]);
+      const row = {
+        criteri: pick(/CRITERI\s+LOMLOE\s*[:：]\s*([^\n]+)/i),
+        item: pick(/[ÍI]TEM\s*[:：]\s*([^\n]+)/i),
+        na: pick(/(?:NA|No\s+Assolit(?:\s*\(NA\))?)\s*[:：]\s*([\s\S]*?)(?=\n\s*(?:AS|Assolit\s+Satisfactori|AN|Assolit\s+Notable|AE|Assolit\s+Excel|CRITERI|ÍTEM|ITEM)\b|$)/i),
+        as: pick(/(?:AS|Assolit\s+Satisfactori(?:\s*\(AS\))?)\s*[:：]\s*([\s\S]*?)(?=\n\s*(?:AN|Assolit\s+Notable|AE|Assolit\s+Excel|CRITERI|ÍTEM|ITEM)\b|$)/i),
+        an: pick(/(?:AN|Assolit\s+Notable(?:\s*\(AN\))?)\s*[:：]\s*([\s\S]*?)(?=\n\s*(?:AE|Assolit\s+Excel|CRITERI|ÍTEM|ITEM)\b|$)/i),
+        ae: pick(/(?:AE|Assolit\s+Excel[·l.]*lent(?:\s*\(AE\))?)\s*[:：]\s*([\s\S]*?)(?=\n\s*(?:CRITERI|ÍTEM|ITEM)\b|$)/i)
+      };
+      if (row.criteri && row.item && row.na && row.as && row.an && row.ae && !/^NA\s*\/\s*AS/i.test(row.criteri)) rows.push(row);
+    }
+    return rows;
+  }
+  buildRubricRows = function(data, criteriaCodes){
+    const d = data || {};
+    if (Array.isArray(d.rubrica) && d.rubrica.length) return d.rubrica.map((r,i) => ({ criteri: clean(r.criteri_lomloe || r.criteri || r.criteria || r.codi || (criteriaCodes||[])[i]), item: clean(r.item || r.descriptor || `Ítem ${i+1}`), na: clean(r.NA || r.na), as: clean(r.AS || r.as), an: clean(r.AN || r.an), ae: clean(r.AE || r.ae) })).filter(r => r.item && r.na && r.as && r.an && r.ae);
+    const parsed = rowsFromAssessment(d);
+    if (parsed.length >= 3) return parsed;
+    return makeRows(d);
+  };
+  function review(rows){
+    const warnings = [];
+    if (rows.length < 4) warnings.push('La rúbrica té menys de 4 ítems. És recomanable tenir entre 4 i 6 ítems.');
+    rows.forEach((r,i) => {
+      if (!r.criteri) warnings.push(`Fila ${i+1}: falta criteri LOMLOE.`);
+      if (!r.item || r.item.length < 8) warnings.push(`Fila ${i+1}: falta un ítem d’avaluació clar.`);
+      ['na','as','an','ae'].forEach(level => { if (!r[level] || r[level].length < 35) warnings.push(`Fila ${i+1}: descriptor ${level.toUpperCase()} massa curt.`); });
+      const desc = [r.na,r.as,r.an,r.ae].map(v => v.toLowerCase());
+      if (new Set(desc).size < 4) warnings.push(`Fila ${i+1}: els descriptors NA/AS/AN/AE són massa semblants.`);
+    });
+    return warnings;
+  }
+  function render(rows, withReview){
+    workshopRows = rows;
+    const panel = $('rubricWorkshopPanel'); if (!panel) return;
+    const warnings = withReview ? review(rows) : [];
+    const summary = `<div class="rubric-summary"><span class="${warnings.length ? 'pill-warn':'pill-ok'}">${warnings.length ? '⚠ Revisió amb avisos':'✓ Rúbrica criterial correcta'}</span><span class="pill-ok">${rows.length} ítems</span></div>`;
+    const table = `<table><thead><tr><th>Criteri</th><th>Ítem</th><th>NA</th><th>AS</th><th>AN</th><th>AE</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.criteri)}</td><td>${esc(r.item)}</td><td>${esc(r.na)}</td><td>${esc(r.as)}</td><td>${esc(r.an)}</td><td>${esc(r.ae)}</td></tr>`).join('')}</tbody></table>`;
+    const extra = withReview && warnings.length ? `<p class="rubric-warn">Avisos:</p><ul>${warnings.map(w=>`<li>${esc(w)}</li>`).join('')}</ul>` : '<p class="rubric-ok">Descriptors complets i diferenciats per NA, AS, AN i AE.</p>';
+    panel.innerHTML = summary + table + extra;
+  }
+  function textForAssessment(rows){
+    return 'RÚBRICA NA/AS/AN/AE:\n\n' + rows.map(r => [
+      `CRITERI LOMLOE: ${r.criteri}`,
+      `ÍTEM: ${r.item}`,
+      `NA: ${r.na}`,
+      `AS: ${r.as}`,
+      `AN: ${r.an}`,
+      `AE: ${r.ae}`
+    ].join('\n')).join('\n\n');
+  }
+  function onBuild(e){ e.preventDefault(); e.stopImmediatePropagation(); render(makeRows(getData()), false); }
+  function onReview(e){ e.preventDefault(); e.stopImmediatePropagation(); const rows = workshopRows.length ? workshopRows : buildRubricRows(getData(), getCriteriaCodes(getData())); render(rows, true); }
+  function onApply(e){
+    e.preventDefault(); e.stopImmediatePropagation();
+    const rows = workshopRows.length ? workshopRows : makeRows(getData());
+    const current = $('assessment')?.value || '';
+    const cleaned = current.replace(/\n{0,2}R[ÚU]BRICA(?:\s+NA\/AS\/AN\/AE)?\s*[:：][\s\S]*$/i, '').trim();
+    if ($('assessment')) $('assessment').value = (cleaned ? cleaned + '\n\n' : '') + textForAssessment(rows);
+    render(rows, true);
+    if (typeof renderReport === 'function' && typeof getFormData === 'function') renderReport(getFormData());
+  }
+  function onExport(e){
+    e.preventDefault(); e.stopImmediatePropagation();
+    const data = getData();
+    const rows = workshopRows.length ? workshopRows : makeRows(data);
+    const payload = { schema:'docentkit.rubrica.v2.4.0', version: VERSION, exportedAt: new Date().toISOString(), titol: data.title || '', curs: data.level || '', materia: data.subject || '', rubrica: rows.map(r => ({ criteri_lomloe:r.criteri, item:r.item, NA:r.na, AS:r.as, AN:r.an, AE:r.ae })) };
+    if (typeof downloadJson === 'function') downloadJson(payload, `rubrica-docentkit-${(typeof slugify==='function'?slugify(data.title||'sa'):'sa')}.json`);
+  }
+  function bind(){
+    $('rubricBuildBtn')?.addEventListener('click', onBuild, true);
+    $('rubricReviewBtn')?.addEventListener('click', onReview, true);
+    $('rubricApplyBtn')?.addEventListener('click', onApply, true);
+    $('rubricExportBtn')?.addEventListener('click', onExport, true);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind); else bind();
+})();
+
+/* DocentKit v2.4.0 · Importar projectes de Tecnologia i reptes */
+(function(){
+  const VERSION = '2.4.0';
+  const $ = (id) => document.getElementById(id);
+  const clean = (v) => String(v ?? '').replace(/\s+/g,' ').trim();
+  const asArray = (v) => {
+    if (!v) return [];
+    if (Array.isArray(v)) return v.filter(Boolean);
+    if (typeof v === 'object') return Object.values(v).flat().filter(Boolean);
+    return String(v).split(/\n|;|\s+·\s+|\s*\|\s*/).map(x=>x.replace(/^[-•]\s*/,'').trim()).filter(Boolean);
+  };
+  const join = (parts, sep='\n') => parts.filter(Boolean).map(x => typeof x === 'string' ? x : JSON.stringify(x)).join(sep);
+  const courseLabel = (v) => {
+    const t = clean(v).toLowerCase();
+    if (/eso1|1\s*r|primer/.test(t)) return '1r ESO';
+    if (/eso2|2\s*n|segon/.test(t)) return '2n ESO';
+    if (/eso3|3\s*r|tercer/.test(t)) return '3r ESO';
+    if (/eso4|4\s*t|quart/.test(t)) return '4t ESO';
+    return clean(v) || '4t ESO';
+  };
+  const hasTechOrigin = (data) => {
+    const text = [data?.app, data?.app_origen, data?.source, data?.origen, data?.schema, data?.compatibilitat].flat().join(' ').toLowerCase();
+    return /tecnologia|projectes|reptes/.test(text);
+  };
+  function extractTechSituations(data){
+    if (!data) return [];
+    if (data.situacio) return [data.situacio];
+    if (Array.isArray(data.situations)) return data.situations;
+    if (data.situations && typeof data.situations === 'object') return Object.values(data.situations).flat();
+    if (Array.isArray(data.projectes)) return data.projectes;
+    if (Array.isArray(data.projects)) return data.projects;
+    if (Array.isArray(data.items)) return data.items;
+    if (Array.isArray(data.recursos)) return data.recursos;
+    if (Array.isArray(data.resources)) return data.resources;
+    if (data.title || data.titol || data.repte || data.challenge) return [data];
+    return [];
+  }
+  function rubricRowsFromTech(raw, criteriaText){
+    const rows = Array.isArray(raw?.rubric) ? raw.rubric : Array.isArray(raw?.rubrica) ? raw.rubrica : [];
+    return rows.map((r,i)=>({
+      criteri_lomloe: clean(r.criteri_lomloe || r.criteria || r.criteri || r.codi || criteriaText || ''),
+      competencia: clean(r.competencia || r.competence || ''),
+      item: clean(r.item || r.descriptor || r.title || `Ítem ${i+1}`),
+      NA: clean(r.NA || r.na || r.levels?.NA || 'No identifica o no aplica els elements essencials del repte.'),
+      AS: clean(r.AS || r.as || r.levels?.AS || 'Aplica els elements bàsics amb ajuda o amb algunes imprecisions.'),
+      AN: clean(r.AN || r.an || r.levels?.AN || 'Aplica els elements de manera correcta i coherent.'),
+      AE: clean(r.AE || r.ae || r.levels?.AE || 'Aplica els elements amb autonomia, precisió i justificació tècnica.')
+    })).filter(r => r.item);
+  }
+  function techSituationToDocentKitResource(raw, idx=0){
+    raw = raw || {};
+    const title = clean(raw.titol || raw.title || raw.nom || raw.name) || `Projecte tecnològic importat ${idx+1}`;
+    const level = courseLabel(raw.curs || raw.course || raw.level || raw.nivell);
+    const subject = clean(raw.materia || raw.subject) || (level === '4t ESO' ? 'Tecnologia optativa' : 'Tecnologia i Digitalització');
+    const criteriaList = asArray(raw.criteris_avaluacio || raw.criteria || raw.criteris || raw.ca).map(x => typeof x === 'object' ? [x.codi, x.descripcio || x.text].filter(Boolean).join('. ') : String(x));
+    const ceList = asArray(raw.competencies_especifiques || raw.competencies || raw.competenciesEspecifiques || raw.ce).map(x => typeof x === 'object' ? [x.codi, x.descripcio || x.text].filter(Boolean).join('. ') : String(x));
+    const knowledgeList = asArray(raw.sabers?.continguts || raw.sabers || raw.knowledge || raw.coneixements).map(x => typeof x === 'object' ? JSON.stringify(x) : String(x));
+    const blocks = asArray(raw.sabers?.blocs || raw.blocks || raw.blocs).map(x=>String(x));
+    const acts = raw.sequencia_activitats || raw.activities || raw.activitats || {};
+    const seqLines = Array.isArray(acts) ? acts.map(a => typeof a === 'string' ? a : join([a.fase && `${a.fase}: ${a.titol || ''}`, Array.isArray(a.activitats) ? a.activitats.join('; ') : a.activitats, Array.isArray(a.evidencies) ? `Evidències: ${a.evidencies.join('; ')}` : ''], ' ')) : [
+      acts.initial || acts.inicials ? `Inicials: ${acts.initial || acts.inicials}` : '',
+      acts.development || acts.desenvolupament ? `Desenvolupament: ${acts.development || acts.desenvolupament}` : '',
+      acts.structuring || acts.estructuracio ? `Estructuració: ${acts.structuring || acts.estructuracio}` : '',
+      acts.application || acts.aplicacio ? `Aplicació: ${acts.application || acts.aplicacio}` : ''
+    ].filter(Boolean);
+    const evidence = asArray(raw.evidence || raw.evidencies || raw.avaluacio?.evidencies);
+    const instruments = asArray(raw.instruments || raw.avaluacio?.instruments);
+    const materials = asArray(raw.materials || raw.recursos || raw.materials_i_eines);
+    const rubric = rubricRowsFromTech(raw, criteriaList.join('; '));
+    const challenge = join([
+      raw.short || raw.descripcio ? `Descripció: ${raw.short || raw.descripcio}` : '',
+      raw.context ? `Context: ${raw.context}` : '',
+      raw.justificacio ? `Justificació: ${raw.justificacio}` : '',
+      raw.challenge || raw.repte ? `Repte: ${raw.challenge || raw.repte}` : '',
+      raw.product || raw.producte || raw.producte_final || raw.producteFinal ? `Producte final: ${raw.product || raw.producte || raw.producte_final || raw.producteFinal}` : '',
+      'Origen: importat des de Tecnologia ESO · Projectes i reptes. Revisa i completa la SA abans d’exportar-la a Programació LOMLOE.'
+    ]);
+    const resource = {
+      ...(typeof getFormData === 'function' ? getFormData() : {}),
+      id: `tech-${Date.now()}-${idx}-${(typeof slugify === 'function' ? slugify(title) : title.toLowerCase().replace(/\W+/g,'-'))}`,
+      createdAt: new Date().toISOString(),
+      type: 'Situació d’aprenentatge',
+      title,
+      level,
+      subject,
+      duration: clean(raw.durada?.total || raw.duration || raw.durada || ''),
+      challenge,
+      knowledge: join([blocks.length ? `Blocs de sabers: ${blocks.join('; ')}` : '', knowledgeList.length ? `Sabers / continguts: ${knowledgeList.join('\n')}` : '']),
+      competences: join([ceList.length ? `Competències específiques:\n${ceList.join('\n')}` : '', criteriaList.length ? `Criteris d’avaluació:\n${criteriaList.join('\n')}` : '']),
+      sequence: join([materials.length ? `Materials i recursos: ${materials.join('; ')}` : '', seqLines.length ? `Seqüència d’activitats:\n${seqLines.join('\n')}` : '']),
+      inclusion: join([raw.mesures_i_suports ? (typeof raw.mesures_i_suports === 'string' ? raw.mesures_i_suports : JSON.stringify(raw.mesures_i_suports, null, 2)) : '', raw.teacher ? `Orientacions docents: ${raw.teacher}` : 'Mesures universals: instruccions pautades, model visual del producte, treball cooperatiu i diferents formes de presentar evidències.']),
+      assessment: join([evidence.length ? `Evidències: ${evidence.join('; ')}` : '', instruments.length ? `Instruments: ${instruments.join('; ')}` : '', rubric.length ? 'RÚBRICA NA/AS/AN/AE:\n\n' + rubric.map(r => [`CRITERI LOMLOE: ${r.criteri_lomloe}`, `ÍTEM: ${r.item}`, `NA: ${r.NA}`, `AS: ${r.AS}`, `AN: ${r.AN}`, `AE: ${r.AE}`].join('\n')).join('\n\n') : '']),
+      tags: ['tecnologia-reptes','importat','pendent-revisio'].concat(asArray(raw.tags || raw.blocks || raw.blocs).map(String)).slice(0,12),
+      tecnologiaOriginal: raw,
+      rubrica: rubric
+    };
+    return resource;
+  }
+  function applyTechImport(resourcesToAdd, filename){
+    if (!resourcesToAdd.length) throw new Error('No he trobat cap projecte o situació reconeixible dins del JSON de Tecnologia/Reptes.');
+    resources = [...resourcesToAdd, ...resources.filter(r => !resourcesToAdd.some(n => n.title === r.title && n.level === r.level))];
+    if (typeof persistResources === 'function') persistResources();
+    if (typeof renderLibrary === 'function') renderLibrary();
+    const first = resourcesToAdd[0];
+    if (typeof setModule === 'function') setModule('sa');
+    const fieldMap = { title:first.title, level:first.level, subject:first.subject, duration:first.duration, type:first.type, challenge:first.challenge, knowledge:first.knowledge, competences:first.competences, sequence:first.sequence, inclusion:first.inclusion, assessment:first.assessment, tags:(first.tags||[]).join(', ') };
+    Object.entries(fieldMap).forEach(([k,v]) => { const el = $(k); if (el) el.value = v || ''; });
+    if (typeof renderReport === 'function' && typeof getFormData === 'function') renderReport(getFormData());
+    if (typeof renderSaReview === 'function' && typeof validateSaForExport === 'function' && typeof getFormData === 'function') renderSaReview(validateSaForExport(getFormData()), false);
+    const status = $('importStatus');
+    if (status) status.innerHTML = `Projecte de Tecnologia/Reptes importat: <strong>${filename}</strong>. ${resourcesToAdd.length} recurs(os) carregat(s). Obert: ${first.title}. <span class="tech-import-badge">pendent de revisar</span>`;
+    const formCard = document.querySelector('.form-card');
+    if (formCard) formCard.scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+  async function importTechProjectFile(file){
+    const text = await file.text();
+    const data = JSON.parse(text);
+    const raws = extractTechSituations(data);
+    const mapped = raws.map((raw,i) => techSituationToDocentKitResource(raw, i));
+    applyTechImport(mapped, file.name);
+  }
+  function bindTechImport(){
+    const input = $('techProjectInput');
+    if (!input) return;
+    input.addEventListener('change', async () => {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      try { await importTechProjectFile(file); }
+      catch (err) { console.error(err); alert(err.message || 'No he pogut importar el projecte de Tecnologia/Reptes.'); }
+      finally { input.value = ''; }
+    });
+  }
+  // Millora també la importació JSON genèrica: els paquets de Tecnologia/Reptes es reconeixen automàticament.
+  const oldExtract = typeof extractJsonSaItems === 'function' ? extractJsonSaItems : null;
+  extractJsonSaItems = function(parsed){
+    const base = oldExtract ? oldExtract(parsed) : [];
+    const tech = (hasTechOrigin(parsed) || parsed?.situacio || parsed?.situations) ? extractTechSituations(parsed) : [];
+    const merged = [...base, ...tech];
+    const seen = new Set();
+    return merged.filter(item => {
+      const key = item.id || item.titol || item.title || JSON.stringify(item).slice(0,100);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
+  const oldJsonMap = typeof jsonSaToFormResource === 'function' ? jsonSaToFormResource : null;
+  jsonSaToFormResource = function(item){
+    if (item && (item.app_origen || item.course || item.product || item.blocks || item.rubric || item.technologyOriginal) && !item.schema?.includes?.('docentkit.sa')) {
+      return techSituationToDocentKitResource(item, 0);
+    }
+    return oldJsonMap ? oldJsonMap(item) : techSituationToDocentKitResource(item, 0);
+  };
+  window.docentKitTechImport = { version: VERSION, extractTechSituations, techSituationToDocentKitResource };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindTechImport); else bindTechImport();
+})();
