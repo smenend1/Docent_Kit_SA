@@ -175,7 +175,7 @@ Aquesta versió no substitueix DocentKit com a generador de SA: Tecnologia/Repte
 - Els botons “Completa camps buits”, “Genera només sabers”, “Genera només adaptacions” i “Genera només rúbrica” també emplenen els camps corresponents.
 
 
-## v2.4.4 · Neteja i reestructuració de SA
+## v2.4.6 · Neteja i reestructuració de SA
 
 - Nou botó **Reestructura SA** dins el control de qualitat IA.
 - Neteja camps generats per IA quan queden barrejats o repetits.
@@ -186,7 +186,7 @@ Aquesta versió no substitueix DocentKit com a generador de SA: Tecnologia/Repte
 - Millora l’exportació cap a Programació LOMLOE perquè no arrossegui reptes fragmentats ni CE buides quan es pugui reconstruir.
 
 
-## v2.4.4 · Neteja fina de camps IA
+## v2.4.6 · Neteja fina de camps IA
 
 - Corregeix camps barrejats quan es crea una SA amb IA.
 - El producte final ja no arrossega rúbriques ni textos interns.
@@ -195,3 +195,19 @@ Aquesta versió no substitueix DocentKit com a generador de SA: Tecnologia/Repte
 - Afegeix competències transversals quan falten.
 - Garanteix instruments d’avaluació i retorna normes de taller clares en projectes de construcció o prototipatge.
 - La plantilla general competencial ja no força 2n ESO ni una matèria concreta.
+
+
+## v2.4.6 · Seguretat de taller automàtica
+
+- El botó **Afegeix seguretat de taller** genera normes adaptades segons curs/edat, eines, materials i tipus de projecte.
+- Detecta riscos de tall, calor/silicona, electricitat, pneumàtica, mecanismes, fabricació digital i materials.
+- Afegeix riscos específics, normes d’ús, organització de l’espai, rols i mesures de protecció.
+- En projectes de construcció, `Reestructura SA` també pot afegir automàticament aquest bloc si falta.
+
+
+## v2.4.6 · Diagnòstic de Gemini
+
+- Afegeix el botó **Prova generació curta** per comprovar generateContent real, no només la connexió curta.
+- Millora els missatges d'error de Gemini: quota, model no disponible, restriccions de clau, timeout, bloqueig de seguretat i resposta buida.
+- La generació completa informa de la mida aproximada del prompt i manté un esborrany local si l'API falla.
+- El check de clau queda explicat com a prova curta; no garanteix que una SA llarga es pugui generar.

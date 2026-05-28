@@ -208,6 +208,8 @@ function bindEvents() {
   document.getElementById('aiDraftBtn').addEventListener('click', generateAiDraft);
   const aiTestBtn = document.getElementById('aiTestBtn');
   if (aiTestBtn) aiTestBtn.addEventListener('click', testGeminiConnection);
+  const aiSmokeTestBtn = document.getElementById('aiSmokeTestBtn');
+  if (aiSmokeTestBtn) aiSmokeTestBtn.addEventListener('click', testGeminiGenerationShort);
   const aiBuildPromptBtn = document.getElementById('aiBuildPromptBtn');
   if (aiBuildPromptBtn) aiBuildPromptBtn.addEventListener('click', fillAiContextFromWizard);
   ['aiCourse','aiSubject','aiTopic','aiProduct','aiDuration','aiTools','aiKnowledge','aiCriteria'].forEach(id => {
@@ -1879,46 +1881,86 @@ function getSelectedGeminiModel() {
   return (els.aiModel && els.aiModel.value) || loadSettings().googleModel || 'gemini-2.5-flash';
 }
 
-function formatGeminiError(status, detail) {
+function parseGeminiErrorDetail(detail) {
   let message = detail || '';
+  let code = '';
+  let status = '';
+  let reason = '';
+  let raw = detail || '';
   try {
     const parsed = JSON.parse(detail);
     message = parsed?.error?.message || detail;
+    code = parsed?.error?.code || '';
+    status = parsed?.error?.status || '';
+    const first = parsed?.error?.details?.[0];
+    reason = first?.reason || first?.metadata?.reason || '';
   } catch {}
-  const tips = [];
-  if (status === 400) tips.push('El model o el format de la petició no és acceptat. Prova gemini-2.5-flash.');
-  if (status === 401 || status === 403) tips.push('La clau pot ser incorrecta, no tenir activada la Gemini API / Generative Language API, tenir restriccions de domini massa estrictes o no permetre aquest model.');
-  if (status === 404) tips.push('El model seleccionat no està disponible per aquesta clau o endpoint. Prova gemini-2.5-flash.');
-  if (status === 429) tips.push('S’ha superat el límit de quota o peticions. Espera una estona o revisa quota/facturació.');
-  if (status >= 500) tips.push('Error temporal del servei de Google. Torna-ho a provar més tard.');
-  return `Error API ${status}${message ? `: ${message}` : ''}${tips.length ? `\n\nPossibles causes:\n- ${tips.join('\n- ')}` : ''}`;
+  return { message, code, status, reason, raw };
 }
 
-async function callGeminiText(prompt) {
+function formatGeminiError(statusCode, detail, context = 'generació') {
+  const parsed = parseGeminiErrorDetail(detail);
+  const message = parsed.message || detail || 'Sense detall de l’error.';
+  const tips = [];
+  if (statusCode === 400) {
+    tips.push('La petició no és acceptada. Pot passar si el prompt és massa llarg, el format no és correcte o el model no accepta algun paràmetre.');
+    tips.push('Prova “Prova generació curta” i, si funciona, redueix el text base o genera per blocs.');
+  }
+  if (statusCode === 401 || statusCode === 403) {
+    tips.push('La clau pot ser incorrecta, pot no tenir activada la Gemini API / Generative Language API, o pot tenir restriccions de domini/referrer.');
+    tips.push('Si el check curt funciona però la generació llarga no, revisa quota, model i restriccions del projecte a Google AI Studio/Cloud.');
+  }
+  if (statusCode === 404) tips.push('El model seleccionat no està disponible per aquesta clau o endpoint. Prova gemini-2.5-flash o gemini-2.5-flash-lite.');
+  if (statusCode === 429) tips.push('S’ha superat quota, límit de peticions o límit temporal. Espera una estona o revisa quota/facturació.');
+  if (statusCode >= 500) tips.push('Error temporal del servei de Google. Torna-ho a provar més tard.');
+  if (/SAFETY|blocked|safety|policy/i.test(message + ' ' + parsed.status + ' ' + parsed.reason)) tips.push('La resposta pot haver estat bloquejada per filtres de seguretat. Reformula el prompt o redueix detalls sensibles.');
+  return `Error API ${statusCode} durant ${context}${message ? `: ${message}` : ''}${tips.length ? `\n\nPossibles causes i passos:\n- ${tips.join('\n- ')}` : ''}`;
+}
+
+async function callGeminiText(prompt, options = {}) {
   const key = els.aiKey.value.trim();
   if (!key) throw new Error('No hi ha API key configurada.');
-  const model = getSelectedGeminiModel();
+  const model = options.model || getSelectedGeminiModel();
+  const timeoutMs = options.timeoutMs || 45000;
+  const maxOutputTokens = options.maxOutputTokens || 8192;
+  const temperature = options.temperature ?? 0.5;
   saveSettings({ googleApiKey: key, googleModel: model });
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   let response;
   try {
     response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.5, maxOutputTokens: 8192 }
+        generationConfig: { temperature, maxOutputTokens }
       })
     });
   } catch (networkError) {
-    throw new Error('No s’ha pogut contactar amb Google. Revisa connexió, bloquejadors, CORS/restriccions de domini o si estàs obrint la PWA des de file:// en lloc d’https://.');
+    if (networkError && networkError.name === 'AbortError') {
+      throw new Error(`La petició ha trigat massa (${Math.round(timeoutMs/1000)} s). La clau pot ser bona, però la generació és massa llarga o la connexió és inestable. Prova generació curta, redueix el prompt o usa gemini-2.5-flash-lite.`);
+    }
+    throw new Error('No s’ha pogut contactar amb Google. Revisa connexió, bloquejadors, restriccions de domini/referrer o si estàs obrint la PWA des de file:// en lloc d’https://.');
+  } finally {
+    clearTimeout(timer);
   }
   const detail = await response.text();
-  if (!response.ok) throw new Error(formatGeminiError(response.status, detail));
+  if (!response.ok) throw new Error(formatGeminiError(response.status, detail, options.context || 'generació'));
   let json;
-  try { json = JSON.parse(detail); } catch { throw new Error('La resposta de Gemini no és JSON vàlid.'); }
-  const text = json?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n').trim();
-  if (!text) throw new Error('Gemini ha respost, però no ha retornat text. Pot ser un bloqueig de seguretat o una resposta buida.');
+  try { json = JSON.parse(detail); } catch { throw new Error('La resposta de Gemini no és JSON vàlid. Pot haver-hi un problema temporal o una resposta inesperada del servei.'); }
+  const candidate = json?.candidates?.[0];
+  const finishReason = candidate?.finishReason || '';
+  const text = candidate?.content?.parts?.map(p => p.text || '').join('\n').trim();
+  if (!text) {
+    const safety = (candidate?.safetyRatings || []).map(r => `${r.category}: ${r.probability}`).join(', ');
+    throw new Error(`Gemini ha respost, però no ha retornat text.${finishReason ? ` Motiu: ${finishReason}.` : ''}${safety ? ` Seguretat: ${safety}.` : ''} Pot ser bloqueig de seguretat, resposta buida o límit de sortida.`);
+  }
+  if (finishReason && !/STOP|MAX_TOKENS/i.test(finishReason)) {
+    return `${text}\n\n[Avís tècnic Gemini: finishReason=${finishReason}]`;
+  }
   return text;
 }
 
@@ -1927,19 +1969,38 @@ async function testGeminiConnection() {
     els.aiOutput.textContent = 'El mode seleccionat és local. Tria “Mode Gemini · usa la meva API key” per provar la connexió.';
     return;
   }
-  els.aiOutput.textContent = `Provant connexió amb ${getSelectedGeminiModel()}...`;
+  els.aiOutput.textContent = `Provant connexió curta amb ${getSelectedGeminiModel()}...`;
   try {
-    const text = await callGeminiText('Respon només amb aquesta frase en català: Connexió Gemini correcta.');
-    els.aiOutput.textContent = `Connexió correcta amb ${getSelectedGeminiModel()}.\n\nResposta:\n${text}`;
+    const text = await callGeminiText('Respon només amb aquesta frase en català: Connexió Gemini correcta.', { maxOutputTokens: 64, timeoutMs: 20000, context: 'prova de connexió' });
+    els.aiOutput.textContent = `Connexió correcta amb ${getSelectedGeminiModel()}.\n\nAquesta prova només valida clau + model + resposta curta. Per comprovar que la generació real funciona, prem “Prova generació curta”.\n\nResposta:\n${text}`;
   } catch (error) {
     console.error(error);
     els.aiOutput.textContent = `No s’ha pogut connectar amb Gemini.\n\n${error.message}`;
   }
 }
 
+async function testGeminiGenerationShort() {
+  if (els.aiProvider.value !== 'google') {
+    els.aiOutput.textContent = 'El mode seleccionat és local. Tria “Mode Gemini · usa la meva API key” per provar una generació real.';
+    return;
+  }
+  const data = getAiWizardData();
+  const prompt = `Genera una mini situació d'aprenentatge en català per provar la API.\nCurs: ${data.course}.\nMatèria: ${data.subject}.\nTema: ${data.topic || 'repte tecnològic senzill'}.\nRespon amb aquests apartats breus: TÍTOL, REPTE, PRODUCTE FINAL, 3 SABERS, 2 INSTRUMENTS.`;
+  els.aiOutput.textContent = `Provant generació curta amb ${getSelectedGeminiModel()}...`;
+  try {
+    const text = await callGeminiText(prompt, { maxOutputTokens: 900, timeoutMs: 30000, context: 'prova de generació curta' });
+    els.aiOutput.textContent = `Generació curta correcta.\n\nAixò confirma que la clau pot fer generateContent, no només el check. Si una SA llarga falla, el problema sol ser prompt massa llarg, quota, model, bloqueig o timeout.\n\nResposta:\n${text}`;
+  } catch (error) {
+    console.error(error);
+    els.aiOutput.textContent = `La clau pot haver passat el check curt, però la generació curta ha fallat.\n\n${error.message}\n\nPots continuar amb mode local o reduir el prompt.`;
+  }
+}
+
 async function generateAiDraft() {
   const provider = els.aiProvider.value;
-  els.aiOutput.textContent = 'Generant esborrany...';
+  const prompt = buildAiPrompt();
+  const promptSize = prompt.length;
+  els.aiOutput.textContent = `Generant esborrany amb ${provider === 'google' ? getSelectedGeminiModel() : 'mode local'}...${provider === 'google' ? `\nMida aproximada del prompt: ${promptSize} caràcters.` : ''}`;
   if (provider !== 'google') {
     els.aiOutput.textContent = buildLocalAIDraft();
     return;
@@ -1949,11 +2010,11 @@ async function generateAiDraft() {
     return;
   }
   try {
-    const text = await callGeminiText(buildAiPrompt());
+    const text = await callGeminiText(prompt, { maxOutputTokens: 8192, timeoutMs: 60000, context: 'generació completa de SA' });
     els.aiOutput.textContent = text;
   } catch (error) {
     console.error(error);
-    els.aiOutput.textContent = `No he pogut obtenir resposta de la API.\n\n${error.message}\n\nMantinc un esborrany local perquè puguis continuar.\n\n` + buildLocalAIDraft();
+    els.aiOutput.textContent = `No he pogut obtenir resposta de la API durant la generació completa.\n\n${error.message}\n\nDiagnòstic ràpid:\n- El check de clau només prova una resposta curta.\n- Aquesta generació és molt més llarga i pot fallar per quota, timeout, model, filtres o mida del prompt.\n- Prova “Prova generació curta”. Si funciona, redueix les instruccions o genera per parts.\n\nMantinc un esborrany local perquè puguis continuar.\n\n` + buildLocalAIDraft();
   }
 }
 
@@ -4369,7 +4430,7 @@ init();
 
 // ===== v2.4.4: neteja final de camps IA, plantilles neutres i normes de taller =====
 (function(){
-  const DK243_VERSION = '2.4.4';
+  const DK243_VERSION = '2.4.5';
   const byId = (id) => document.getElementById(id);
   const read = (id) => (byId(id)?.value || '').trim();
   const write = (id, value) => { const el = byId(id); if (el && typeof value === 'string') el.value = value; };
@@ -4600,7 +4661,7 @@ init();
     write('inclusion', cleanInclusion243(data));
     write('assessment', buildAssessment243({...data, challenge:read('challenge')}));
     renderAll243();
-    const st = byId('importStatus'); if (st) st.textContent = 'SA netejada amb v2.4.4: camps IA reestructurats, repte/producte/objectius netejats, instruments i normes de taller revisats.';
+    const st = byId('importStatus'); if (st) st.textContent = 'SA netejada amb v2.4.6: camps IA reestructurats, repte/producte/objectius netejats, instruments i normes de taller revisats.';
     try { if (typeof showToast === 'function') showToast('SA netejada i reestructurada. Revisa CE/CA exactes abans d’exportar.'); } catch(e) {}
   }
   window.restructureCurrentSa = restructure243;
@@ -4725,4 +4786,131 @@ init();
     if(btn && !btn.dataset.dk244Extra){ btn.dataset.dk244Extra='1'; btn.addEventListener('click', function(){ setTimeout(()=>window.restructureCurrentSa&&window.restructureCurrentSa(),0); }); }
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', bind244); else bind244();
+})();
+
+
+// ===== v2.4.6: seguretat de taller automàtica segons eines, materials i edat =====
+(function(){
+  function dk245Text(v){ return String(v || '').toLowerCase(); }
+  function dk245Lines(items){ return items.filter(Boolean).map(x => '- ' + x).join('\n'); }
+  function dk245Data(){
+    try { return (typeof getFormData === 'function') ? getFormData() : {}; } catch(e) { return {}; }
+  }
+  function dk245Age(level){
+    const t = dk245Text(level);
+    if (/1r|primer/.test(t)) return {label:'1r ESO', edat:'12-13 anys', autonomia:'baixa-mitjana', extra:'Cal demostració molt guiada, tasques curtes i supervisió directa en eines de tall, calor o electricitat.'};
+    if (/2n|segon/.test(t)) return {label:'2n ESO', edat:'13-14 anys', autonomia:'mitjana', extra:'Cal supervisió freqüent, especialment en tall, adhesius calents, circuits i proves de mecanismes.'};
+    if (/3r|tercer/.test(t)) return {label:'3r ESO', edat:'14-15 anys', autonomia:'mitjana-alta', extra:'Pot haver-hi més autonomia, però amb protocols clars, zones de treball delimitades i revisió docent en fases de risc.'};
+    if (/4t|quart/.test(t)) return {label:'4t ESO', edat:'15-16 anys', autonomia:'alta supervisada', extra:'Pot treballar amb més autonomia, sempre amb autorització prèvia, comprovació de muntatges i respecte estricte de normes de taller.'};
+    return {label:'ESO', edat:'12-16 anys', autonomia:'variable', extra:'Adapta el grau d’autonomia al curs, al grup i a l’eina utilitzada.'};
+  }
+  function dk245DetectTools(data){
+    const src = dk245Text([data.title,data.subject,data.level,data.challenge,data.knowledge,data.sequence,data.assessment,data.inclusion].join('\n'));
+    const tools=[];
+    const add=(id,label,rx,risks,norms)=>{ if(rx.test(src)) tools.push({id,label,risks,norms}); };
+    add('cut','Eines de tall: cúter, tisores, serra o alicates',/(c[úu]ter|tisores|serra|alicates|tallar|tall|fulla|cizalla|xerrac)/i,
+      ['talls a dits o mans','ús incorrecte de fulles','restes punxants o peces petites'],
+      ['Tall sempre sobre base de tall o superfície protegida.','No tallar mai cap al cos ni cap a un company/a.','Guardar l’eina quan no s’utilitza i demanar permís abans d’agafar cúter o serra.']);
+    add('heat','Calor i adhesius: pistola de silicona, cola calenta o soldador',/(silicona|cola t[eè]rmica|pistola de cola|soldador|soldar|calent|cremada)/i,
+      ['cremades per punta calenta o cola','cables o superfície calenta','fums o mala ventilació'],
+      ['Ús només amb autorització i supervisió docent.','No tocar la punta ni la cola acabada d’aplicar.','Deixar refredar la peça abans de manipular-la o guardar-la.']);
+    add('electric','Electricitat i electrònica: circuits, protoboard, Arduino, motors o multímetre',/(circuit|protoboard|arduino|led|resist[eè]ncia|motor|pila|bateria|mult[ií]metre|electric|electr[oò]nica|tinkercad)/i,
+      ['curtcircuits','sobreescalfament de components','connexions incorrectes','ús erroni del multímetre'],
+      ['Treballar només amb baixa tensió educativa i mai amb xarxa elèctrica.','Revisar polaritat, connexions i resistències abans d’alimentar el circuit.','Desconnectar l’alimentació abans de modificar el muntatge.','Usar el multímetre amb l’escala correcta i sota indicació docent.']);
+    add('pneumatic','Pneumàtica o hidràulica: xeringues, tubs, aire o fluids',/(pneum[aà]tic|hidr[aà]ulic|xeringa|tub|aire comprimit|pressi[oó]|fluid|pin[cç]a|bra[cç])/i,
+      ['sortida brusca de tubs','pinçaments en articulacions','pressió excessiva','objectes projectats'],
+      ['No apuntar tubs ni xeringues cap a persones.','Comprovar unions abans de pressionar el sistema.','Fer proves amb recorregut lliure i dits fora de punts de pinçament.','No forçar xeringues ni mecanismes bloquejats.']);
+    add('mechanism','Mecanismes, autòmats, Rube Goldberg o peces mòbils',/(mecanisme|aut[oò]mat|rube|goldberg|lleva|seguidor|eix|manovella|engranatge|politja|palanca|m[oò]bil|moviment)/i,
+      ['atrapament de dits','peces que cauen','moviment sobtat','inestabilitat del prototip'],
+      ['Fer proves lentes i per parts abans de provar el sistema complet.','Mantenir dits i cabells lluny de punts de moviment.','Fixar bé la base i retirar objectes innecessaris de la zona de prova.']);
+    add('fabrication','Fabricació digital o màquines: impressora 3D, trepant o màquines de taller',/(impressora 3d|3d|trepant|m[aà]quina|mecanitzat|fabricaci[oó] digital|broca|dremel)/i,
+      ['cremades o atrapaments','peces calentes','enganxades de roba o cabells','ús indegut de màquina'],
+      ['Manipulació de màquines només amb demostració prèvia i autorització docent.','Recollir cabells, cordons i peces de roba soltes.','No tocar peces calentes ni parts mòbils.','Respectar zona de seguretat al voltant de la màquina.']);
+    add('materials','Materials: cartró, fusta, plàstic, metall o peces petites',/(cartr[oó]|fusta|pl[aà]stic|metall|filferro|clips|taps|peces|materials recicl|reciclable)/i,
+      ['punxades o vores tallants','estelles','desordre de peces petites','residus al terra'],
+      ['Revisar vores, puntes i estelles abans de manipular.','Classificar restes i materials reutilitzables.','Mantenir el terra i la taula sense peces petites que puguin provocar caigudes.']);
+    return tools;
+  }
+  function dk245BuildSafety(data){
+    const age = dk245Age(data.level || data.course || '');
+    let tools = dk245DetectTools(data);
+    if (!tools.length) tools = [{label:'Treball de taller o projecte tecnològic', risks:['desordre de l’espai','ús poc segur de materials','manca de coordinació del grup'], norms:['Llegir les instruccions abans de començar.','Mantenir l’espai ordenat i avisar el docent davant qualsevol dubte o incidència.','Respectar rols, torns d’ús de materials i normes del taller.']}];
+    const riskSet = new Set(); const normSet = new Set();
+    tools.forEach(t => { (t.risks||[]).forEach(r=>riskSet.add(r)); (t.norms||[]).forEach(n=>normSet.add(n)); });
+    const generals = [
+      'Entrada al taller amb material preparat, cabells recollits si cal, motxilles fora de les zones de pas i taules ordenades.',
+      'Explicació inicial del docent abans d’usar eines, components o materials amb risc.',
+      'Ús de rols de grup: responsable de material, responsable de seguretat, responsable de documentació i responsable de proves.',
+      'No córrer, no fer bromes amb eines o materials i no manipular el projecte d’un altre grup sense permís.',
+      'Aturar l’activitat i avisar el docent davant talls, cremades, peces trencades, cables escalfats, tubs solts o qualsevol incidència.',
+      'Recollida final: eines al seu lloc, residus classificats, taula neta i prototip guardat de manera segura.'
+    ];
+    const epi = [];
+    const all = tools.map(t=>t.id).join(' ');
+    if (/cut|fabrication|materials/.test(all)) epi.push('Ulleres de protecció quan hi hagi tall, perforació, estelles o peces projectables.');
+    if (/heat/.test(all)) epi.push('Evitar tocar superfícies calentes i usar suport o base resistent a la calor.');
+    if (/electric/.test(all)) epi.push('Treballar amb baixa tensió i mans seques; no manipular circuits alimentats.');
+    if (/pneumatic|mechanism/.test(all)) epi.push('Dits fora de punts de pinçament, articulacions, engranatges o recorreguts de moviment.');
+    return [
+      'Seguretat i organització de taller:',
+      `- Curs/edat orientativa: ${age.label} (${age.edat}). Grau d’autonomia: ${age.autonomia}. ${age.extra}`,
+      '',
+      'Eines, materials o sistemes detectats:',
+      dk245Lines(tools.map(t=>t.label)),
+      '',
+      'Riscos específics previstos:',
+      dk245Lines(Array.from(riskSet)),
+      '',
+      'Normes específiques segons eines i materials:',
+      dk245Lines(Array.from(normSet)),
+      '',
+      'Normes generals d’organització:',
+      dk245Lines(generals),
+      epi.length ? '\nMesures de protecció o cura especial:\n' + dk245Lines(epi) : ''
+    ].join('\n').replace(/\n{3,}/g,'\n\n').trim();
+  }
+  window.generateWorkshopSafetyByTools = function(){
+    const data = dk245Data();
+    const safety = dk245BuildSafety(data);
+    const seq = (typeof els !== 'undefined' && els.sequence) ? els.sequence.value || '' : '';
+    const inc = (typeof els !== 'undefined' && els.inclusion) ? els.inclusion.value || '' : '';
+    if (typeof els !== 'undefined' && els.sequence) {
+      els.sequence.value = /Riscos específics previstos|Seguretat i organitzaci[oó] de taller/i.test(seq)
+        ? seq.replace(/Seguretat i organitzaci[oó] de taller:[\s\S]*?(?=\n\s*(Inicials|Desenvolupament|Estructuraci[oó]|Aplicaci[oó])\s*:|$)/i, safety + '\n')
+        : [seq, safety].filter(Boolean).join('\n\n');
+    }
+    if (typeof els !== 'undefined' && els.inclusion && !/seguretat de taller adaptada|riscos específics/i.test(inc)) {
+      const incAdd = 'Seguretat de taller adaptada: les instruccions, els rols, els riscos i el grau d’autonomia s’ajusten a l’edat del grup, a les eines utilitzades i al tipus de projecte. Es preveuen demostracions prèvies, supervisió docent, normes visibles i aturada immediata davant incidències.';
+      els.inclusion.value = [inc, incAdd].filter(Boolean).join('\n');
+    }
+    try { if (typeof renderAll243 === 'function') renderAll243(); } catch(e) {}
+    try { if (typeof renderReport === 'function' && typeof getFormData === 'function') renderReport(getFormData()); } catch(e) {}
+    try { if (typeof renderPedagogicAudit === 'function' && typeof validateSaPedagogy === 'function' && typeof getFormData === 'function') renderPedagogicAudit(validateSaPedagogy(getFormData())); } catch(e) {}
+    try { if (typeof showToast === 'function') showToast('Seguretat de taller generada segons eines, materials i edat.'); } catch(e) {}
+  };
+  autoFixWorkshopSafety = function(data){
+    window.generateWorkshopSafetyByTools();
+  };
+  function bind245(){
+    const panel = (typeof els !== 'undefined') ? els.pedagogicAuditPanel : null;
+    if (panel && !panel.dataset.dk245WorkshopBound) {
+      panel.dataset.dk245WorkshopBound = '1';
+      panel.addEventListener('click', function(ev){
+        const btn = ev.target.closest('[data-auto-fix="workshop"]');
+        if (btn) setTimeout(window.generateWorkshopSafetyByTools, 10);
+      });
+    }
+    const restructure = document.getElementById('restructureSaBtn');
+    if (restructure && !restructure.dataset.dk245SafetyBound) {
+      restructure.dataset.dk245SafetyBound = '1';
+      restructure.addEventListener('click', function(){
+        setTimeout(function(){
+          const data = dk245Data();
+          const all = dk245Text([data.title,data.subject,data.challenge,data.knowledge,data.sequence].join('\n'));
+          if (/(taller|constru|muntatge|prototip|circuit|eina|cartr[oó]|fusta|pneum[aà]tic|electric|arduino|impressora|aut[oò]mat)/i.test(all) && !/Riscos específics previstos/i.test(data.sequence||'')) window.generateWorkshopSafetyByTools();
+        }, 180);
+      });
+    }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind245); else bind245();
 })();
