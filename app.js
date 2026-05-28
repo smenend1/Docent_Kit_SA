@@ -233,13 +233,15 @@ function bindEvents() {
     });
   }
   const aiCompleteMissingBtn = document.getElementById('aiCompleteMissingBtn');
-  if (aiCompleteMissingBtn) aiCompleteMissingBtn.addEventListener('click', () => generatePartialAiDraft('missing'));
+  if (aiCompleteMissingBtn) aiCompleteMissingBtn.addEventListener('click', () => generatePartialAiDraft('missing', { apply: true }));
+  const restructureSaBtn = document.getElementById('restructureSaBtn');
+  if (restructureSaBtn) restructureSaBtn.addEventListener('click', () => window.restructureCurrentSa && window.restructureCurrentSa());
   const aiKnowledgeBtn = document.getElementById('aiKnowledgeBtn');
-  if (aiKnowledgeBtn) aiKnowledgeBtn.addEventListener('click', () => generatePartialAiDraft('knowledge'));
+  if (aiKnowledgeBtn) aiKnowledgeBtn.addEventListener('click', () => generatePartialAiDraft('knowledge', { apply: true }));
   const aiInclusionBtn = document.getElementById('aiInclusionBtn');
-  if (aiInclusionBtn) aiInclusionBtn.addEventListener('click', () => generatePartialAiDraft('inclusion'));
+  if (aiInclusionBtn) aiInclusionBtn.addEventListener('click', () => generatePartialAiDraft('inclusion', { apply: true }));
   const aiRubricBtn = document.getElementById('aiRubricBtn');
-  if (aiRubricBtn) aiRubricBtn.addEventListener('click', () => generatePartialAiDraft('rubric'));
+  if (aiRubricBtn) aiRubricBtn.addEventListener('click', () => generatePartialAiDraft('rubric', { apply: true }));
   els.aiProvider.addEventListener('change', updateAiStatus);
   els.aiProvider.addEventListener('input', updateAiStatus);
   els.aiKey.value = loadSettings().googleApiKey || '';
@@ -2112,11 +2114,12 @@ function getAiFixLabel(issueId) {
 }
 
 function generateAiFixForIssue(issueId) {
-  if (issueId === 'alignment') return generatePartialAiDraft('rubric');
-  if (issueId === 'inclusion') return generatePartialAiDraft('inclusion');
-  if (issueId === 'assessment') return generatePartialAiDraft('missing');
-  if (issueId === 'sequence' || issueId === 'producte' || issueId === 'repte') return generatePartialAiDraft('missing');
-  return generatePartialAiDraft('missing');
+  if (issueId === 'alignment') return generatePartialAiDraft('rubric', { apply: true, source: 'revisió pedagògica' });
+  if (issueId === 'inclusion') return generatePartialAiDraft('inclusion', { apply: true, source: 'revisió pedagògica' });
+  if (issueId === 'assessment') return generatePartialAiDraft('assessment', { apply: true, source: 'revisió pedagògica' });
+  if (issueId === 'sequence') return generatePartialAiDraft('sequence', { apply: true, source: 'revisió pedagògica' });
+  if (issueId === 'producte' || issueId === 'repte') return generatePartialAiDraft('challenge', { apply: true, source: 'revisió pedagògica' });
+  return generatePartialAiDraft('missing', { apply: true, source: 'revisió pedagògica' });
 }
 
 function autoFixPedagogicIssue(issueId) {
@@ -2282,6 +2285,32 @@ Criteris o competències coneguts: ${w.criteria || data.competences || 'pendent'
 Instruccions de l’usuari:
 ${context}`;
 
+  if (kind === 'challenge') return `${common}
+
+Millora només el context, el repte i el producte final de la SA. Respon amb aquestes etiquetes exactes:
+CONTEXT
+REPTE
+JUSTIFICACIÓ
+PRODUCTE FINAL
+
+El repte ha de ser una pregunta o missió clara, propera i accionable. El producte final ha de ser observable i avaluable.`;
+  if (kind === 'sequence') return `${common}
+
+Millora només la seqüència didàctica de la SA. Respon amb aquestes etiquetes exactes:
+INICIALS
+DESENVOLUPAMENT
+ESTRUCTURACIÓ
+APLICACIÓ
+
+Inclou activitats concretes, no només fases genèriques.`;
+  if (kind === 'assessment') return `${common}
+
+Millora només l'avaluació de la SA. Respon amb aquestes etiquetes exactes:
+EVIDÈNCIES
+INSTRUMENTS
+RETORN I MILLORA
+
+Inclou evidències observables, instruments concrets i moments de feedback o millora.`;
   if (kind === 'knowledge') return `${common}
 
 Genera només els sabers de la SA. Respon amb aquestes etiquetes exactes:
@@ -2329,6 +2358,61 @@ function buildLocalPartialDraft(kind) {
   const data = getFormData();
   const subject = els.aiSubject?.value || data.subject || 'la matèria';
   const topic = els.aiTopic?.value || firstSentence(data.challenge) || 'el repte plantejat';
+  const title = data.title && data.title !== 'Recurs sense títol' ? data.title : 'la situació d’aprenentatge';
+  if (kind === 'challenge') {
+    return `CONTEXT
+L’alumnat de ${data.level || 'ESO'} treballa ${subject} a partir d’una situació propera relacionada amb ${title}. La proposta connecta els sabers de la matèria amb una necessitat real de l’aula, del centre o de l’entorn, i demana prendre decisions justificades durant el procés.
+
+REPTE
+Com podem donar resposta a aquesta necessitat mitjançant una proposta o solució competencial, viable, ben documentada i comunicable?
+
+JUSTIFICACIÓ
+La situació permet aplicar sabers de ${subject}, treballar cooperativament, documentar el procés, revisar els resultats i transferir els aprenentatges a contextos propers.
+
+PRODUCTE FINAL
+Producte, prototip, documentació, presentació o evidència final que mostri el procés seguit, les decisions preses i el resultat obtingut.`;
+  }
+  if (kind === 'sequence') {
+    return `INICIALS
+- Presentació del context i del repte.
+- Activació de coneixements previs i conversa guiada sobre criteris d’èxit.
+- Anàlisi d’exemples o situacions semblants.
+
+DESENVOLUPAMENT
+- Recerca i selecció d’informació rellevant.
+- Pràctica guiada dels sabers o procediments necessaris.
+- Planificació del producte o solució i distribució de rols.
+- Desenvolupament progressiu amb seguiment docent.
+
+ESTRUCTURACIÓ
+- Posada en comú de dificultats i aprenentatges.
+- Revisió amb checklist, criteris d’èxit o rúbrica.
+- Organització de les evidències i preparació de la comunicació final.
+
+APLICACIÓ
+- Finalització del producte final.
+- Presentació o lliurament de l’evidència.
+- Autoavaluació, coavaluació i proposta de millora o transferència.`;
+  }
+  if (kind === 'assessment') {
+    return `EVIDÈNCIES
+- Procés de treball documentat.
+- Producte final o evidència competencial.
+- Presentació, explicació o defensa del resultat.
+- Reflexió final sobre aprenentatges, dificultats i millores.
+
+INSTRUMENTS
+- Rúbrica criterial NA/AS/AN/AE.
+- Llista de control del procés.
+- Observació docent.
+- Autoavaluació i coavaluació.
+
+RETORN I MILLORA
+- Feedback docent durant el procés.
+- Revisió entre iguals abans del lliurament final.
+- Temps per incorporar millores justificades.
+- Comentari final sobre què s’ha millorat i per què.`;
+  }
   if (kind === 'knowledge') {
     return `BLOCS DE SABERS
 - Procés de resolució de problemes i projectes.
@@ -2378,27 +2462,51 @@ ${c(5)} | Reflexió, autoavaluació i millora | No identifica aprenentatges ni m
   return buildLocalPartialDraft('knowledge') + '\n\n' + buildLocalPartialDraft('inclusion') + '\n\n' + buildLocalPartialDraft('rubric');
 }
 
-async function generatePartialAiDraft(kind) {
+async function generatePartialAiDraft(kind, options = {}) {
   renderAiValidation(validateSaQuality(getFormData()));
-  const label = kind === 'knowledge' ? 'sabers' : kind === 'inclusion' ? 'adaptacions' : kind === 'rubric' ? 'rúbrica' : 'camps buits o febles';
+  const label = kind === 'knowledge' ? 'sabers' : kind === 'inclusion' ? 'adaptacions' : kind === 'rubric' ? 'rúbrica' : kind === 'challenge' ? 'repte/context' : kind === 'sequence' ? 'seqüència' : kind === 'assessment' ? 'avaluació' : 'camps buits o febles';
   els.aiOutput.textContent = `Generant ${label}...`;
   const provider = els.aiProvider.value;
+  let text = '';
   if (provider !== 'google' || !els.aiKey.value.trim()) {
-    els.aiOutput.textContent = buildLocalPartialDraft(kind);
-    return;
-  }
-  try {
-    els.aiOutput.textContent = await callGeminiText(buildPartialPrompt(kind));
-  } catch (error) {
-    console.error(error);
-    els.aiOutput.textContent = `No he pogut obtenir resposta de la API per completar ${label}.
+    text = buildLocalPartialDraft(kind);
+  } else {
+    try {
+      text = await callGeminiText(buildPartialPrompt(kind));
+    } catch (error) {
+      console.error(error);
+      text = `No he pogut obtenir resposta de la API per completar ${label}.
 
 ${error.message}
 
 Et deixo una proposta local:
 
 ${buildLocalPartialDraft(kind)}`;
+    }
   }
+  els.aiOutput.textContent = text;
+  if (options.apply) {
+    applyPartialDraftToForm(kind, text, options.source || 'IA assistida');
+  }
+  return text;
+}
+
+function applyPartialDraftToForm(kind, text, source = 'IA assistida') {
+  const before = getFormData();
+  const clean = String(text || '').replace(/^No he pogut obtenir resposta[\s\S]*?Et deixo una proposta local:\s*/i, '').trim();
+  applyImportedText(`millora-${kind}.txt`, clean || text, source);
+  const after = getFormData();
+  const changed = [];
+  if ((before.challenge || '') !== (after.challenge || '')) changed.push('repte/context');
+  if ((before.knowledge || '') !== (after.knowledge || '')) changed.push('sabers');
+  if ((before.competences || '') !== (after.competences || '')) changed.push('criteris/CE');
+  if ((before.sequence || '') !== (after.sequence || '')) changed.push('seqüència');
+  if ((before.inclusion || '') !== (after.inclusion || '')) changed.push('inclusió');
+  if ((before.assessment || '') !== (after.assessment || '')) changed.push('avaluació/rúbrica');
+  renderReport(getFormData());
+  renderAiValidation(validateSaQuality(getFormData()));
+  renderPedagogicAudit(validateSaPedagogy(getFormData()));
+  showToast(changed.length ? `Millora aplicada a: ${changed.join(', ')}.` : 'La IA ha generat text, però no he detectat camps nous. Revisa l’esborrany IA.');
 }
 
 async function extractDocxText(file) {
@@ -3671,7 +3779,7 @@ init();
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindRubricWorkshop); else bindRubricWorkshop();
 })();
 
-/* DocentKit v2.4.0 · Correcció rúbrica criterial robusta */
+/* DocentKit v2.4.2 · Correcció rúbrica criterial robusta */
 (function(){
   const VERSION = '2.4.0';
   const $ = id => document.getElementById(id);
@@ -3840,7 +3948,7 @@ init();
     e.preventDefault(); e.stopImmediatePropagation();
     const data = getData();
     const rows = workshopRows.length ? workshopRows : makeRows(data);
-    const payload = { schema:'docentkit.rubrica.v2.4.0', version: VERSION, exportedAt: new Date().toISOString(), titol: data.title || '', curs: data.level || '', materia: data.subject || '', rubrica: rows.map(r => ({ criteri_lomloe:r.criteri, item:r.item, NA:r.na, AS:r.as, AN:r.an, AE:r.ae })) };
+    const payload = { schema:'docentkit.rubrica.v2.4.2', version: VERSION, exportedAt: new Date().toISOString(), titol: data.title || '', curs: data.level || '', materia: data.subject || '', rubrica: rows.map(r => ({ criteri_lomloe:r.criteri, item:r.item, NA:r.na, AS:r.as, AN:r.an, AE:r.ae })) };
     if (typeof downloadJson === 'function') downloadJson(payload, `rubrica-docentkit-${(typeof slugify==='function'?slugify(data.title||'sa'):'sa')}.json`);
   }
   function bind(){
@@ -3852,7 +3960,7 @@ init();
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind); else bind();
 })();
 
-/* DocentKit v2.4.0 · Importar projectes de Tecnologia i reptes */
+/* DocentKit v2.4.2 · Importar projectes de Tecnologia i reptes */
 (function(){
   const VERSION = '2.4.0';
   const $ = (id) => document.getElementById(id);
@@ -4007,4 +4115,253 @@ init();
   };
   window.docentKitTechImport = { version: VERSION, extractTechSituations, techSituationToDocentKitResource };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindTechImport); else bindTechImport();
+})();
+
+
+/* DocentKit v2.4.2 · Neteja i reestructuració de SA generades amb IA */
+(function(){
+  const DK242_VERSION = '2.4.2';
+  function $(id){ return document.getElementById(id); }
+  function field(id){ const el=$(id); return el ? String(el.value || '') : ''; }
+  function setField(id, value){ const el=$(id); if (el) el.value = value == null ? '' : String(value); }
+  function lines(text){ return String(text || '').split(/\r?\n/).map(s=>s.trim()).filter(Boolean); }
+  function stripBullets(s){ return String(s||'').replace(/^[-•*\d.)\s]+/,'').trim(); }
+  function uniq(arr){ const seen=new Set(); return arr.map(x=>String(x||'').trim()).filter(x=>{ const k=x.toLowerCase(); if(!x||seen.has(k)) return false; seen.add(k); return true; }); }
+  function cleanValue(text){
+    return String(text || '')
+      .replace(/\n{3,}/g,'\n\n')
+      .replace(/[ \t]{2,}/g,' ')
+      .replace(/\s+([,.;:])/g,'$1')
+      .trim();
+  }
+  function labelBlock(label, value){ value=cleanValue(value); return value ? `${label}: ${value}` : ''; }
+  function safeExtractSaParts(text){
+    try { if (typeof extractSaParts === 'function') return extractSaParts(text) || {}; } catch(e){}
+    return {};
+  }
+  function safeExtractLabeled(text, labels){
+    try { if (typeof extractLabeled === 'function') return extractLabeled(text, labels) || {}; } catch(e){}
+    return {};
+  }
+  function firstMeaningfulSentence(text){
+    const t=String(text||'').replace(/\s+/g,' ').trim();
+    const parts=t.split(/(?<=[.!?])\s+/).map(x=>x.trim()).filter(Boolean);
+    return parts.find(p=>p.length>25) || parts[0] || '';
+  }
+  function isWeakChallenge(rep){
+    const r=String(rep||'').trim();
+    if (!r) return true;
+    if (r.length < 35) return true;
+    if (/^(d['’]enginyeria real|repte|pregunta|problema|necessitat)\.?$/i.test(r)) return true;
+    if (!/[?¿]|com podem|com podríem|disseny|constru|resoldre|millorar|crear|elaborar|investigar/i.test(r)) return true;
+    return false;
+  }
+  function inferProductShort(product, title){
+    let p=String(product||'').trim() || String(title||'').trim();
+    p=p.replace(/^(Maqueta|Projecte|Prototip|Producte final)\s+d['’]un\s*/i,'').trim();
+    p=p.replace(/,\s*acompanyada[\s\S]*$/i,'').trim();
+    p=p.replace(/\s+/g,' ');
+    if (p.length>90) p=p.slice(0,90).replace(/\s+\S*$/,'')+'...';
+    return p || 'producte final';
+  }
+  function buildGoodChallenge(data, parts){
+    const title=data.title || 'la situació';
+    const subject=data.subject || 'la matèria';
+    const product=inferProductShort(parts.producte || '', title);
+    if (/braç pneumàtic/i.test(title + ' ' + product)) {
+      return 'Com podem dissenyar i construir un braç pneumàtic funcional amb materials senzills, aplicant principis de pneumàtica i justificant-ne el funcionament?';
+    }
+    if (/aut[oò]mat/i.test(title + ' ' + product)) {
+      return 'Com podem construir un autòmat funcional i explicar tècnicament com transforma el moviment?';
+    }
+    return `Com podem dissenyar, construir i justificar ${product} aplicant sabers de ${subject} per donar resposta a un repte proper i real?`;
+  }
+  function restructureChallenge(data){
+    const parts=safeExtractSaParts(data.challenge || '');
+    let context=cleanValue(parts.context || '');
+    let repte=cleanValue(parts.repte || '');
+    let justificacio=cleanValue(parts.justificacio || '');
+    let producte=cleanValue(parts.producte || '');
+    const raw=data.challenge || '';
+    if (!context) {
+      const candidate=firstMeaningfulSentence(raw);
+      if (candidate && !/^Repte\s*:/i.test(candidate) && candidate.length > 40) context=candidate;
+    }
+    if (!producte) {
+      const m=raw.match(/producte final\s*:?\s*([^\n.]+(?:\.[^\n]*)?)/i);
+      if (m) producte=cleanValue(m[1]);
+    }
+    if (isWeakChallenge(repte)) repte=buildGoodChallenge(data, {producte});
+    if (!context) context=`L’alumnat de ${data.level || 'ESO'} treballa ${data.subject || 'la matèria'} a partir d’un repte pràctic i proper, connectant els sabers amb una situació real de disseny, construcció, anàlisi i comunicació.`;
+    if (!justificacio) justificacio='La situació permet aplicar sabers de manera competencial, desenvolupar el procés tecnològic, treballar cooperativament, documentar decisions i comunicar evidències de l’aprenentatge.';
+    if (!producte) producte='Producte final funcional o documentat, acompanyat d’evidències del procés, justificació tècnica i presentació o reflexió final.';
+    return cleanValue([labelBlock('Context', context), labelBlock('Repte', repte), labelBlock('Justificació', justificacio), labelBlock('Producte final', producte)].filter(Boolean).join('\n\n'));
+  }
+  function extractUntilNext(label, text){
+    const escaped=label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    const labels='Inicials|Desenvolupament|Estructuració|Estructuracio|Aplicació|Aplicacio|Metodologia|Organització de l.aula|Organitzacio de l.aula|Recursos|Espais';
+    const re=new RegExp(`${escaped}\\s*:?\\s*([\\s\\S]*?)(?=\\n\\s*(?:${labels})\\s*:?|$)`,'i');
+    const m=String(text||'').match(re);
+    return m ? cleanValue(m[1]) : '';
+  }
+  function removeNoiseFromPhase(text){
+    let t=String(text||'');
+    t=t.replace(/\n\s*(Metodologia|Organització de l.aula|Organitzacio de l.aula|Recursos|Espais)\s*:[\s\S]*$/i,'');
+    t=t.replace(/\n\s*(Inicials|Desenvolupament|Estructuració|Estructuracio|Aplicació|Aplicacio)\s*:[\s\S]*$/i,'');
+    const l=uniq(lines(t).map(stripBullets)).filter(x=>x && !/^(Sessió|Sessio)\s*\d+\s*:?$/i.test(x));
+    return l.slice(0,10).map(x=>`- ${x}`).join('\n');
+  }
+  function defaultPhase(title, product){
+    const p=inferProductShort(product,title);
+    return {
+      inicials:`- Presentació del context i del repte.\n- Activació de coneixements previs i conversa sobre criteris d’èxit.\n- Organització dels equips i primera identificació de necessitats, materials i condicionants.`,
+      desenvolupament:`- Recerca guiada i anàlisi d’exemples relacionats amb ${p}.\n- Disseny, planificació i elaboració d’esbossos o esquemes.\n- Construcció, simulació o desenvolupament del producte amb proves parcials.`,
+      estructuracio:`- Organització de les evidències del procés.\n- Revisió dels sabers aplicats i del vocabulari tècnic.\n- Ajustos a partir de proves, errors detectats i retorn docent o entre iguals.`,
+      aplicacio:`- Presentació o demostració del producte final.\n- Autoavaluació i coavaluació amb rúbrica.\n- Reflexió final sobre aprenentatges, dificultats i possibles millores.`
+    };
+  }
+  function restructureSequence(data){
+    const raw=data.sequence || '';
+    const defaults=defaultPhase(data.title, safeExtractSaParts(data.challenge||'').producte);
+    let inicials=removeNoiseFromPhase(extractUntilNext('Inicials', raw));
+    let desenvolupament=removeNoiseFromPhase(extractUntilNext('Desenvolupament', raw));
+    let estructuracio=removeNoiseFromPhase(extractUntilNext('Estructuració', raw) || extractUntilNext('Estructuracio', raw));
+    let aplicacio=removeNoiseFromPhase(extractUntilNext('Aplicació', raw) || extractUntilNext('Aplicacio', raw));
+    if (!inicials || inicials.length<40) inicials=defaults.inicials;
+    if (!desenvolupament || desenvolupament.length<40) desenvolupament=defaults.desenvolupament;
+    if (!estructuracio || estructuracio.length<40) estructuracio=defaults.estructuracio;
+    if (!aplicacio || aplicacio.length<40) aplicacio=defaults.aplicacio;
+    const metodologia=extractUntilNext('Metodologia', raw);
+    const organitzacio=extractUntilNext('Organització de l’aula', raw) || extractUntilNext('Organitzacio de l’aula', raw);
+    const recursos=extractUntilNext('Recursos', raw);
+    return cleanValue([
+      metodologia && labelBlock('Metodologia', metodologia),
+      organitzacio && labelBlock('Organització de l’aula', organitzacio),
+      recursos && labelBlock('Recursos', recursos),
+      labelBlock('Inicials', inicials),
+      labelBlock('Desenvolupament', desenvolupament),
+      labelBlock('Estructuració', estructuracio),
+      labelBlock('Aplicació', aplicacio)
+    ].filter(Boolean).join('\n\n'));
+  }
+  function criteriaFromRubric(text){
+    const codes=(String(text||'').match(/\b\d+\.\d+\b/g)||[]).filter(Boolean);
+    return uniq(codes).slice(0,6);
+  }
+  function restructureCompetences(data){
+    let c=cleanValue(data.competences || '');
+    if (c && !/—|pendents? de concretar/i.test(c) && /\d+\.\d+|CE\d|Competències específiques|Criteris/i.test(c)) return c;
+    const codes=criteriaFromRubric(data.assessment).length ? criteriaFromRubric(data.assessment) : ['1.1','2.1','3.1','4.1','5.1','6.1'];
+    const subject=data.subject || 'Tecnologia';
+    return cleanValue(`Competències específiques:\nCE1. Idear i planificar solucions tecnològiques a partir d’una necessitat o repte proper.\nCE2. Desenvolupar projectes aplicant el procés tecnològic: anàlisi, disseny, planificació, construcció, prova i millora.\nCE3. Utilitzar materials, eines, mecanismes, components o recursos digitals adequats al repte.\nCE4. Comunicar processos i solucions amb vocabulari tècnic, dibuixos, esquemes, documents o presentacions.\n\nCriteris d’avaluació:\n${codes.map(code=>`${code}. Criteri vinculat al desenvolupament del projecte i als sabers de ${subject}; cal revisar-ne la redacció exacta segons el currículum del curs.`).join('\n')}`);
+  }
+  function rubricRowsFromText(text){
+    const rows=[];
+    const src=String(text||'');
+    const blocks=src.split(/(?=CRITERI LOMLOE\s*:|\n\s*\d+\.\d+\s*[|:])/i).map(x=>x.trim()).filter(Boolean);
+    for (const b of blocks){
+      const code=(b.match(/(?:CRITERI LOMLOE\s*:\s*)?(\d+\.\d+)/i)||[])[1] || '';
+      const item=(b.match(/ÍTEM\s*:\s*([^\n]+)/i)||b.match(/\d+\.\d+\s*[|:]\s*([^|\n]+)/)||[])[1] || '';
+      const na=(b.match(/(?:No Assolit \(NA\)|NA)\s*:\s*([\s\S]*?)(?=\n\s*(?:Assolit Satisfactori \(AS\)|AS)\s*:|$)/i)||[])[1] || '';
+      const ass=(b.match(/(?:Assolit Satisfactori \(AS\)|AS)\s*:\s*([\s\S]*?)(?=\n\s*(?:Assolit Notable \(AN\)|AN)\s*:|$)/i)||[])[1] || '';
+      const an=(b.match(/(?:Assolit Notable \(AN\)|AN)\s*:\s*([\s\S]*?)(?=\n\s*(?:Assolit Excel·lent \(AE\)|AE)\s*:|$)/i)||[])[1] || '';
+      const ae=(b.match(/(?:Assolit Excel·lent \(AE\)|AE)\s*:\s*([\s\S]*?)(?=\n\s*(?:CRITERI LOMLOE\s*:|\d+\.\d+\s*[|:])|$)/i)||[])[1] || '';
+      if (code || item || na || ass || an || ae) rows.push({code,item,na:cleanValue(na),as:cleanValue(ass),an:cleanValue(an),ae:cleanValue(ae)});
+    }
+    return rows;
+  }
+  function cleanRubricItem(item, product){
+    let i=String(item||'').trim();
+    if (/^Qualitat del/i.test(i) && i.length>80) return 'Qualitat del producte final';
+    if (!i) return 'Ítem d’avaluació';
+    return i;
+  }
+  function assessmentDefaults(data){
+    const product=safeExtractSaParts(data.challenge||'').producte || data.title || 'producte final';
+    return {
+      evidencies:`- Producte final o prototip.\n- Esbossos, croquis, plànols o esquemes.\n- Quadern, memòria o documentació del procés.\n- Presentació oral o demostració.\n- Autoavaluació, coavaluació i reflexió final.`,
+      instruments:`- Rúbrica NA/AS/AN/AE del procés i del producte.\n- Llista de control del treball de grup i de la documentació.\n- Observació docent durant el procés.\n- Retorn formatiu abans del lliurament final.`,
+      retorn:`- Feedback durant el disseny i la construcció.\n- Revisió entre iguals a partir de criteris d’èxit.\n- Millora del producte o de la documentació abans de la presentació final.`
+    };
+  }
+  function restructureAssessment(data){
+    const raw=data.assessment || '';
+    const parts=safeExtractLabeled(raw, {evidencies:['Evidències','Evidencies'], instruments:['Instruments'], retorn:['Retorn i millora','Retorn'], rubrica:['Rúbrica','Rubrica']});
+    const defs=assessmentDefaults(data);
+    let rub=parts.rubrica || raw;
+    const rows=rubricRowsFromText(rub);
+    const product=safeExtractSaParts(data.challenge||'').producte || '';
+    let rubricText='';
+    if (rows.length){
+      rubricText=rows.slice(0,8).map(r=>[
+        `CRITERI LOMLOE: ${r.code || 'pendent'}`,
+        `ÍTEM: ${cleanRubricItem(r.item, product)}`,
+        `NA: ${r.na || 'Mostra dificultats importants i necessita molta ajuda.'}`,
+        `AS: ${r.as || 'Assoleix els elements bàsics amb suport puntual.'}`,
+        `AN: ${r.an || 'Assoleix el criteri de manera coherent i força autònoma.'}`,
+        `AE: ${r.ae || 'Assoleix el criteri amb autonomia, precisió i justificació.'}`
+      ].join('\n')).join('\n\n');
+    } else {
+      rubricText='CRITERI LOMLOE: 1.1\nÍTEM: Comprensió del repte\nNA: Identifica parcialment el repte i necessita molta guia.\nAS: Identifica els elements bàsics del repte amb suport.\nAN: Analitza el repte i el relaciona amb el context.\nAE: Analitza el repte amb profunditat i proposa millores.\n\nCRITERI LOMLOE: 2.1\nÍTEM: Procés de treball i producte final\nNA: El procés és incomplet o poc funcional.\nAS: Compleix els requisits mínims amb suport.\nAN: Desenvolupa un producte coherent i ben justificat.\nAE: Desenvolupa un producte complet, creatiu i millorat.';
+    }
+    return cleanValue([
+      labelBlock('Evidències', removeRubricLeak(parts.evidencies) || defs.evidencies),
+      labelBlock('Instruments', removeRubricLeak(parts.instruments) || defs.instruments),
+      labelBlock('Retorn i millora', removeRubricLeak(parts.retorn) || defs.retorn),
+      labelBlock('Rúbrica', rubricText)
+    ].join('\n\n'));
+  }
+  function removeRubricLeak(text){
+    return cleanValue(String(text||'').replace(/CRITERI LOMLOE[\s\S]*$/i,'').replace(/Assolit Excel·lent[\s\S]*$/i,''));
+  }
+  function restructureKnowledge(data){
+    const l=uniq(lines(data.knowledge).map(stripBullets)).filter(x=>x.length>3);
+    if (l.length<=18) return data.knowledge;
+    const keep=l.filter(x=>!/^(Sabers\s*\/|Sabers conceptuals|Sabers procedimentals|Sabers actitudinals)\s*:?$/i.test(x)).slice(0,22);
+    return keep.map(x=>`- ${x}`).join('\n');
+  }
+  window.restructureCurrentSa = function(){
+    const data=typeof getFormData==='function' ? getFormData() : {
+      title:field('title'), level:field('level'), subject:field('subject'), duration:field('duration'), challenge:field('challenge'), knowledge:field('knowledge'), competences:field('competences'), sequence:field('sequence'), inclusion:field('inclusion'), assessment:field('assessment')
+    };
+    const cleaned={
+      challenge:restructureChallenge(data),
+      knowledge:cleanValue(restructureKnowledge(data)),
+      competences:restructureCompetences(data),
+      sequence:restructureSequence(data),
+      assessment:restructureAssessment(data)
+    };
+    Object.entries(cleaned).forEach(([k,v])=>setField(k,v));
+    if (typeof renderReport==='function' && typeof getFormData==='function') renderReport(getFormData());
+    if (typeof renderAiValidation==='function' && typeof validateSaQuality==='function' && typeof getFormData==='function') renderAiValidation(validateSaQuality(getFormData()));
+    if (typeof renderPedagogicAudit==='function' && typeof validateSaPedagogy==='function' && typeof getFormData==='function') renderPedagogicAudit(validateSaPedagogy(getFormData()));
+    if (typeof renderSaReview==='function' && typeof validateSaForExport==='function' && typeof getFormData==='function') renderSaReview(validateSaForExport(getFormData()), false);
+    const status=$('importStatus'); if (status) status.textContent='SA reestructurada: repte, seqüència, rúbrica, evidències i camps principals netejats.';
+    if (typeof showToast==='function') showToast('SA reestructurada i camps principals actualitzats. Revisa CE/CA exactes abans d’exportar.');
+  };
+  const oldBuild = typeof buildProgramacioLomloeExport === 'function' ? buildProgramacioLomloeExport : null;
+  if (oldBuild) {
+    window.buildProgramacioLomloeExport = function(item){
+      const base = oldBuild(item);
+      const data = item || {};
+      const cleanedChallenge = restructureChallenge(data);
+      const p = safeExtractSaParts(cleanedChallenge);
+      base.context = p.context || base.context;
+      base.descripcio = p.context || base.descripcio;
+      base.repte = p.repte || base.repte;
+      base.producteFinal = p.producte || base.producteFinal;
+      if (!base.competenciesEspecifiques || !base.competenciesEspecifiques.length || String(base.competenciesEspecifiques).includes('—')) {
+        const cp = safeExtractLabeled(restructureCompetences(data), { competencies:['Competències específiques','Competencies especifiques'], criteria:['Criteris d’avaluació','Criteris'] });
+        base.competenciesEspecifiques = lines(cp.competencies || '').filter(Boolean);
+        if (!base.criterisAvaluacio || !base.criterisAvaluacio.length) base.criterisAvaluacio = lines(cp.criteria || '').filter(Boolean);
+      }
+      base.observacions = (base.observacions || '') + ' Exportació netejada amb DocentKit v2.4.2.';
+      return base;
+    };
+  }
+  function bind242(){
+    const btn=$('restructureSaBtn');
+    if (btn && !btn.dataset.dk242Bound){ btn.dataset.dk242Bound='1'; btn.addEventListener('click', window.restructureCurrentSa); }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind242); else bind242();
 })();

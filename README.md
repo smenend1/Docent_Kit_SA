@@ -142,7 +142,7 @@ L’exportació cap a **Programació LOMLOE** també envia la rúbrica normalitz
 - El botó **Revisa rúbrica** revisa la rúbrica generada en pantalla, no una plantilla antiga buida.
 - El botó **Afegeix a avaluació** insereix una rúbrica textual estructurada compatible amb Programació LOMLOE.
 
-## v2.4.0 · Importar projectes de Tecnologia i reptes
+## v2.4.1 · Importar projectes de Tecnologia i reptes
 
 Aquesta versió connecta millor DocentKit amb **Tecnologia ESO · Projectes i reptes**.
 
@@ -166,3 +166,21 @@ Tecnologia ESO · Projectes i reptes
 ```
 
 Aquesta versió no substitueix DocentKit com a generador de SA: Tecnologia/Reptes continua fent de banc de projectes i idees tècniques.
+
+
+## v2.4.1
+
+- Els botons blaus de millora amb IA de la revisió pedagògica ara apliquen el text generat als camps del formulari.
+- S'han afegit generacions específiques per repte/context, seqüència i avaluació.
+- Els botons “Completa camps buits”, “Genera només sabers”, “Genera només adaptacions” i “Genera només rúbrica” també emplenen els camps corresponents.
+
+
+## v2.4.2 · Neteja i reestructuració de SA
+
+- Nou botó **Reestructura SA** dins el control de qualitat IA.
+- Neteja camps generats per IA quan queden barrejats o repetits.
+- Converteix el repte en una pregunta o missió clara.
+- Separa context, repte, justificació i producte final.
+- Reordena la seqüència didàctica en Inicials, Desenvolupament, Estructuració i Aplicació, evitant repeticions de metodologia i recursos.
+- Separa evidències, instruments, retorn i rúbrica.
+- Millora l’exportació cap a Programació LOMLOE perquè no arrossegui reptes fragmentats ni CE buides quan es pugui reconstruir.
