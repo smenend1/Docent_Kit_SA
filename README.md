@@ -175,7 +175,7 @@ Aquesta versió no substitueix DocentKit com a generador de SA: Tecnologia/Repte
 - Els botons “Completa camps buits”, “Genera només sabers”, “Genera només adaptacions” i “Genera només rúbrica” també emplenen els camps corresponents.
 
 
-## v2.4.2 · Neteja i reestructuració de SA
+## v2.4.4 · Neteja i reestructuració de SA
 
 - Nou botó **Reestructura SA** dins el control de qualitat IA.
 - Neteja camps generats per IA quan queden barrejats o repetits.
@@ -184,3 +184,14 @@ Aquesta versió no substitueix DocentKit com a generador de SA: Tecnologia/Repte
 - Reordena la seqüència didàctica en Inicials, Desenvolupament, Estructuració i Aplicació, evitant repeticions de metodologia i recursos.
 - Separa evidències, instruments, retorn i rúbrica.
 - Millora l’exportació cap a Programació LOMLOE perquè no arrossegui reptes fragmentats ni CE buides quan es pugui reconstruir.
+
+
+## v2.4.4 · Neteja fina de camps IA
+
+- Corregeix camps barrejats quan es crea una SA amb IA.
+- El producte final ja no arrossega rúbriques ni textos interns.
+- Els objectius no incorporen fragments de rúbrica.
+- Les competències específiques es desenvolupen quan només apareixen codis genèrics CE1, CE2, CE3.
+- Afegeix competències transversals quan falten.
+- Garanteix instruments d’avaluació i retorna normes de taller clares en projectes de construcció o prototipatge.
+- La plantilla general competencial ja no força 2n ESO ni una matèria concreta.

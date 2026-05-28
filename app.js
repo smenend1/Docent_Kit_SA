@@ -4365,3 +4365,364 @@ init();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind242); else bind242();
 })();
+
+
+// ===== v2.4.4: neteja final de camps IA, plantilles neutres i normes de taller =====
+(function(){
+  const DK243_VERSION = '2.4.4';
+  const byId = (id) => document.getElementById(id);
+  const read = (id) => (byId(id)?.value || '').trim();
+  const write = (id, value) => { const el = byId(id); if (el && typeof value === 'string') el.value = value; };
+  const lines243 = (v) => String(v || '').replace(/\r/g,'').split(/\n+/).map(x => x.trim()).filter(Boolean);
+  const uniq243 = (arr) => [...new Set(arr.map(x => String(x||'').trim()).filter(Boolean))];
+  const join243 = (arr) => arr.filter(Boolean).join('\n\n');
+  const clean243 = (v) => String(v || '')
+    .replace(/\r/g,'')
+    .replace(/[ \t]+\n/g,'\n')
+    .replace(/\n{3,}/g,'\n\n')
+    .replace(/^[ \t]+|[ \t]+$/g,'')
+    .trim();
+  const stripBullet243 = (v) => String(v || '').replace(/^[-•*]\s*/, '').replace(/^\d+[.)]\s*/, '').trim();
+  const labelBlock243 = (label, value) => clean243(value) ? `${label}: ${clean243(value)}` : '';
+  const normalizeLabel243 = (v) => String(v || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .toUpperCase()
+    .replace(/[’']/g,' ')
+    .replace(/[^A-Z0-9]+/g,' ')
+    .trim();
+  function extractLabels243(text, labels) {
+    const src = String(text || '');
+    const all = Object.values(labels).flat().map(l => l.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'));
+    const out = {};
+    for (const [key, aliases] of Object.entries(labels)) {
+      for (const alias of aliases) {
+        const re = new RegExp('(?:^|\\n)\\s*' + alias.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '\\s*[:：]\\s*([\\s\\S]*?)(?=\\n\\s*(?:' + all.join('|') + ')\\s*[:：]|$)', 'i');
+        const m = src.match(re);
+        if (m && clean243(m[1])) { out[key] = clean243(m[1]); break; }
+      }
+    }
+    return out;
+  }
+  function removeAfter243(text, labels) {
+    let out = String(text || '');
+    for (const lab of labels) {
+      const re = new RegExp('\\n?\\s*' + lab + '\\s*[:：]?[\\s\\S]*$', 'i');
+      out = out.replace(re, '');
+    }
+    return clean243(out);
+  }
+  function removeInstructional243(text) {
+    return clean243(String(text || '')
+      .replace(/Producte,\s*prototip,\s*documentaci[oó],\s*presentaci[oó][\s\S]*?resultat obtingut\.?/gi, '')
+      .replace(/Esborrany IA complet pendent de mapatge autom[aà]tic\s*:?\s*[\s\S]*$/gi, '')
+      .replace(/Ajusta-les segons el curr[ií]culum de la mat[eè]ria\.?/gi, '')
+      .replace(/Revisa la numeraci[oó] LOMLOE de la mat[eè]ria i el curs\.?/gi, '')
+      .replace(/Criteris pendents de concretar\.?/gi, '')
+      .replace(/Compet[eè]ncies espec[ií]fiques\s*i\s*clau\s*:/gi, 'Competències específiques:')
+      .replace(/\b—\b/g, '')
+    );
+  }
+  function looksLikeConstruction243(data) {
+    const all = `${data.title||''} ${data.challenge||''} ${data.sequence||''} ${data.knowledge||''}`;
+    return /(constru|muntatge|taller|prototip|maqueta|braç|brac|pneum[aà]tic|aut[oò]mat|robot|mecanisme|circuit|eina|cartr[oó]|xeringa)/i.test(all);
+  }
+  function shortProduct243(raw, data) {
+    let p = removeInstructional243(raw || '');
+    p = removeAfter243(p, ['R[úu]brica', 'CRITERI\\s+LOMLOE', 'Objectius', 'Compet[eè]ncies', 'Criteris', 'Evid[eè]ncies', 'Instruments', 'Retorn', 'Seqü[eè]ncia', 'Metodologia']);
+    p = p.split('\n').map(stripBullet243).filter(Boolean).slice(0,3).join(' ');
+    if (!p || p.length < 15 || /^(producte final|prototip|documentaci[oó]|presentaci[oó])$/i.test(p)) {
+      const all = `${data.title||''} ${data.challenge||''}`;
+      if (/braç|brac|pneum[aà]tic/i.test(all)) return 'Braç pneumàtic funcional amb maqueta o prototip, documentació del procés tecnològic i presentació breu del funcionament.';
+      if (/aut[oò]mat/i.test(all)) return 'Autòmat funcional construït amb cartró, documentació del procés tecnològic i explicació del mecanisme.';
+      if (/rube|goldberg/i.test(all)) return 'Màquina de Rube Goldberg funcional amb materials reciclables, documentació del procés i demostració final.';
+      return 'Producte final funcional o documentat, acompanyat d’evidències del procés, justificació i presentació final.';
+    }
+    if (p.length > 260) p = p.slice(0,260).replace(/\s+\S*$/, '') + '.';
+    return p;
+  }
+  function goodChallenge243(data, producte) {
+    const all = `${data.title||''} ${producte||''}`;
+    if (/braç|brac|pneum[aà]tic/i.test(all)) return 'Com podem dissenyar i construir un braç pneumàtic funcional amb materials senzills, aplicant principis de pneumàtica i explicant-ne el funcionament?';
+    if (/aut[oò]mat/i.test(all)) return 'Com podem construir un autòmat funcional i explicar tècnicament com transforma el moviment?';
+    if (/rube|goldberg/i.test(all)) return 'Com podem dissenyar una seqüència de mecanismes que transformi una acció inicial en una acció final útil?';
+    return `Com podem resoldre aquest repte de ${data.subject || 'la matèria'} mitjançant una proposta funcional, justificada i comunicable?`;
+  }
+  function firstContext243(raw, data) {
+    const txt = removeInstructional243(removeAfter243(raw || '', ['Repte', 'Justificaci[oó]', 'Producte final', 'R[úu]brica', 'CRITERI\\s+LOMLOE']));
+    const sent = txt.replace(/\n+/g,' ').split(/(?<=[.!?])\s+/).find(s => s.trim().length > 45);
+    if (sent) return sent.trim();
+    return `L’alumnat de ${data.level || 'ESO'} treballa un repte pràctic de ${data.subject || 'la matèria'} a partir d’una situació propera, aplicant sabers, presa de decisions, treball cooperatiu i comunicació del procés.`;
+  }
+  function extractChallengeParts243(data) {
+    const raw = removeInstructional243(data.challenge || '');
+    const parts = extractLabels243(raw, {context:['Context'], repte:['Repte'], justificacio:['Justificació','Justificacio'], producte:['Producte final']});
+    const producte = shortProduct243(parts.producte || '', data);
+    let repte = removeInstructional243(removeAfter243(parts.repte || '', ['Justificaci[oó]', 'Producte final', 'R[úu]brica', 'CRITERI\\s+LOMLOE']));
+    if (!repte || repte.length < 20 || /^[a-zà-ÿ\s.,;:-]{1,35}$/i.test(repte) || /enginyeria real\.?$/i.test(repte)) repte = goodChallenge243(data, producte);
+    const context = firstContext243(parts.context || raw, data);
+    const justificacio = removeInstructional243(removeAfter243(parts.justificacio || '', ['Producte final','R[úu]brica','CRITERI\\s+LOMLOE'])) || 'La situació permet aplicar aprenentatges de manera competencial, desenvolupar el procés de treball, documentar decisions, cooperar i millorar el resultat a partir del retorn rebut.';
+    return {context, repte, justificacio, producte};
+  }
+  function buildChallenge243(data) {
+    const p = extractChallengeParts243(data);
+    return join243([
+      labelBlock243('Context', p.context),
+      labelBlock243('Repte', p.repte),
+      labelBlock243('Justificació', p.justificacio),
+      labelBlock243('Producte final', p.producte)
+    ]);
+  }
+  function buildCompetences243(data) {
+    let raw = removeInstructional243(data.competences || '');
+    raw = removeAfter243(raw, ['R[úu]brica', 'CRITERI\\s+LOMLOE', 'Evid[eè]ncies', 'Instruments', 'Retorn']);
+    const parts = extractLabels243(raw, {ce:['Competències específiques','Competencies especifiques','CE'], ca:['Criteris d’avaluació','Criteris d avalucio','Criteris','CA'], obj:['Objectius d’aprenentatge','Objectius'], trans:['Competències transversals','Competencies transversals']});
+    const genericCE = !parts.ce || /^CE\d(?:\s*,\s*CE\d)*\.?$/i.test(parts.ce.replace(/\s+/g,'')) || /CE1,\s*CE2,\s*CE3/i.test(parts.ce);
+    const ce = genericCE ? [
+      'CE1. Idear i planificar solucions tecnològiques a partir d’una necessitat o repte proper, valorant-ne la viabilitat i la utilitat.',
+      'CE2. Desenvolupar projectes aplicant el procés tecnològic: anàlisi, disseny, planificació, construcció, prova i millora.',
+      'CE3. Utilitzar materials, eines, mecanismes, components o recursos digitals adequats al repte, respectant les normes de seguretat.',
+      'CE4. Comunicar processos i solucions amb vocabulari tècnic, dibuixos, documents, presentacions o demostracions.'
+    ].join('\n') : removeInstructional243(parts.ce);
+    const ca = removeInstructional243(parts.ca) || '1.1. Analitzar una necessitat o repte tecnològic i planificar una solució coherent.\n2.1. Aplicar les fases del procés tecnològic en el desenvolupament del projecte.\n2.2. Construir o elaborar el producte final utilitzant materials, eines i procediments adequats.\n4.1. Comunicar el procés i el resultat amb vocabulari tècnic i evidències clares.';
+    const obj = removeInstructional243(removeAfter243(parts.obj || '', ['R[úu]brica','CRITERI\\s+LOMLOE'])) || 'Comprendre el repte plantejat i els sabers implicats.\nPlanificar i desenvolupar una proposta viable.\nConstruir, provar o elaborar el producte final aplicant criteris tècnics i de seguretat.\nDocumentar el procés, justificar decisions i comunicar el resultat.\nReflexionar sobre dificultats, aprenentatges i millores.';
+    const trans = removeInstructional243(parts.trans) || '- Competència digital: cerca, documentació, simulació o comunicació del procés quan sigui necessari.\n- Competència personal, social i d’aprendre a aprendre: cooperació, autoregulació i millora a partir del retorn.\n- Competència emprenedora: ideació, presa de decisions i transformació d’una idea en producte o solució.\n- Competència ciutadana: ús responsable de materials, seguretat, sostenibilitat i impacte de la tecnologia.';
+    return join243([
+      labelBlock243('Competències específiques', ce),
+      labelBlock243('Criteris d’avaluació', ca),
+      labelBlock243('Objectius d’aprenentatge', obj),
+      labelBlock243('Competències transversals', trans)
+    ]);
+  }
+  function workshopRules243() {
+    return 'Normes de taller:\n- Fer servir cúter, tisores, pistola de silicona, eines de tall o elements punxants només amb indicació i supervisió del docent.\n- Mantenir la taula ordenada, deixar passadissos lliures i recollir restes de materials durant i al final de la sessió.\n- Provar mecanismes o prototips sense posar els dits en punts de pressió, tall, atrapament o moviment.\n- Respectar els rols del grup, compartir materials i avisar el docent davant qualsevol incidència o dubte de seguretat.\n- Desconnectar, guardar o refredar eines i materials segons les instruccions abans de canviar de tasca o sortir del taller.';
+  }
+  function cleanPhase243(v) {
+    let x = removeInstructional243(v || '');
+    x = removeAfter243(x, ['Metodologia', 'Organitzaci[oó] de l.aula', 'Recursos', 'Materials i eines', 'Evid[eè]ncies', 'Instruments', 'R[úu]brica', 'CRITERI\\s+LOMLOE']);
+    return clean243(x);
+  }
+  function buildSequence243(data) {
+    const raw = data.sequence || '';
+    const parts = extractLabels243(raw, {met:['Metodologia'], org:['Organització de l’aula','Organitzacio de l aula'], rec:['Recursos','Materials i eines'], ini:['Inicials','Activitats inicials'], des:['Desenvolupament'], est:['Estructuració','Estructuracio'], apl:['Aplicació','Aplicacio'], normes:['Normes de taller','Seguretat al taller']});
+    const construction = looksLikeConstruction243(data);
+    const metodologia = removeInstructional243(parts.met) || 'Metodologia activa basada en reptes o projectes, amb treball cooperatiu, pràctica guiada, revisió del procés, feedback formatiu i comunicació del resultat.';
+    const org = removeInstructional243(parts.org) || (construction ? 'Treball en grups reduïts al taller o aula de tecnologia, amb rols de disseny, muntatge, documentació i verificació.' : 'Treball individual, per parelles o en grups reduïts segons la tasca, amb moments de posada en comú i revisió.');
+    const rec = removeInstructional243(parts.rec) || (construction ? 'Materials i eines pròpies del projecte, elements de prototipatge, instruments de mesura o recursos digitals, segons la proposta.' : 'Materials de suport, fitxes, eines digitals, recursos visuals i espais de treball adequats.');
+    const ini = cleanPhase243(parts.ini) || 'Presentació del context i del repte, activació de coneixements previs, anàlisi de criteris d’èxit i organització del treball.';
+    const des = cleanPhase243(parts.des) || 'Recerca, disseny, pràctica guiada, construcció o desenvolupament de la proposta amb seguiment docent i ajustos durant el procés.';
+    const est = cleanPhase243(parts.est) || 'Organització d’evidències, síntesi dels aprenentatges, revisió amb checklist o rúbrica i preparació de la comunicació final.';
+    const apl = cleanPhase243(parts.apl) || 'Presentació, demostració o lliurament del producte final, autoavaluació/coavaluació i millora a partir del retorn rebut.';
+    const normes = removeInstructional243(parts.normes) || (construction ? workshopRules243() : '');
+    return join243([
+      labelBlock243('Metodologia', metodologia),
+      labelBlock243('Organització de l’aula', org),
+      labelBlock243('Recursos', rec),
+      normes,
+      labelBlock243('Inicials', ini),
+      labelBlock243('Desenvolupament', des),
+      labelBlock243('Estructuració', est),
+      labelBlock243('Aplicació', apl)
+    ]);
+  }
+  function rubricRows243(text) {
+    const src = String(text || '');
+    const rows = [];
+    const blocks = src.split(/(?=CRITERI\s+LOMLOE\s*:|\n\s*\d+\.\d+\s*[|:])/i).map(b=>b.trim()).filter(Boolean);
+    for (const b of blocks) {
+      const code = (b.match(/(?:CRITERI\s+LOMLOE\s*:\s*)?(\d+\.\d+)/i)||[])[1] || '';
+      let item = (b.match(/[ÍI]TEM\s*:\s*([^\n]+)/i)||b.match(/\d+\.\d+\s*[|:]\s*([^|\n]+)/)||[])[1] || '';
+      if (/^Qualitat del/i.test(item) && item.length > 80) item = 'Qualitat del producte final';
+      const pick = (label) => {
+        const re = new RegExp('(?:' + label + ')\\s*[:：]\\s*([\\s\\S]*?)(?=\\n\\s*(?:NA|AS|AN|AE|No\\s+Assolit|Assolit\\s+Satisfactori|Assolit\\s+Notable|Assolit\\s+Excel|CRITERI\\s+LOMLOE|\\d+\\.\\d+)\\s*[:：]|$)', 'i');
+        return clean243((b.match(re)||[])[1] || '');
+      };
+      const na = pick('NA|No\\s+Assolit\\s*\\(NA\\)|No\\s+Assolit');
+      const as = pick('AS|Assolit\\s+Satisfactori\\s*\\(AS\\)|Assolit\\s+Satisfactori');
+      const an = pick('AN|Assolit\\s+Notable\\s*\\(AN\\)|Assolit\\s+Notable');
+      const ae = pick('AE|Assolit\\s+Excel[·l.]*lent\\s*\\(AE\\)|Assolit\\s+Excel[·l.]*lent');
+      if (code || item || na || as || an || ae) rows.push({code,item,na,as,an,ae});
+    }
+    return rows;
+  }
+  function buildAssessment243(data) {
+    const raw = removeInstructional243(data.assessment || '');
+    const parts = extractLabels243(raw, {evi:['Evidències','Evidencies'], ins:['Instruments'], ret:['Retorn i millora','Retorn'], rub:['Rúbrica','Rubrica']});
+    const evi = removeAfter243(removeInstructional243(parts.evi), ['Instruments','Retorn','R[úu]brica','CRITERI\\s+LOMLOE']) || '- Producte final o prototip.\n- Documentació, fitxes, memòria o quadern de procés.\n- Esbossos, proves, registres, mesures o captures del treball realitzat.\n- Presentació, demostració o explicació final.\n- Reflexió individual o de grup.';
+    const ins = removeAfter243(removeInstructional243(parts.ins), ['Retorn','R[úu]brica','CRITERI\\s+LOMLOE']) || '- Rúbrica criterial NA/AS/AN/AE.\n- Llista de control del procés i de les normes de taller.\n- Observació docent durant el treball.\n- Autoavaluació i coavaluació.\n- Revisió del producte final, documentació o presentació.';
+    const ret = removeAfter243(removeInstructional243(parts.ret), ['R[úu]brica','CRITERI\\s+LOMLOE']) || '- Feedback docent durant el procés.\n- Revisió entre iguals amb criteris d’èxit.\n- Possibilitat de millora abans del lliurament final.\n- Comentari final sobre aprenentatges, dificultats i millores.';
+    let rows = rubricRows243(parts.rub || raw);
+    if (!rows.length) rows = [
+      {code:'1.1',item:'Comprensió del repte i planificació',na:'Identifica parcialment el repte i necessita molta guia.',as:'Identifica el repte i planifica els passos bàsics amb suport.',an:'Analitza el repte i planifica el treball de manera coherent.',ae:'Analitza el repte amb profunditat, anticipa dificultats i justifica decisions.'},
+      {code:'2.1',item:'Procés de treball i aplicació dels sabers',na:'Aplica els sabers de manera incompleta o poc ordenada.',as:'Aplica procediments bàsics amb suport puntual.',an:'Aplica els sabers de manera coherent i força autònoma.',ae:'Aplica els sabers amb autonomia, precisió i criteri propi.'},
+      {code:'2.2',item:'Qualitat del producte final',na:'El producte és incomplet, poc funcional o no respon prou al repte.',as:'El producte compleix els requisits mínims amb algunes mancances.',an:'El producte és funcional, coherent i ben justificat.',ae:'El producte és complet, creatiu, ben acabat i millorat a partir de proves.'},
+      {code:'4.1',item:'Comunicació i documentació',na:'Comunica el procés amb poca claredat o poques evidències.',as:'Explica les idees principals amb una estructura bàsica.',an:'Documenta i comunica el procés amb claredat i vocabulari adequat.',ae:'Comunica amb rigor, evidències ben seleccionades i vocabulari tècnic precís.'}
+    ];
+    const rub = rows.slice(0,8).map(r => [
+      `CRITERI LOMLOE: ${r.code || 'pendent'}`,
+      `ÍTEM: ${r.item || 'Ítem d’avaluació'}`,
+      `NA: ${r.na || 'Mostra dificultats importants i necessita molta ajuda.'}`,
+      `AS: ${r.as || 'Assoleix els elements bàsics amb suport puntual.'}`,
+      `AN: ${r.an || 'Assoleix el criteri de manera coherent i força autònoma.'}`,
+      `AE: ${r.ae || 'Assoleix el criteri amb autonomia, precisió i justificació.'}`
+    ].join('\n')).join('\n\n');
+    return join243([
+      labelBlock243('Evidències', evi),
+      labelBlock243('Instruments', ins),
+      labelBlock243('Retorn i millora', ret),
+      labelBlock243('Rúbrica', rub)
+    ]);
+  }
+  function cleanKnowledge243(data) {
+    const l = uniq243(lines243(removeInstructional243(data.knowledge)).map(stripBullet243)).filter(x => x.length > 3 && !/^Sabers\s*\/?|^Sabers conceptuals:?$|^Sabers procedimentals:?$|^Sabers actitudinals:?$/i.test(x));
+    if (!l.length) return data.knowledge || '';
+    return l.slice(0,24).map(x => `- ${x}`).join('\n');
+  }
+  function cleanInclusion243(data) {
+    const inc = removeInstructional243(data.inclusion || '');
+    if (inc && inc.length > 80) return inc;
+    return 'Mesures universals: instruccions fragmentades, models visuals, checklist, rols cooperatius, temps de revisió i opcions diverses d’expressió.\nTDAH: tasques curtes, temporitzador, objectius de sessió i rol actiu.\nTEA: anticipació de fases, estructura visual, consignes literals i exemple acabat.\nDislèxia: suport oral i visual, tipografia clara, menys càrrega lectora i temps addicional.\nTDL: vocabulari anticipat, frases model, comprovació de comprensió i suport visual.';
+  }
+  function getData243() {
+    return {title:read('title'),level:read('level'),subject:read('subject'),duration:read('duration'),challenge:read('challenge'),knowledge:read('knowledge'),competences:read('competences'),sequence:read('sequence'),inclusion:read('inclusion'),assessment:read('assessment')};
+  }
+  function renderAll243() {
+    try { if (typeof renderReport === 'function' && typeof getFormData === 'function') renderReport(getFormData()); } catch(e) {}
+    try { if (typeof renderAiValidation === 'function' && typeof validateSaQuality === 'function' && typeof getFormData === 'function') renderAiValidation(validateSaQuality(getFormData())); } catch(e) {}
+    try { if (typeof renderPedagogicAudit === 'function' && typeof validateSaPedagogy === 'function' && typeof getFormData === 'function') renderPedagogicAudit(validateSaPedagogy(getFormData())); } catch(e) {}
+    try { if (typeof renderSaReview === 'function' && typeof validateSaForExport === 'function' && typeof getFormData === 'function') renderSaReview(validateSaForExport(getFormData()), false); } catch(e) {}
+  }
+  function restructure243() {
+    const data = getData243();
+    write('challenge', buildChallenge243(data));
+    write('knowledge', cleanKnowledge243({...data, challenge:read('challenge')}));
+    write('competences', buildCompetences243({...data, challenge:read('challenge')}));
+    write('sequence', buildSequence243({...data, challenge:read('challenge')}));
+    write('inclusion', cleanInclusion243(data));
+    write('assessment', buildAssessment243({...data, challenge:read('challenge')}));
+    renderAll243();
+    const st = byId('importStatus'); if (st) st.textContent = 'SA netejada amb v2.4.4: camps IA reestructurats, repte/producte/objectius netejats, instruments i normes de taller revisats.';
+    try { if (typeof showToast === 'function') showToast('SA netejada i reestructurada. Revisa CE/CA exactes abans d’exportar.'); } catch(e) {}
+  }
+  window.restructureCurrentSa = restructure243;
+  // Neutralitza la plantilla general competencial: estructura si cal, però no imposa 2n ESO ni matèria.
+  try {
+    if (window.EXTRA_TEMPLATES && window.EXTRA_TEMPLATES.sa_generica) {
+      window.EXTRA_TEMPLATES.sa_generica.level = '';
+      window.EXTRA_TEMPLATES.sa_generica.subject = '';
+    }
+  } catch(e) {}
+  try {
+    if (typeof EXTRA_TEMPLATES !== 'undefined' && EXTRA_TEMPLATES.sa_generica) {
+      EXTRA_TEMPLATES.sa_generica.level = '';
+      EXTRA_TEMPLATES.sa_generica.subject = '';
+    }
+  } catch(e) {}
+  // Neteja automàtica després d'aplicar un esborrany IA, sense impedir l'aplicació original.
+  function bind243() {
+    const r = byId('restructureSaBtn');
+    if (r && !r.dataset.dk243Bound) { r.dataset.dk243Bound = '1'; r.addEventListener('click', restructure243); }
+    const apply = byId('aiApplyBtn');
+    if (apply && !apply.dataset.dk243Bound) { apply.dataset.dk243Bound = '1'; apply.addEventListener('click', () => setTimeout(restructure243, 80)); }
+    const complete = byId('aiCompleteMissingBtn');
+    if (complete && !complete.dataset.dk243Bound) { complete.dataset.dk243Bound = '1'; complete.addEventListener('click', () => setTimeout(restructure243, 120)); }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind243); else bind243();
+})();
+
+
+// ===== v2.4.4: correccio estricta de CE/CA/transversals despres de mapatge IA =====
+(function(){
+  function cleanDK244(v){return String(v||'').replace(/\r/g,'').replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();}
+  function linesDK244(v){return String(v||'').replace(/\r/g,'').split(/\n+/).map(x=>x.trim()).filter(Boolean);}
+  function stripDK244(v){return String(v||'').replace(/^[-•*]\s*/,'').replace(/^\d+[.)]\s*/,'').trim();}
+  function uniqDK244(a){return [...new Set(a.map(x=>String(x||'').trim()).filter(Boolean))];}
+  function removeNoiseDK244(text){
+    return cleanDK244(String(text||'')
+      .replace(/^(?:i\s+clau\s*:?)\s*/i,'')
+      .replace(/Compet[eè]ncies\s+espec[ií]fiques\s+i\s+clau\s*:?/gi,'Competències específiques:')
+      .replace(/Ajusta-les segons el curr[ií]culum de la mat[eè]ria\.?/gi,'')
+      .replace(/Revisa la numeraci[oó] LOMLOE de la mat[eè]ria i el curs\.?/gi,'')
+      .replace(/Criteris pendents de concretar\.?/gi,'')
+      .replace(/^[\s,.;:]+|[\s,.;:]+$/g,'')
+    );
+  }
+  function findSectionDK244(src, labelVariants, stopVariants){
+    const source='\n'+String(src||'').replace(/\r/g,'')+'\n';
+    const stops=stopVariants.map(x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|');
+    for(const label of labelVariants){
+      const lab=label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+      // label must end before colon or line end; prevents matching only "Competències específiques" inside "Competències específiques i clau"
+      const re=new RegExp('\\n\\s*'+lab+'\\s*[:：]\\s*([\\s\\S]*?)(?=\\n\\s*(?:'+stops+')\\s*[:：]|\\n\\s*$)','i');
+      const m=source.match(re);
+      if(m && cleanDK244(m[1])) return cleanDK244(m[1]);
+    }
+    return '';
+  }
+  function inferSubjectDK244(){
+    const el=document.getElementById('subject');
+    return (el&&el.value)||'Tecnologia';
+  }
+  function fallbackCompetencesDK244(raw){
+    const src=String(raw||'');
+    const codes=uniqDK244((src.match(/\bCE\s*\d+\b/gi)||[]).map(x=>x.replace(/\s+/g,'').toUpperCase()));
+    const map={
+      CE1:'CE1. Analitzar necessitats o reptes de l’entorn i proposar solucions tecnològiques creatives, viables i sostenibles.',
+      CE2:'CE2. Desenvolupar projectes tecnològics aplicant el procés de disseny, planificació, construcció, prova i millora.',
+      CE3:'CE3. Utilitzar materials, eines, mecanismes, components o recursos digitals adequats a la funció del projecte.',
+      CE4:'CE4. Representar i comunicar idees, processos i solucions tecnològiques amb vocabulari tècnic, dibuixos, esquemes o documents.',
+      CE5:'CE5. Utilitzar eines digitals per dissenyar, simular, documentar, comprovar o compartir projectes tecnològics.',
+      CE6:'CE6. Valorar l’impacte de la tecnologia en la sostenibilitat, la seguretat, l’eficiència i la cura de l’entorn.'
+    };
+    const use=(codes.length?codes:['CE1','CE2','CE3']).slice(0,6);
+    return use.map(c=>map[c]||`${c}. Competència específica pendent de revisar segons el currículum de la matèria.`).join('\n');
+  }
+  function fallbackCriteriaDK244(raw){
+    const codes=uniqDK244((String(raw||'').match(/\b\d+\.\d+\b/g)||[]));
+    const subject=inferSubjectDK244();
+    return (codes.length?codes:['1.1','2.1','3.1']).slice(0,8).map(c=>`${c}. Criteri d’avaluació vinculat al desenvolupament del projecte i als sabers de ${subject}; revisa’n la redacció exacta segons el currículum del curs.`).join('\n');
+  }
+  function defaultTransversalsDK244(){
+    return [
+      'Competència digital: ús responsable d’eines digitals per cercar, documentar, representar o comunicar el procés.',
+      'Competència personal, social i d’aprendre a aprendre: planificació, autoregulació, cooperació i revisió del propi aprenentatge.',
+      'Competència emprenedora: ideació, presa de decisions, resolució de problemes i millora de la proposta.',
+      'Competència en comunicació lingüística: ús de vocabulari tècnic i comunicació oral o escrita del procés i del resultat.'
+    ].join('\n');
+  }
+  function parseCompetencesDK244(text){
+    const src=removeNoiseDK244(text);
+    const labelsCE=['Competències específiques i clau','Competències específiques','Competencies especifiques i clau','Competencies especifiques'];
+    const labelsCA=['Criteris d’avaluació','Criteris d\'avaluació','Criteris d’avaluacio','Criteris d\'avaluacio','Criteris'];
+    const labelsTR=['Competències transversals','Competencies transversals'];
+    const all=[...labelsCE,...labelsCA,...labelsTR,'Objectius d’aprenentatge','Objectius','Sabers','Rúbrica','Rubrica','Seqüència','Sequencia','Avaluació','Avaluacio'];
+    let competencies=findSectionDK244(src,labelsCE,all);
+    let criteria=findSectionDK244(src,labelsCA,all);
+    let transversals=findSectionDK244(src,labelsTR,all);
+    competencies=removeNoiseDK244(competencies);
+    criteria=removeNoiseDK244(criteria);
+    transversals=removeNoiseDK244(transversals);
+    if(!competencies || /^[-–—]$/.test(competencies) || /^CE\d(?:\s*,\s*CE\d)*\.?$/i.test(competencies) || /^i\s+clau/i.test(competencies)) competencies=fallbackCompetencesDK244(src);
+    if(!criteria || /^[-–—]$/.test(criteria) || /^\d+\.\d+(?:\s*,\s*\d+\.\d+)*\.?$/i.test(criteria)) criteria=fallbackCriteriaDK244(src);
+    if(!transversals || /^[-–—]$/.test(transversals)) transversals=defaultTransversalsDK244();
+    return {competencies, criteria, transversals, criteriaCodes: uniqDK244((criteria.match(/\b\d+\.\d+\b/g)||[]))};
+  }
+  try{
+    extractCompetenceParts = function(text){ return parseCompetencesDK244(text); };
+  }catch(e){ window.extractCompetenceParts = function(text){ return parseCompetencesDK244(text); }; }
+  // Also clean current form when user runs Reestructura SA, so the preview/export no longer shows "i clau..."
+  const previous = window.restructureCurrentSa;
+  window.restructureCurrentSa = function(){
+    if(typeof previous==='function') previous();
+    const field=document.getElementById('competences');
+    if(field){
+      const p=parseCompetencesDK244(field.value);
+      field.value = cleanDK244(`Competències específiques:\n${p.competencies}\n\nCriteris d’avaluació:\n${p.criteria}\n\nCompetències transversals:\n${p.transversals}`);
+    }
+    if(typeof renderReport==='function' && typeof getFormData==='function') renderReport(getFormData());
+  };
+  function bind244(){
+    const btn=document.getElementById('restructureSaBtn');
+    if(btn && !btn.dataset.dk244Extra){ btn.dataset.dk244Extra='1'; btn.addEventListener('click', function(){ setTimeout(()=>window.restructureCurrentSa&&window.restructureCurrentSa(),0); }); }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', bind244); else bind244();
+})();
