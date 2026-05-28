@@ -211,3 +211,12 @@ Aquesta versió no substitueix DocentKit com a generador de SA: Tecnologia/Repte
 - Millora els missatges d'error de Gemini: quota, model no disponible, restriccions de clau, timeout, bloqueig de seguretat i resposta buida.
 - La generació completa informa de la mida aproximada del prompt i manté un esborrany local si l'API falla.
 - El check de clau queda explicat com a prova curta; no garanteix que una SA llarga es pugui generar.
+
+
+## v2.4.7 · Control de quota Gemini
+
+- Afegeix pausa automàtica quan Gemini retorna error 429 de quota o límit temporal.
+- Desactiva temporalment els botons de prova i generació mentre dura la pausa.
+- Mostra un comptador de segons i recomana continuar amb mode local.
+- Afegeix el botó “Mode local ara”.
+- Evita repetir intents que poden consumir quota o allargar el bloqueig.

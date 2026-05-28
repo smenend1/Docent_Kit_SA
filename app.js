@@ -154,6 +154,7 @@ const els = {
   search: document.getElementById('searchInput'), levelFilter: document.getElementById('levelFilter'), typeFilter: document.getElementById('typeFilter'), fileInput: document.getElementById('fileInput'), installBtn: document.getElementById('installBtn'),
   templateSelect: document.getElementById('templateSelect'), aiProvider: document.getElementById('aiProvider'), aiKey: document.getElementById('aiKey'),
   aiModel: document.getElementById('aiModel'), aiModeStatus: document.getElementById('aiModeStatus'), aiContext: document.getElementById('aiContext'), aiOutput: document.getElementById('aiOutput'),
+  aiQuotaStatus: document.getElementById('aiQuotaStatus'),
   aiCourse: document.getElementById('aiCourse'), aiSubject: document.getElementById('aiSubject'), aiTopic: document.getElementById('aiTopic'), aiProduct: document.getElementById('aiProduct'),
   aiDuration: document.getElementById('aiDuration'), aiTools: document.getElementById('aiTools'), aiKnowledge: document.getElementById('aiKnowledge'), aiCriteria: document.getElementById('aiCriteria'),
   aiInclTdah: document.getElementById('aiInclTdah'), aiInclTea: document.getElementById('aiInclTea'), aiInclDislexia: document.getElementById('aiInclDislexia'), aiInclTdl: document.getElementById('aiInclTdl'),
@@ -210,6 +211,15 @@ function bindEvents() {
   if (aiTestBtn) aiTestBtn.addEventListener('click', testGeminiConnection);
   const aiSmokeTestBtn = document.getElementById('aiSmokeTestBtn');
   if (aiSmokeTestBtn) aiSmokeTestBtn.addEventListener('click', testGeminiGenerationShort);
+  const aiUseLocalBtn = document.getElementById('aiUseLocalBtn');
+  if (aiUseLocalBtn) aiUseLocalBtn.addEventListener('click', () => {
+    if (els.aiProvider) els.aiProvider.value = 'local';
+    saveSettings({ aiProvider: 'local' });
+    updateAiModeStatus();
+    if (els.aiOutput) els.aiOutput.textContent = 'Mode local activat. Pots continuar generant esborranys sense consumir quota de Gemini.';
+  });
+  refreshGeminiCooldownUi();
+  setInterval(refreshGeminiCooldownUi, 1000);
   const aiBuildPromptBtn = document.getElementById('aiBuildPromptBtn');
   if (aiBuildPromptBtn) aiBuildPromptBtn.addEventListener('click', fillAiContextFromWizard);
   ['aiCourse','aiSubject','aiTopic','aiProduct','aiDuration','aiTools','aiKnowledge','aiCriteria'].forEach(id => {
@@ -1718,6 +1728,7 @@ function updateAiStatus() {
   const provider = els.aiProvider.value;
   const isGoogle = provider === 'google';
   els.aiModeStatus.textContent = isGoogle ? 'Mode Gemini · API key' : 'Mode local · sense API';
+  try { refreshGeminiCooldownUi(); } catch(e) {}
   els.aiModeStatus.classList.toggle('google-mode', isGoogle);
   els.aiModeStatus.classList.toggle('local-mode', !isGoogle);
   els.aiModeStatus.style.background = isGoogle ? '#fff7ed' : '#ecfdf3';
@@ -1877,6 +1888,87 @@ function buildLocalAIDraft() {
 - Ús de recursos i eines: ${w.tools || 'materials i eines adequades al repte.'}\n- Comunicació clara del procés i dels resultats.\n\nMETODOLOGIA\nAprenentatge basat en reptes, treball cooperatiu, bastides, revisió entre iguals i feedback formatiu.\n\nINICIALS\nActivació de coneixements previs, presentació del repte i construcció compartida dels criteris d’èxit.\n\nDESENVOLUPAMENT\nRecerca, pràctica guiada, resolució de tasques parcials i revisió del procés.\n\nESTRUCTURACIÓ\nSíntesi dels aprenentatges, organització d’evidències i preparació del producte final.\n\nAPLICACIÓ\nPresentació del producte final, transferència a un context proper i reflexió individual.\n\nMESURES I SUPORTS\nDisseny universal: instruccions fragmentades, exemples, checklist, rols i opcions de resposta. TDAH: temporització i tasques curtes. TEA: anticipació i estructura visual. Dislèxia: suport oral i reducció de càrrega lectora. TDL: vocabulari previ i frases model.\n\nEVIDÈNCIES\nProcés de treball, producte final, presentació i reflexió final.\n\nINSTRUMENTS\nRúbrica NA/AS/AN/AE, llista de control, coavaluació i autoavaluació.\n\nRETORN I MILLORA\nFeedback durant el procés, revisió entre iguals i millora abans del lliurament.\n\nRÚBRICA\n1.1 | Comprensió del repte | NA: identifica parcialment | AS: identifica els elements bàsics | AN: analitza i justifica | AE: analitza amb profunditat i transfereix\n2.1 | Aplicació de sabers | NA: aplica amb moltes ajudes | AS: aplica procediments bàsics | AN: aplica de manera coherent | AE: aplica amb autonomia i criteri\n3.1 | Comunicació i reflexió | NA: comunica amb poca claredat | AS: comunica la idea principal | AN: comunica amb evidències | AE: comunica amb rigor i proposa millores`; 
 }
 
+
+const GEMINI_COOLDOWN_KEY = 'docentkit_gemini_cooldown_until_v247';
+
+function extractRetrySecondsFromGeminiDetail(detail) {
+  const text = String(detail || '');
+  let seconds = 0;
+  try {
+    const parsed = JSON.parse(text);
+    const details = parsed?.error?.details || [];
+    for (const d of details) {
+      const retry = d?.retryDelay || d?.metadata?.retryDelay || d?.metadata?.retry_delay;
+      if (typeof retry === 'string') {
+        const m = retry.match(/([0-9.]+)s/i);
+        if (m) seconds = Math.max(seconds, Math.ceil(Number(m[1])));
+      }
+      const quotaMetric = d?.violations?.[0]?.quotaMetric || d?.metadata?.quota_metric || '';
+      if (quotaMetric && /free_tier|generate_content/i.test(quotaMetric)) seconds = Math.max(seconds, 60);
+    }
+    const msg = parsed?.error?.message || '';
+    const m2 = msg.match(/retry\s+in\s+([0-9.]+)s/i);
+    if (m2) seconds = Math.max(seconds, Math.ceil(Number(m2[1])));
+  } catch {
+    const m = text.match(/retry\s+in\s+([0-9.]+)s/i) || text.match(/([0-9.]+)s/i);
+    if (m) seconds = Math.max(seconds, Math.ceil(Number(m[1])));
+  }
+  if (!seconds) seconds = 75;
+  return Math.min(Math.max(seconds + 5, 15), 15 * 60);
+}
+
+function setGeminiCooldown(seconds, reason = '') {
+  const until = Date.now() + (Number(seconds) || 75) * 1000;
+  localStorage.setItem(GEMINI_COOLDOWN_KEY, String(until));
+  localStorage.setItem(GEMINI_COOLDOWN_KEY + '_reason', reason || 'quota');
+  refreshGeminiCooldownUi();
+  return until;
+}
+
+function getGeminiCooldownRemaining() {
+  const until = Number(localStorage.getItem(GEMINI_COOLDOWN_KEY) || 0);
+  const left = until - Date.now();
+  if (left <= 0) {
+    localStorage.removeItem(GEMINI_COOLDOWN_KEY);
+    localStorage.removeItem(GEMINI_COOLDOWN_KEY + '_reason');
+    return 0;
+  }
+  return Math.ceil(left / 1000);
+}
+
+function refreshGeminiCooldownUi() {
+  const left = getGeminiCooldownRemaining();
+  const ids = ['aiTestBtn','aiSmokeTestBtn','aiDraftBtn'];
+  ids.forEach(id => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    if (left > 0 && els.aiProvider && els.aiProvider.value === 'google') {
+      btn.disabled = true;
+      btn.dataset.originalText = btn.dataset.originalText || btn.textContent;
+      btn.textContent = `Espera ${left}s`;
+    } else {
+      btn.disabled = false;
+      if (btn.dataset.originalText) btn.textContent = btn.dataset.originalText;
+    }
+  });
+  if (els.aiQuotaStatus) {
+    if (left > 0) {
+      els.aiQuotaStatus.textContent = `Quota Gemini en pausa temporal: espera ${left} segons abans de tornar a provar. Mentrestant pots fer servir “Mode local ara”.`;
+      els.aiQuotaStatus.style.color = '#b45309';
+    } else {
+      els.aiQuotaStatus.textContent = 'Quota Gemini: sense pausa activa. Si reps un 429, l’app esperarà automàticament abans de permetre nous intents.';
+      els.aiQuotaStatus.style.color = '';
+    }
+  }
+}
+
+function throwIfGeminiCoolingDown(context = 'generació') {
+  const left = getGeminiCooldownRemaining();
+  if (left > 0) {
+    throw new Error(`Gemini està en pausa per quota o límit temporal. Espera ${left} segons abans de tornar a provar ${context}. Pots continuar amb mode local sense consumir quota.`);
+  }
+}
+
 function getSelectedGeminiModel() {
   return (els.aiModel && els.aiModel.value) || loadSettings().googleModel || 'gemini-2.5-flash';
 }
@@ -1911,13 +2003,18 @@ function formatGeminiError(statusCode, detail, context = 'generació') {
     tips.push('Si el check curt funciona però la generació llarga no, revisa quota, model i restriccions del projecte a Google AI Studio/Cloud.');
   }
   if (statusCode === 404) tips.push('El model seleccionat no està disponible per aquesta clau o endpoint. Prova gemini-2.5-flash o gemini-2.5-flash-lite.');
-  if (statusCode === 429) tips.push('S’ha superat quota, límit de peticions o límit temporal. Espera una estona o revisa quota/facturació.');
+  if (statusCode === 429) {
+    const secs = extractRetrySecondsFromGeminiDetail(detail);
+    tips.push(`S’ha superat quota, límit de peticions o límit temporal. L’app farà una pausa automàtica d’uns ${secs} segons abans de permetre nous intents.`);
+    tips.push('No premis repetidament els botons de prova: cada intent pot comptar contra la mateixa quota. Fes servir mode local mentre esperes.');
+  }
   if (statusCode >= 500) tips.push('Error temporal del servei de Google. Torna-ho a provar més tard.');
   if (/SAFETY|blocked|safety|policy/i.test(message + ' ' + parsed.status + ' ' + parsed.reason)) tips.push('La resposta pot haver estat bloquejada per filtres de seguretat. Reformula el prompt o redueix detalls sensibles.');
   return `Error API ${statusCode} durant ${context}${message ? `: ${message}` : ''}${tips.length ? `\n\nPossibles causes i passos:\n- ${tips.join('\n- ')}` : ''}`;
 }
 
 async function callGeminiText(prompt, options = {}) {
+  throwIfGeminiCoolingDown(options.context || 'generació');
   const key = els.aiKey.value.trim();
   if (!key) throw new Error('No hi ha API key configurada.');
   const model = options.model || getSelectedGeminiModel();
@@ -1948,7 +2045,13 @@ async function callGeminiText(prompt, options = {}) {
     clearTimeout(timer);
   }
   const detail = await response.text();
-  if (!response.ok) throw new Error(formatGeminiError(response.status, detail, options.context || 'generació'));
+  if (!response.ok) {
+    if (response.status === 429) {
+      const seconds = extractRetrySecondsFromGeminiDetail(detail);
+      setGeminiCooldown(seconds, detail);
+    }
+    throw new Error(formatGeminiError(response.status, detail, options.context || 'generació'));
+  }
   let json;
   try { json = JSON.parse(detail); } catch { throw new Error('La resposta de Gemini no és JSON vàlid. Pot haver-hi un problema temporal o una resposta inesperada del servei.'); }
   const candidate = json?.candidates?.[0];
@@ -4661,7 +4764,7 @@ init();
     write('inclusion', cleanInclusion243(data));
     write('assessment', buildAssessment243({...data, challenge:read('challenge')}));
     renderAll243();
-    const st = byId('importStatus'); if (st) st.textContent = 'SA netejada amb v2.4.6: camps IA reestructurats, repte/producte/objectius netejats, instruments i normes de taller revisats.';
+    const st = byId('importStatus'); if (st) st.textContent = 'SA netejada amb v2.4.7: camps IA reestructurats, repte/producte/objectius netejats, instruments i normes de taller revisats.';
     try { if (typeof showToast === 'function') showToast('SA netejada i reestructurada. Revisa CE/CA exactes abans d’exportar.'); } catch(e) {}
   }
   window.restructureCurrentSa = restructure243;
@@ -4789,7 +4892,7 @@ init();
 })();
 
 
-// ===== v2.4.6: seguretat de taller automàtica segons eines, materials i edat =====
+// ===== v2.4.7: seguretat de taller automàtica segons eines, materials i edat =====
 (function(){
   function dk245Text(v){ return String(v || '').toLowerCase(); }
   function dk245Lines(items){ return items.filter(Boolean).map(x => '- ' + x).join('\n'); }
