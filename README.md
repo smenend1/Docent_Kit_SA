@@ -250,7 +250,7 @@ Flux recomanat:
 5. Exporta per Programació LOMLOE.
 
 
-## v2.4.12 · Poliment final de camps IA
+## v2.5.0 · Poliment final de camps IA
 
 - Sanejament més estricte de camps generats amb IA.
 - Evita que fragments llargs o descripcions completes acabin dins del camp de durada.
@@ -258,3 +258,11 @@ Flux recomanat:
 - Neteja fragments de rúbrica, CE/CA o apartats interns que puguin contaminar producte final o objectius.
 - Omple instruments i mesures específiques quan queden buides o amb marcadors provisionals.
 - Reestructura SA aplica també aquest sanejament final.
+
+
+## v2.5.0 · Mòduls en paral·lel i fitxes des de SA
+
+- Les opcions del menú lateral generen documents diferenciats: SA, projecte, sessió, rúbrica, prova competencial, fitxa d’activitats i adaptació inclusiva.
+- S’afegeixen botons per crear una fitxa, una sessió o una prova a partir de la SA actual.
+- Les fitxes d’activitat aprofiten repte, producte final, sabers, seqüència, instruments, mesures i rúbrica de la SA.
+- Aquesta versió separa millor el format de cada recurs i evita que tots els recursos surtin com una SA.

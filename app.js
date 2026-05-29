@@ -5554,7 +5554,7 @@ init();
   window.docentKitSequence2411={version:DK2411, fillSessions, extractSequenceParts};
 })();
 
-// ===== v2.4.12: poliment final de camps IA, durada i frases tallades =====
+// ===== v2.5.0: poliment final de camps IA, durada i frases tallades =====
 (function(){
   const DK2412='2.4.12';
   const prevMap = typeof mapImportedTemplateText === 'function' ? mapImportedTemplateText : null;
@@ -5774,7 +5774,7 @@ init();
     if (typeof prevRestructure2412 === 'function') prevRestructure2412();
     setTimeout(()=>{
       sanitizeCurrentSa2412();
-      try{ if(typeof showToast==='function') showToast('SA sanejada amb v2.4.12: durada, repte, producte, objectius, instruments i mesures revisats.'); }catch(e){}
+      try{ if(typeof showToast==='function') showToast('SA sanejada amb v2.5.0: durada, repte, producte, objectius, instruments i mesures revisats.'); }catch(e){}
     },90);
   };
 
@@ -5787,4 +5787,114 @@ init();
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', bind2412); else bind2412();
   window.docentKitPoliment2412={version:DK2412, sanitizeCurrentSa:sanitizeCurrentSa2412, sanitizeMapped};
+})();
+
+/* DocentKit v2.5.0 - mòduls paral·lels i fitxes derivades de SA */
+(function(){
+  const DK250='v2.5.0';
+  function norm(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+  function cleanBullets(text){return String(text||'').split('\n').map(x=>x.trim()).filter(Boolean).map(x=>x.replace(/^[-•*]\s*/,'')).filter(Boolean);}
+  function asList(items){const arr=Array.isArray(items)?items:cleanBullets(items); return arr.length?`<ul>${arr.map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul>`:'<p>—</p>';}
+  function getKind(data){
+    const t=norm(data && data.type); const tags=Array.isArray(data&&data.tags)?norm(data.tags.join(' ')):'';
+    if(t.includes('projecte')) return 'projecte';
+    if(t.includes('sessio')) return 'sessio';
+    if(t.includes('rubrica')) return 'rubrica';
+    if(t.includes('prova')) return 'prova';
+    if(t.includes('fitxa')) return 'fitxa';
+    if(t.includes('adaptacio')) return 'adaptacio';
+    if(t.includes('situacio')||tags.includes('docentkit.sa')) return 'sa';
+    return 'generic';
+  }
+  window.isSituation = isSituation = function(data){ return getKind(data)==='sa'; };
+  const oldBuild = window.buildReportHtml || buildReportHtml;
+  window.buildReportHtml = buildReportHtml = function(data, mode='sa'){
+    const kind=getKind(data);
+    if(kind==='sa' && mode!=='brief') return buildSaReportHtml(data);
+    if(kind==='projecte') return buildProjectReportHtml250(data);
+    if(kind==='sessio') return buildSessionReportHtml250(data);
+    if(kind==='rubrica') return buildRubricReportHtml250(data);
+    if(kind==='prova') return buildTestReportHtml250(data);
+    if(kind==='fitxa') return buildActivitySheetReportHtml250(data);
+    if(kind==='adaptacio') return buildAdaptationReportHtml250(data);
+    return oldBuild(data, mode);
+  };
+  function cardTitle(data, subtitle){return `<header class="sa-cover"><p class="sa-kicker">${escapeHtml(data.type||'Recurs docent')}</p><h1>${escapeHtml(data.title)}</h1>${subtitle?`<p class="sa-question">${escapeHtml(subtitle)}</p>`:''}</header>`;}
+  function baseMeta(data){return `<section class="sa-meta-grid">${metaBox('Curs',data.level||'—')}${metaBox('Àrea / matèria / àmbit',data.subject||'—')}${metaBox('Durada',data.duration||'—')}${metaBox('Tipus',data.type||'—')}</section>`;}
+  function genericArticle(data, blocks){return `<article class="sa-report">${cardTitle(data, firstSentence(data.challenge))}${baseMeta(data)}${blocks.join('')}</article>`;}
+  function buildProjectReportHtml250(data){
+    return genericArticle(data,[
+      `<section class="sa-block"><h2>Repte i producte final</h2>${definition('Repte o necessitat',data.challenge)}${definition('Producte final esperat', inferProductFromChallenge250(data.challenge)||'Producte final pendent de concretar.')}</section>`,
+      `<section class="sa-block"><h2>Sabers i requisits del projecte</h2>${formatText(data.knowledge)}</section>`,
+      `<section class="sa-block"><h2>Fases del projecte</h2>${buildProjectPhases250(data.sequence)}</section>`,
+      `<section class="sa-block"><h2>Rols, materials i organització</h2>${definition('Organització i inclusió',data.inclusion)}</section>`,
+      `<section class="sa-block"><h2>Avaluació del projecte</h2>${formatText(data.assessment)}</section>`
+    ]);
+  }
+  function buildSessionReportHtml250(data){
+    const seq=splitSession250(data.sequence);
+    return genericArticle(data,[
+      `<section class="sa-block"><h2>Objectiu de la sessió</h2>${definition('Objectiu',data.challenge)}</section>`,
+      `<section class="sa-block"><h2>Sabers i vocabulari</h2>${formatText(data.knowledge)}</section>`,
+      `<section class="sa-block"><h2>Desenvolupament de la sessió</h2><table class="sa-sequence-table"><thead><tr><th>Moment</th><th>Temps orientatiu</th><th>Activitat docent i alumnat</th></tr></thead><tbody>${sequenceRow('Inici','10 min',seq.inici)}${sequenceRow('Desenvolupament','35 min',seq.desenvolupament)}${sequenceRow('Tancament','10 min',seq.tancament)}</tbody></table></section>`,
+      `<section class="sa-block"><h2>Suports i adaptacions</h2>${formatText(data.inclusion)}</section>`,
+      `<section class="sa-block"><h2>Evidència de sortida</h2>${formatText(data.assessment)}</section>`
+    ]);
+  }
+  function buildRubricReportHtml250(data){
+    const rows=parseRubricLike250(data.assessment||data.sequence||data.competences||'');
+    return genericArticle(data,[
+      `<section class="sa-block"><h2>Finalitat de la rúbrica</h2>${definition('Què avalua?',data.challenge)}</section>`,
+      `<section class="sa-block"><h2>Criteris i nivells</h2><table class="rubric-table"><thead><tr><th>Criteri</th><th>Ítem</th><th>NA</th><th>AS</th><th>AN</th><th>AE</th></tr></thead><tbody>${rows.map(r=>rubricRow(r)).join('')}</tbody></table></section>`,
+      `<section class="sa-block"><h2>Ús formatiu</h2>${formatText(data.inclusion||'Compartir la rúbrica abans de l’activitat, fer autoavaluació i incorporar millores abans del lliurament final.')}</section>`
+    ]);
+  }
+  function buildTestReportHtml250(data){
+    return genericArticle(data,[
+      `<section class="sa-block"><h2>Estímul o situació inicial</h2>${formatText(data.challenge)}</section>`,
+      `<section class="sa-block"><h2>Sabers que s’activen</h2>${formatText(data.knowledge)}</section>`,
+      `<section class="sa-block"><h2>Preguntes competencials</h2>${buildQuestions250(data.sequence)}</section>`,
+      `<section class="sa-block"><h2>Adaptacions i condicions</h2>${formatText(data.inclusion)}</section>`,
+      `<section class="sa-block"><h2>Pauta de correcció</h2>${formatText(data.assessment)}</section>`
+    ]);
+  }
+  function buildActivitySheetReportHtml250(data){
+    const seq=cleanBullets(data.sequence); const criteria=cleanBullets(data.competences);
+    return genericArticle(data,[
+      `<section class="sa-block"><h2>Per començar</h2>${definition('Repte de la fitxa',data.challenge)}${definition('Què hauràs d’entregar?',inferProductFromChallenge250(data.challenge)||data.assessment||'Resposta, producte o evidència final de l’activitat.')}</section>`,
+      `<section class="sa-block"><h2>Material i recursos</h2>${formatText(data.knowledge)}</section>`,
+      `<section class="sa-block"><h2>Activitats pas a pas</h2>${asList(seq.length?seq:['Llegeix el repte i subratlla què has de fer.','Planifica la feina i prepara els materials.','Realitza les tasques indicades.','Comprova el resultat amb la checklist.','Escriu una reflexió final breu.'])}</section>`,
+      `<section class="sa-block"><h2>Checklist de qualitat</h2>${asList(criteria.length?criteria:['He entès el repte.','He seguit tots els passos.','He revisat el resultat abans de lliurar-lo.','He explicat què he après i què milloraria.'])}</section>`,
+      `<section class="sa-block"><h2>Suports i opcions</h2>${formatText(data.inclusion)}</section>`,
+      `<section class="sa-block"><h2>Avaluació</h2>${formatText(data.assessment)}</section>`
+    ]);
+  }
+  function buildAdaptationReportHtml250(data){
+    return genericArticle(data,[
+      `<section class="sa-block"><h2>Activitat original</h2>${formatText(data.challenge)}</section>`,
+      `<section class="sa-block"><h2>Barreres possibles</h2>${formatText(data.knowledge)}</section>`,
+      `<section class="sa-block"><h2>Adaptacions aplicables</h2>${formatText(data.inclusion)}</section>`,
+      `<section class="sa-block"><h2>Avaluació sense rebaixar objectius</h2>${formatText(data.assessment)}</section>`,
+      `<section class="sa-block"><h2>Comunicació amb l’alumnat</h2>${formatText(data.sequence)}</section>`
+    ]);
+  }
+  function buildProjectPhases250(text){
+    const items=cleanBullets(text); return `<ol>${(items.length?items:['Llançament del repte i requisits.','Recerca i ideació.','Planificació de fases, materials i rols.','Construcció, prova o simulació.','Presentació, retorn i millora.']).map(x=>`<li>${escapeHtml(x.replace(/^\d+[.)]\s*/,''))}</li>`).join('')}</ol>`;
+  }
+  function splitSession250(text){const src=String(text||''); return {inici: extractSection250(src,['Inici','Inicials'])||'Activació de coneixements previs, objectiu i criteris d’èxit.', desenvolupament: extractSection250(src,['Desenvolupament'])||src||'Activitat principal guiada i pràctica amb suport docent.', tancament: extractSection250(src,['Tancament','Aplicació','Síntesi'])||'Síntesi, evidència de sortida i autoavaluació breu.'};}
+  function extractSection250(text,labels){for(const l of labels){const r=new RegExp(`${escapeRegExp(l)}\\s*:?\\s*([\\s\\S]*?)(?=\\n\\s*(?:Inici|Inicials|Desenvolupament|Tancament|Aplicació|Síntesi)\\s*:?|$)`,'i'); const m=String(text||'').match(r); if(m&&m[1].trim()) return m[1].trim();} return '';}
+  function parseRubricLike250(text){ const codes=extractCriteriaCodes(text); const base=buildRubricRows(getFormData?getFormData():{}, codes); return base.slice(0,6); }
+  function buildQuestions250(text){const items=cleanBullets(text); const qs=items.length?items:['Interpreta la situació inicial i identifica el problema.','Aplica els sabers treballats per resoldre la tasca.','Justifica la decisió o resposta amb arguments.','Proposa una millora o transferència a un altre context.']; return `<ol>${qs.map(q=>`<li>${escapeHtml(q.replace(/^\d+[.)]\s*/,''))}</li>`).join('')}</ol>`;}
+  function inferProductFromChallenge250(text){const src=String(text||''); const parts=(typeof extractSaParts==='function')?extractSaParts(src):{}; if(parts.producte) return parts.producte; const m=src.match(/producte\s+final\s*:?\s*([^\n]+)/i); return m?m[1].trim():'';}
+  function applyData250(data,moduleId){ if(typeof setModule==='function') setModule(moduleId); const map={title:'title',level:'level',subject:'subject',duration:'duration',type:'type',challenge:'challenge',knowledge:'knowledge',competences:'competences',sequence:'sequence',inclusion:'inclusion',assessment:'assessment',tags:'tags'}; Object.entries(map).forEach(([k,id])=>{const el=document.getElementById(id); if(!el) return; const v=Array.isArray(data[k])?data[k].join(', '):(data[k]||''); el.value=v;}); renderReport(getFormData()); scrollReportIntoView&&scrollReportIntoView(); }
+  function deriveFitxaFromSa250(){const d=getFormData(); const parts=extractSaParts(d.challenge); const seq=extractSequenceParts(d.sequence); const ass=extractAssessmentParts(d.assessment); const fitxa={...d,type:'Fitxa d’activitats',title:'Fitxa · '+(d.title||'activitat'),challenge:`Repte: ${parts.repte||firstSentence(d.challenge)||'Repte pendent.'}\nProducte final: ${parts.producte||'Evidència final de l’activitat.'}`,knowledge:d.knowledge,competences:d.competences,sequence:joinNonEmpty([seq.inicials,seq.desenvolupament,seq.estructuracio,seq.aplicacio]),inclusion:d.inclusion,assessment:joinNonEmpty([`Evidències: ${ass.evidencies||'Producte o resposta final.'}`,`Instruments: ${ass.instruments||'Checklist, observació i autoavaluació.'}`,`Retorn: ${ass.retorn||'Feedback formatiu i millora.'}`]),tags:[...(d.tags||[]),'fitxa des de SA']}; applyData250(fitxa,'fitxa'); }
+  function deriveSessioFromSa250(){const d=getFormData(); const seq=extractSequenceParts(d.sequence); const s={...d,type:'Sessió',title:'Sessió · '+(d.title||'activitat'),duration:'1 sessió',challenge:extractSaParts(d.challenge).repte||d.challenge,sequence:joinNonEmpty([`Inici: ${seq.inicials||'Activació del repte i criteris.'}`,`Desenvolupament: ${seq.desenvolupament||'Activitat guiada i pràctica.'}`,`Tancament: ${seq.estructuracio||seq.aplicacio||'Síntesi i evidència de sortida.'}`]),assessment:'Evidència de sortida, observació docent i autoavaluació breu.',tags:[...(d.tags||[]),'sessió des de SA']}; applyData250(s,'sessio'); }
+  function deriveProvaFromSa250(){const d=getFormData(); const p={...d,type:'Prova competencial',title:'Prova competencial · '+(d.title||'SA'),duration:'1 sessió',challenge:`Estímul: ${extractSaParts(d.challenge).repte||firstSentence(d.challenge)||'Situació inicial contextualitzada.'}`,sequence:'1. Comprensió de la situació.\n2. Aplicació dels sabers treballats.\n3. Justificació de decisions.\n4. Transferència o proposta de millora.',assessment:'Pauta de correcció vinculada als criteris d’avaluació i descriptors NA/AS/AN/AE.',tags:[...(d.tags||[]),'prova des de SA']}; applyData250(p,'prova'); }
+  function bind250(){
+    const b1=document.getElementById('deriveFitxaBtn'); if(b1&&!b1.dataset.dk250){b1.dataset.dk250='1'; b1.addEventListener('click',deriveFitxaFromSa250);}
+    const b2=document.getElementById('deriveSessioBtn'); if(b2&&!b2.dataset.dk250){b2.dataset.dk250='1'; b2.addEventListener('click',deriveSessioFromSa250);}
+    const b3=document.getElementById('deriveProvaBtn'); if(b3&&!b3.dataset.dk250){b3.dataset.dk250='1'; b3.addEventListener('click',deriveProvaFromSa250);}
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', bind250); else bind250();
+  window.docentKit250={version:DK250, deriveFitxaFromSa:deriveFitxaFromSa250, deriveSessioFromSa:deriveSessioFromSa250, deriveProvaFromSa:deriveProvaFromSa250};
 })();
