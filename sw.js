@@ -1,4 +1,4 @@
-const CACHE_NAME = 'docentkit-v247-gemini-quota';
+const CACHE_NAME = 'docentkit-v248-gemini-origin';
 const ASSETS = [
   './',
   './index.html',

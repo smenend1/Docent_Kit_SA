@@ -263,6 +263,7 @@ function bindEvents() {
     els.aiModel.addEventListener('change', () => saveSettings({ googleModel: els.aiModel.value }));
   }
   updateAiStatus();
+  clearOldGeminiErrorOnStartup();
   els.search.addEventListener('input', renderLibrary);
   els.levelFilter.addEventListener('change', renderLibrary);
   if (els.typeFilter) els.typeFilter.addEventListener('change', renderLibrary);
@@ -1727,7 +1728,10 @@ function updateAiStatus() {
   if (!els.aiModeStatus || !els.aiProvider) return;
   const provider = els.aiProvider.value;
   const isGoogle = provider === 'google';
-  els.aiModeStatus.textContent = isGoogle ? 'Mode Gemini · API key' : 'Mode local · sense API';
+  const originWarning = isGoogle && typeof explainGeminiOriginRestriction === 'function' ? explainGeminiOriginRestriction() : '';
+  els.aiModeStatus.textContent = isGoogle
+    ? (originWarning ? 'Mode Gemini · bloquejat en local/referrer null. Obre des de GitHub Pages/HTTPS o usa mode local.' : 'Mode Gemini · API key')
+    : 'Mode local · sense API';
   try { refreshGeminiCooldownUi(); } catch(e) {}
   els.aiModeStatus.classList.toggle('google-mode', isGoogle);
   els.aiModeStatus.classList.toggle('local-mode', !isGoogle);
@@ -1969,6 +1973,35 @@ function throwIfGeminiCoolingDown(context = 'generació') {
   }
 }
 
+
+function getGeminiOriginStatus() {
+  const protocol = window.location.protocol;
+  const origin = window.location.origin;
+  const href = window.location.href || '';
+  const isLocalFile = protocol === 'file:' || href.startsWith('content:') || origin === 'null';
+  const isSecureWeb = protocol === 'https:' || /^http:\/\/localhost(:|\/|$)/.test(href) || /^http:\/\/127\.0\.0\.1(:|\/|$)/.test(href);
+  return { protocol, origin, href, isLocalFile, isSecureWeb };
+}
+
+function explainGeminiOriginRestriction() {
+  const st = getGeminiOriginStatus();
+  if (!st.isLocalFile) return '';
+  return 'Estàs obrint DocentKit com a fitxer local o des d’un visor del mòbil. En aquest cas el navegador envia referer/origin null i Google pot bloquejar la clau si té restriccions de domini. Obre la PWA des de GitHub Pages/HTTPS o fes servir mode local. No recomano treure les restriccions de la clau si l’app està publicada.';
+}
+
+function assertGeminiCanRunHere(context = 'generació') {
+  const msg = explainGeminiOriginRestriction();
+  if (msg) throw new Error(`${msg}\n\nNo s’ha fet cap petició a Gemini durant ${context}.`);
+}
+
+function clearOldGeminiErrorOnStartup() {
+  if (!els.aiOutput) return;
+  const txt = els.aiOutput.textContent || '';
+  if (/Error API\s+(403|429)|referer null|quota exceeded|generació curta ha fallat/i.test(txt)) {
+    els.aiOutput.textContent = 'Encara no hi ha cap esborrany. Si vols usar Gemini, obre la PWA des de GitHub Pages/HTTPS i fes primer “Prova generació curta”. Si l’obres localment, fes servir mode local.';
+  }
+}
+
 function getSelectedGeminiModel() {
   return (els.aiModel && els.aiModel.value) || loadSettings().googleModel || 'gemini-2.5-flash';
 }
@@ -1999,7 +2032,7 @@ function formatGeminiError(statusCode, detail, context = 'generació') {
     tips.push('Prova “Prova generació curta” i, si funciona, redueix el text base o genera per blocs.');
   }
   if (statusCode === 401 || statusCode === 403) {
-    tips.push('La clau pot ser incorrecta, pot no tenir activada la Gemini API / Generative Language API, o pot tenir restriccions de domini/referrer.');
+    tips.push('La clau pot ser incorrecta, pot no tenir activada la Gemini API / Generative Language API, o pot tenir restriccions de domini/referrer. Si el missatge diu referer null, estàs obrint la PWA com a fitxer local o des d’un visor del mòbil: obre-la des de GitHub Pages/HTTPS.');
     tips.push('Si el check curt funciona però la generació llarga no, revisa quota, model i restriccions del projecte a Google AI Studio/Cloud.');
   }
   if (statusCode === 404) tips.push('El model seleccionat no està disponible per aquesta clau o endpoint. Prova gemini-2.5-flash o gemini-2.5-flash-lite.');
@@ -2015,6 +2048,7 @@ function formatGeminiError(statusCode, detail, context = 'generació') {
 
 async function callGeminiText(prompt, options = {}) {
   throwIfGeminiCoolingDown(options.context || 'generació');
+  assertGeminiCanRunHere(options.context || 'generació');
   const key = els.aiKey.value.trim();
   if (!key) throw new Error('No hi ha API key configurada.');
   const model = options.model || getSelectedGeminiModel();

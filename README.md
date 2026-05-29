@@ -213,10 +213,19 @@ Aquesta versió no substitueix DocentKit com a generador de SA: Tecnologia/Repte
 - El check de clau queda explicat com a prova curta; no garanteix que una SA llarga es pugui generar.
 
 
-## v2.4.7 · Control de quota Gemini
+## v2.4.8 · Control de quota Gemini
 
 - Afegeix pausa automàtica quan Gemini retorna error 429 de quota o límit temporal.
 - Desactiva temporalment els botons de prova i generació mentre dura la pausa.
 - Mostra un comptador de segons i recomana continuar amb mode local.
 - Afegeix el botó “Mode local ara”.
 - Evita repetir intents que poden consumir quota o allargar el bloqueig.
+
+
+## v2.4.8 · Gemini i referer null
+
+- Detecta quan DocentKit s'obre com a fitxer local, `file://`, `content://` o amb origen `null`.
+- Evita fer peticions a Gemini en aquest mode, perquè les claus amb restricció de domini poden retornar `Requests from referer null are blocked`.
+- Mostra un missatge clar: per usar Gemini cal obrir la PWA des de GitHub Pages/HTTPS o usar mode local.
+- Neteja missatges antics d'error 403/429 que podien quedar visibles només obrir l'app.
+- Manté el mode local com a alternativa segura quan no hi ha origen HTTPS.
