@@ -5553,3 +5553,238 @@ init();
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', bind2411); else bind2411();
   window.docentKitSequence2411={version:DK2411, fillSessions, extractSequenceParts};
 })();
+
+// ===== v2.4.12: poliment final de camps IA, durada i frases tallades =====
+(function(){
+  const DK2412='2.4.12';
+  const prevMap = typeof mapImportedTemplateText === 'function' ? mapImportedTemplateText : null;
+  const prevApply = typeof applyImportedText === 'function' ? applyImportedText : null;
+  const prevRestructure2412 = window.restructureCurrentSa;
+  const prevExtractCompetenceParts = typeof extractCompetenceParts === 'function' ? extractCompetenceParts : null;
+  const prevBuildObjectivesList = typeof buildObjectivesList === 'function' ? buildObjectivesList : null;
+
+  function $id(id){ return document.getElementById(id); }
+  function str(v){ return String(v || '').replace(/\r/g,'').trim(); }
+  function clean(v){ return str(v).replace(/[ \t]+/g,' ').replace(/\n{3,}/g,'\n\n').trim(); }
+  function normalize(v){ return str(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+  function join(parts){ return parts.filter(Boolean).map(clean).filter(Boolean).join('\n\n'); }
+  function hasTopic(data, re){ return re.test([data.title,data.subject,data.level,data.duration,data.challenge,data.knowledge,data.sequence,data.assessment,data.inclusion].join('\n')); }
+  function topic(data){
+    if (hasTopic(data,/tinkercad|casa ideal|habitatge|disseny\s*3d|modelatge\s*3d/i)) return 'tinkercad';
+    if (hasTopic(data,/braç|brac|pneum[aà]tic|xeringa|tub flexible|pressi[oó]/i)) return 'pneumatica';
+    if (hasTopic(data,/aut[oò]mat|lleva|seguidor|manovella|tija/i)) return 'automata';
+    if (hasTopic(data,/goldberg|rube/i)) return 'goldberg';
+    if (hasTopic(data,/protoboard|ohm|watt|circuit|electric/i)) return 'electricitat';
+    return 'generic';
+  }
+  function isDangling(v){
+    const t=clean(v);
+    if (!t) return true;
+    if (/\b(amb|de|d[’']|per|a partir de|que|i|o|haur|haur[aà]|inclou|inclogui|acompanyat d[’']?)\s*$/i.test(t)) return true;
+    if (/^[-–—_*\.]+$/.test(t)) return true;
+    if (/^Producte final funcional o documentat,?\s*acompanyat d[’']?\s*$/i.test(t)) return true;
+    return false;
+  }
+  function cutAtBadSection(v){
+    return clean(v)
+      .replace(/\n\s*(?:R[úu]brica|CRITERI\s+LOMLOE|NA\s*[:：]|AS\s*[:：]|AN\s*[:：]|AE\s*[:：]|Compet[eè]ncies\s+espec[ií]fiques|Criteris\s+d[’']?avaluaci[oó]|Objectius\s+d[’']?aprenentatge|Blocs\s+de\s+sabers|Sabers\s*[/i]*\s*continguts|Seq[üu][eè]ncia|Metodologia|Mesures\s+i\s+suports|Evid[eè]ncies|Instruments|Retorn\s+i\s+millora|Vectors)\b[\s\S]*$/i,'')
+      .replace(/\bEsborrany IA complet pendent de mapatge autom[aà]tic\b[\s\S]*$/i,'')
+      .replace(/\bIA assistida\b/gi,'')
+      .replace(/Producte, prototip, documentaci[oó], presentaci[oó] o evid[eè]ncia final que mostri el proc[eé]s seguit, les decisions preses i el resultat obtingut\.?/gi,'')
+      .trim();
+  }
+  function sanitizeField(v){
+    return cutAtBadSection(v)
+      .replace(/\*\*/g,'')
+      .replace(/^\s*[-•]\s*\.\s*$/gm,'')
+      .replace(/\n\s*\.\s*\n/g,'\n')
+      .replace(/[ \t]+\n/g,'\n')
+      .replace(/\n{3,}/g,'\n\n')
+      .trim();
+  }
+  function sanitizeDuration(value, full){
+    const source = [value, full].map(str).join('\n');
+    const line = str(value).split('\n')[0];
+    const candidates = [line, source];
+    for (const src of candidates) {
+      let m = src.match(/\b(\d{1,2})\s*(sessions?|sess)\b/i);
+      if (m) return `${parseInt(m[1],10)} sessions`;
+      m = src.match(/\b(\d{1,2})\s*(hores?|h)\b/i);
+      if (m) return `${parseInt(m[1],10)} hores`;
+    }
+    if (line.length <= 35 && !/[.!?]{1}\s+/.test(line)) return sanitizeField(line);
+    return '';
+  }
+  function inferProduct(data){
+    const t=topic(data);
+    if (t==='tinkercad') return 'Disseny 3D complet d’una casa ideal a Tinkercad, amb espais interiors i exteriors, captures o enllaç del projecte, memòria breu justificativa i presentació final del procés de disseny.';
+    if (t==='pneumatica') return 'Braç pneumàtic funcional construït amb materials senzills, xeringues i tubs, acompanyat d’un informe del procés tecnològic i d’una presentació o demostració del funcionament.';
+    if (t==='automata') return 'Autòmat simple funcional, document manual del procés tecnològic, dibuixos tècnics i explicació del mecanisme de lleva, eix, seguidor i tija.';
+    if (t==='goldberg') return 'Màquina de Rube Goldberg funcional construïda amb cartró i materials reciclables, amb seqüència de mecanismes, prova de funcionament i explicació oral del procés.';
+    if (t==='electricitat') return 'Circuit o muntatge elèctric funcional, fitxes de pràctica, comprovació amb instruments de mesura o simulació i explicació dels resultats obtinguts.';
+    return 'Producte final observable i avaluable, acompanyat de documentació del procés, evidències de treball i presentació o explicació del resultat.';
+  }
+  function inferRepte(data){
+    const t=topic(data);
+    if (t==='tinkercad') return 'Com podem dissenyar amb Tinkercad una casa ideal que sigui funcional, ben distribuïda, estètica, sostenible i comunicada amb criteris tècnics?';
+    if (t==='pneumatica') return 'Com podem dissenyar i construir un braç pneumàtic funcional que transformi la pressió de l’aire en moviment útil utilitzant materials senzills i segurs?';
+    if (t==='automata') return 'Com podem construir un autòmat simple que transformi el moviment circular en moviment vertical i explicar-ne el funcionament amb vocabulari tècnic?';
+    if (t==='goldberg') return 'Com podem crear una màquina de reaccions en cadena que compleixi una acció final senzilla amb materials reciclables i mecanismes ben ajustats?';
+    if (t==='electricitat') return 'Com podem construir, comprovar i explicar circuits elèctrics senzills combinant muntatge real, mesura i simulació digital?';
+    return 'Com podem resoldre aquest repte mitjançant una proposta viable, segura, sostenible, ben documentada i comunicada amb criteri?';
+  }
+  function inferContext(data){
+    const t=topic(data), level=data.level||'ESO', subject=data.subject||'la matèria';
+    if (t==='tinkercad') return `En ${level}, l’alumnat treballa el disseny 3D amb Tinkercad per representar digitalment un habitatge, prendre decisions de distribució, aplicar criteris de funcionalitat i comunicar el procés de disseny.`;
+    if (t==='pneumatica') return `En ${level}, l’alumnat treballa la pneumàtica i el procés tecnològic construint un mecanisme funcional amb materials senzills, relacionant pressió, moviment, prototipatge i seguretat al taller.`;
+    return `En ${level}, l’alumnat treballa ${subject} a partir d’un repte competencial proper que demana investigar, prendre decisions, elaborar una proposta i comunicar-ne el procés i el resultat.`;
+  }
+  function inferTransversal(data){
+    const t=topic(data);
+    if (t==='tinkercad') return 'Competència digital: cerca, documentació, simulació i comunicació del procés de disseny.\nCompetència personal, social i d’aprendre a aprendre: cooperació, autoregulació, revisió del treball i incorporació de millores a partir del retorn rebut.';
+    if (t==='pneumatica') return 'Competència personal, social i d’aprendre a aprendre: treball cooperatiu, repartiment de rols, gestió de dificultats i millora del prototip.\nCompetència emprenedora: ideació, planificació, presa de decisions i optimització d’una solució funcional.';
+    return 'Competència personal, social i d’aprendre a aprendre: cooperació, autoregulació, revisió del procés i millora.\nCompetència emprenedora: ideació, presa de decisions, creativitat i comunicació del resultat.';
+  }
+  function inferObjectives(data){
+    const product = inferProduct(data).replace(/\.$/,'');
+    return [
+      'Analitzar el repte plantejat i identificar necessitats, condicionants i criteris d’èxit relacionats amb la proposta.',
+      `Planificar i desenvolupar ${product.toLowerCase()} aplicant sabers i procediments de la matèria.`,
+      'Aplicar estratègies de recerca, disseny, prova, revisió i millora durant el procés de treball.',
+      'Comunicar el procés seguit, les decisions preses i el resultat obtingut amb vocabulari adequat.',
+      'Reflexionar sobre l’aprenentatge, el treball cooperatiu, les dificultats trobades i les millores possibles.'
+    ].map((x,i)=>`${i+1}. ${x}`).join('\n');
+  }
+  function sanitizeChallengeText(value, data){
+    const parts = (typeof extractSaParts==='function' ? extractSaParts(value) : {}) || {};
+    let context = sanitizeField(parts.context || '');
+    let repte = sanitizeField(parts.repte || '');
+    let justificacio = sanitizeField(parts.justificacio || '');
+    let producte = sanitizeField(parts.producte || '');
+    if (isDangling(context) || context.length < 40) context = inferContext(data);
+    if (isDangling(repte) || repte.length < 40 || !/[?¿]/.test(repte)) repte = inferRepte(data);
+    if (isDangling(justificacio) || justificacio.length < 45) justificacio = 'La situació permet aplicar sabers de la matèria en un context pràctic, desenvolupar el procés de treball, cooperar, documentar decisions i millorar el resultat a partir del retorn rebut.';
+    if (isDangling(producte) || producte.length < 35) producte = inferProduct(data);
+    return join([`Context: ${context}`,`Repte: ${repte}`,`Justificació: ${justificacio}`,`Producte final: ${producte}`]);
+  }
+  function sanitizeCompetenceText(value, data){
+    let text = sanitizeField(value)
+      .replace(/Compet[eè]ncies\s+espec[ií]fiques\s+i\s+clau\s*:/gi,'Competències específiques:')
+      .replace(/^\s*i\s+clau\s*:/gim,'Competències específiques:')
+      .replace(/Ajusta-les segons el curr[ií]culum de la mat[eè]ria\.?/gi,'')
+      .replace(/Revisa la numeraci[oó] LOMLOE de la mat[eè]ria i el curs\.?/gi,'')
+      .trim();
+    let parts = (typeof extractCompetenceParts==='function' && prevExtractCompetenceParts ? prevExtractCompetenceParts(text) : (typeof extractCompetenceParts==='function' ? extractCompetenceParts(text) : {})) || {};
+    let ce = sanitizeField(parts.competencies || '');
+    let ca = sanitizeField(parts.criteria || '');
+    let tr = sanitizeField(parts.transversals || '');
+    let obj = '';
+    const objMatch = text.match(/Objectius\s+d[’']?aprenentatge\s*:?\s*([\s\S]*?)(?=\n\s*(?:Compet[eè]ncies|Criteris|Sabers|R[úu]brica|Seq[üu][eè]ncia)\b|$)/i);
+    if (objMatch) obj = sanitizeField(objMatch[1]);
+    if (!ce || /^CE\d(?:,\s*CE\d)*\.?$/i.test(ce)) {
+      ce = 'CE1. Idear i planificar solucions tecnològiques a partir d’una necessitat o repte proper, valorant-ne la viabilitat i la utilitat.\nCE2. Desenvolupar projectes aplicant el procés tecnològic: anàlisi, disseny, planificació, construcció o simulació i millora.\nCE3. Utilitzar materials, eines, recursos digitals o mecanismes de manera adequada, segura i responsable.\nCE4. Comunicar el procés i el resultat amb vocabulari tècnic, documents, presentacions o demostracions.';
+    }
+    if (!ca) ca = '1.1. Analitzar una necessitat o repte tecnològic i planificar una solució coherent.\n2.1. Aplicar fases del procés tecnològic en el desenvolupament del projecte.\n2.2. Construir, simular o elaborar el producte final utilitzant materials, eines i procediments adequats.\n4.1. Comunicar el procés i el resultat amb vocabulari tècnic i evidències clares.';
+    if (!tr || isDangling(tr)) tr = inferTransversal(data);
+    if (!obj || isDangling(obj) || /R[úu]brica|CRITERI\s+LOMLOE|NA\s*:|AS\s*:|AN\s*:|AE\s*:/i.test(obj)) obj = inferObjectives(data);
+    return join([`Competències específiques: ${ce}`,`Criteris d’avaluació: ${ca}`,`Competències transversals: ${tr}`,`Objectius d’aprenentatge: ${obj}`]);
+  }
+  function sanitizeAssessmentText(value, data){
+    let text = sanitizeField(value);
+    const parts = typeof extractAssessmentParts==='function' ? extractAssessmentParts(text) : {};
+    let evid = sanitizeField(parts.evidencies || '');
+    let inst = sanitizeField(parts.instruments || '');
+    let ret = sanitizeField(parts.retorn || '');
+    let rub = '';
+    const rubMatch = text.match(/R[úu]brica\s*:?\s*([\s\S]*)/i);
+    if (rubMatch) rub = sanitizeField(rubMatch[1]);
+    if (!evid) evid = 'Producte final o prototip.\nDocumentació del procés, memòria o quadern de treball.\nPresentació o demostració final.\nRegistres d’observació del treball a l’aula.\nAutoavaluació i coavaluació.';
+    if (!inst || /^[*•\-.\s]*$/.test(inst)) inst = 'Rúbrica NA/AS/AN/AE vinculada als criteris d’avaluació.\nLlista de control del procés.\nObservació docent.\nAutoavaluació i coavaluació.';
+    if (!ret || /^[*•\-.\s]*$/.test(ret)) ret = 'Feedback formatiu durant el procés.\nRevisió entre iguals abans del lliurament final.\nTemps per incorporar millores justificades.\nReflexió final sobre aprenentatges i dificultats.';
+    return join([`Evidències: ${evid}`,`Instruments: ${inst}`,`Retorn i millora: ${ret}`,rub && `Rúbrica: ${rub}`]);
+  }
+  function sanitizeInclusionText(value, data){
+    let text = sanitizeField(value);
+    const need = !text || /Mesures pendents de concretar|pendents de concretar|^[-–—_*\.\s]*$/i.test(text) || !/TDAH/i.test(text) || !/TEA/i.test(text) || !/Disl[eè]xia/i.test(text) || !/TDL/i.test(text);
+    if (!need) return text;
+    return 'Mesures i suports: instruccions fragmentades, models visuals, checklist, rols cooperatius, temps de revisió i opcions diverses d’expressió.\nTDAH: tasques curtes, temporitzador, objectius de sessió i rol actiu.\nTEA: anticipació de fases, estructura visual, consignes literals i exemple acabat.\nDislèxia: suport oral i visual, tipografia clara, menys càrrega lectora i temps addicional.\nTDL: vocabulari anticipat, frases model, comprovació de comprensió i suport visual.';
+  }
+  function sanitizeMapped(mapped, originalText){
+    const m = Object.assign({}, mapped || {});
+    const data = Object.assign({}, (typeof getFormData==='function' ? getFormData() : {}), m);
+    m.type = (m.type && /IA assistida/i.test(m.type)) ? 'Situació d’aprenentatge' : (m.type || 'Situació d’aprenentatge');
+    m.duration = sanitizeDuration(m.duration, originalText);
+    m.challenge = sanitizeChallengeText(m.challenge || originalText || '', data);
+    m.competences = sanitizeCompetenceText(m.competences || '', Object.assign({}, data, {challenge:m.challenge}));
+    m.assessment = sanitizeAssessmentText(m.assessment || '', Object.assign({}, data, {challenge:m.challenge, competences:m.competences}));
+    m.inclusion = sanitizeInclusionText(m.inclusion || '', data);
+    if (m.knowledge) m.knowledge = sanitizeField(m.knowledge);
+    if (m.sequence) m.sequence = sanitizeField(m.sequence).replace(/Activitats pendents de concretar\.?/gi,'').trim();
+    return m;
+  }
+
+  if (prevMap) {
+    window.mapImportedTemplateText = mapImportedTemplateText = function(text){
+      const mapped = prevMap(text);
+      return sanitizeMapped(mapped, text);
+    };
+  }
+
+  window.applyImportedText = applyImportedText = function(filename, text, kind){
+    if (prevApply) prevApply(filename, text, kind);
+    sanitizeCurrentSa2412();
+  };
+
+  window.extractCompetenceParts = extractCompetenceParts = function(text){
+    const cleaned = sanitizeCompetenceText(text || '', (typeof getFormData==='function'?getFormData():{}));
+    if (prevExtractCompetenceParts) return prevExtractCompetenceParts(cleaned);
+    return {competencies:'', criteria:'', transversals:'', criteriaCodes:[]};
+  };
+
+  window.buildObjectivesList = buildObjectivesList = function(data){
+    const comp = (data && data.competences) || '';
+    const parts = prevExtractCompetenceParts ? prevExtractCompetenceParts(comp) : {};
+    let obj = '';
+    const m = comp.match(/Objectius\s+d[’']?aprenentatge\s*:?\s*([\s\S]*?)(?=\n\s*(?:Compet[eè]ncies|Criteris|Sabers|R[úu]brica|Seq[üu][eè]ncia)\b|$)/i);
+    if (m) obj = sanitizeField(m[1]);
+    if (!obj || isDangling(obj) || /R[úu]brica|CRITERI\s+LOMLOE|NA\s*:/i.test(obj)) obj = inferObjectives(data||{});
+    const lines = obj.split('\n').map(x=>x.replace(/^\s*[-•]?\s*\d+[.)]?\s*/,'').trim()).filter(Boolean).slice(0,7);
+    return `<ol>${lines.map(o=>`<li>${escapeHtml(o)}</li>`).join('')}</ol>`;
+  };
+
+  function sanitizeCurrentSa2412(){
+    if (typeof getFormData !== 'function') return;
+    const d = getFormData();
+    const mapped = sanitizeMapped({
+      type:d.type, duration:d.duration, challenge:d.challenge, competences:d.competences, knowledge:d.knowledge, sequence:d.sequence, inclusion:d.inclusion, assessment:d.assessment
+    }, [d.title,d.challenge,d.competences,d.knowledge,d.sequence,d.inclusion,d.assessment].join('\n'));
+    if ($id('type')) $id('type').value = mapped.type || 'Situació d’aprenentatge';
+    if ($id('duration')) $id('duration').value = mapped.duration || d.duration || '';
+    if ($id('challenge')) $id('challenge').value = mapped.challenge || d.challenge || '';
+    if ($id('competences')) $id('competences').value = mapped.competences || d.competences || '';
+    if ($id('knowledge')) $id('knowledge').value = mapped.knowledge || d.knowledge || '';
+    if ($id('sequence')) $id('sequence').value = mapped.sequence || d.sequence || '';
+    if ($id('inclusion')) $id('inclusion').value = mapped.inclusion || d.inclusion || '';
+    if ($id('assessment')) $id('assessment').value = mapped.assessment || d.assessment || '';
+    try{ if(typeof renderReport==='function') renderReport(getFormData()); }catch(e){}
+    try{ if(typeof renderAiValidation==='function' && typeof validateSaQuality==='function') renderAiValidation(validateSaQuality(getFormData())); }catch(e){}
+  }
+
+  window.restructureCurrentSa = function(){
+    if (typeof prevRestructure2412 === 'function') prevRestructure2412();
+    setTimeout(()=>{
+      sanitizeCurrentSa2412();
+      try{ if(typeof showToast==='function') showToast('SA sanejada amb v2.4.12: durada, repte, producte, objectius, instruments i mesures revisats.'); }catch(e){}
+    },90);
+  };
+
+  function bind2412(){
+    const btn=$id('restructureSaBtn');
+    if(btn && !btn.dataset.dk2412Bound){
+      btn.dataset.dk2412Bound='1';
+      btn.addEventListener('click',()=>setTimeout(()=>window.restructureCurrentSa&&window.restructureCurrentSa(),150));
+    }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', bind2412); else bind2412();
+  window.docentKitPoliment2412={version:DK2412, sanitizeCurrentSa:sanitizeCurrentSa2412, sanitizeMapped};
+})();

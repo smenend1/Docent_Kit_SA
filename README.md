@@ -248,3 +248,13 @@ Flux recomanat:
 3. Prem **Reestructura SA**.
 4. Revisa coherència pedagògica.
 5. Exporta per Programació LOMLOE.
+
+
+## v2.4.12 · Poliment final de camps IA
+
+- Sanejament més estricte de camps generats amb IA.
+- Evita que fragments llargs o descripcions completes acabin dins del camp de durada.
+- Completa i reescriu frases tallades en repte, producte final, competències transversals i objectius.
+- Neteja fragments de rúbrica, CE/CA o apartats interns que puguin contaminar producte final o objectius.
+- Omple instruments i mesures específiques quan queden buides o amb marcadors provisionals.
+- Reestructura SA aplica també aquest sanejament final.
