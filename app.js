@@ -5421,3 +5421,135 @@ init();
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', bind2410); else bind2410();
   window.docentKitClean2410={version:DK2410,badFragment,topic};
 })();
+
+// ===== v2.4.11: seqüència didàctica completa i fases sense pendents =====
+(function(){
+  const DK2411='2.4.11';
+  const prevExtractSequenceParts = typeof extractSequenceParts === 'function' ? extractSequenceParts : null;
+  const prevGetFormData = typeof getFormData === 'function' ? getFormData : null;
+  const prevRestructure = window.restructureCurrentSa;
+  function cleanText(v){
+    return String(v||'').replace(/\r/g,'').replace(/\*\*/g,'').replace(/^[ \t]+|[ \t]+$/gm,'').replace(/\n{3,}/g,'\n\n').trim();
+  }
+  function stripBullet(v){ return cleanText(String(v||'').replace(/^[-•*]\s*/,'').replace(/^\d+[.)]\s*/,'')); }
+  function dataNow(){ try { return prevGetFormData ? prevGetFormData() : (typeof getFormData==='function'?getFormData():{}); } catch(e){ return {}; } }
+  function allText(data){ return cleanText([data.title,data.level,data.subject,data.duration,data.challenge,data.knowledge,data.sequence,data.assessment,data.inclusion].join('\n')); }
+  function topic(data){
+    const t=allText(data);
+    if(/tinkercad|casa|habitatge|espai ideal|disseny\s*3d/i.test(t)) return 'tinkercadCasa';
+    if(/braç|brac|pneum[aà]tic|xeringa|tub flexible/i.test(t)) return 'bracPneumatic';
+    if(/aut[oò]mat|lleva|seguidor|manovella|tija/i.test(t)) return 'automata';
+    if(/rube|goldberg/i.test(t)) return 'goldberg';
+    if(/protoboard|ohm|watt|circuit/i.test(t)) return 'electricitat';
+    return 'generic';
+  }
+  function expectedSessions(data){
+    const raw=String(data.duration||data.durada||'');
+    const m=raw.match(/(\d+)\s*(?:sessions?|sess|hores?)/i) || raw.match(/\b(\d{1,2})\b/);
+    let n=m ? parseInt(m[1],10) : 0;
+    if(!n || n<4) n=8;
+    return Math.max(4, Math.min(n, 20));
+  }
+  function extractSessionsFromText(src){
+    const text=cleanText(src);
+    const re=/(?:^|\n)\s*(?:[-•*]\s*)?(?:\*+\s*)?Sess(?:i[oó]|io)\s*(\d{1,2})(?:\s*[-–:]\s*|\s*:\s*)?([\s\S]*?)(?=(?:\n\s*(?:[-•*]\s*)?(?:\*+\s*)?Sess(?:i[oó]|io)\s*\d{1,2}\b)|\n\s*(?:Metodologia|Organitzaci[oó]|Recursos|Materials|Mesures|Evid[eè]ncies|Instruments|R[úu]brica|Vectors)\b|$)/gi;
+    const out=[]; let m;
+    while((m=re.exec(text))){
+      const n=parseInt(m[1],10);
+      let body=cleanText(m[2]||'')
+        .replace(/^[:\-–\s]+/,'')
+        .replace(/\n\s*(?:Metodologia|Organitzaci[oó] de l.aula|Recursos|Espais|Condicions d.avaluaci[oó]|R[úu]brica)\b[\s\S]*$/i,'');
+      body=body.split('\n').map(stripBullet).filter(Boolean).slice(0,4).join(' ');
+      if(body.length>6) out.push({n, text:`Sessió ${n}: ${body}`});
+    }
+    const unique=new Map();
+    out.forEach(s=>{ if(!unique.has(s.n)) unique.set(s.n,s); });
+    return Array.from(unique.values()).sort((a,b)=>a.n-b.n);
+  }
+  function defaultSession(n,data){
+    const t=topic(data);
+    const casa={
+      1:'Sessió 1: Presentació del repte, criteris d’èxit, exemples inicials i organització del treball.',
+      2:'Sessió 2: Recerca guiada, anàlisi de referents i definició de requisits del projecte.',
+      3:'Sessió 3: Esbossos inicials, distribució d’espais i planificació del model 3D.',
+      4:'Sessió 4: Inici del disseny a Tinkercad: estructura, murs, volums i espais principals.',
+      5:'Sessió 5: Desenvolupament del model: portes, finestres, circulacions i primera comprovació.',
+      6:'Sessió 6: Incorporació de mobiliari, elements interiors i criteris de funcionalitat.',
+      7:'Sessió 7: Millora del disseny a partir del retorn docent i revisió dels requisits.',
+      8:'Sessió 8: Afegit d’elements exteriors, detalls, captures i evidències del procés.',
+      9:'Sessió 9: Revisió global del projecte, comprovació de sostenibilitat, funcionalitat i coherència espacial.',
+      10:'Sessió 10: Elaboració de la memòria o documentació justificativa del disseny.',
+      11:'Sessió 11: Preparació de la presentació, coavaluació i assaig de l’explicació oral.',
+      12:'Sessió 12: Presentació final del projecte, demostració, autoavaluació i reflexió final.'
+    };
+    const generic={
+      1:'Sessió 1: Presentació del repte, criteris d’èxit, exemples inicials i organització del treball.',
+      2:'Sessió 2: Recerca guiada, anàlisi de referents i definició de requisits del projecte.',
+      3:'Sessió 3: Esbossos, planificació, materials, eines i distribució de tasques.',
+      4:'Sessió 4: Inici del disseny, modelatge, construcció o simulació del producte.',
+      5:'Sessió 5: Desenvolupament del producte i primera comprovació amb retorn docent.',
+      6:'Sessió 6: Continuació del disseny o construcció, proves parcials i ajustos.',
+      7:'Sessió 7: Millora del producte a partir d’errors detectats i criteris tècnics.',
+      8:'Sessió 8: Incorporació de detalls, acabats, documentació i evidències del procés.',
+      9:'Sessió 9: Revisió general del producte, comprovació dels requisits i millora final.',
+      10:'Sessió 10: Elaboració de la memòria o documentació justificativa del projecte.',
+      11:'Sessió 11: Preparació de la presentació, coavaluació i assaig de l’explicació oral.',
+      12:'Sessió 12: Presentació final, demostració del producte, autoavaluació i reflexió final.'
+    };
+    return (t==='tinkercadCasa'?casa:generic)[n] || `Sessió ${n}: Activitat vinculada al desenvolupament del projecte.`;
+  }
+  function fillSessions(src,data){
+    const expected=expectedSessions(data);
+    const sessions=extractSessionsFromText(src);
+    const byNum=new Map(sessions.map(s=>[s.n,s.text]));
+    for(let n=1;n<=expected;n++) if(!byNum.has(n)) byNum.set(n, defaultSession(n,data));
+    return Array.from(byNum.entries()).filter(([n])=>n>=1 && n<=expected).sort((a,b)=>a[0]-b[0]).map(([n,text])=>({n,text}));
+  }
+  function rowsToLines(rows){ return rows.map(s=>'- '+cleanText(s.text)).join('\n'); }
+  function phaseSplit(rows, expected){
+    const iniEnd = expected>=8 ? 2 : 1;
+    const aplStart = expected>=10 ? expected-1 : expected;
+    const estStart = expected>=10 ? expected-3 : Math.max(2, expected-1);
+    return {
+      inicials: rows.filter(s=>s.n<=iniEnd),
+      desenvolupament: rows.filter(s=>s.n>iniEnd && s.n<estStart),
+      estructuracio: rows.filter(s=>s.n>=estStart && s.n<aplStart),
+      aplicacio: rows.filter(s=>s.n>=aplStart)
+    };
+  }
+  function pending(v){ return !cleanText(v) || /Activitats pendents de concretar|pendents de concretar|—/i.test(v); }
+  window.extractSequenceParts = extractSequenceParts = function(text){
+    const data=dataNow();
+    let base={};
+    try{ base = prevExtractSequenceParts ? prevExtractSequenceParts(text) : {}; }catch(e){ base={}; }
+    const mustFix = pending(base.estructuracio) || pending(base.aplicacio) || pending(base.desenvolupament) || /Sessió\s*\d+/i.test(text||'');
+    if(!mustFix) return base;
+    const expected=expectedSessions(data);
+    const rows=fillSessions(text || data.sequence || '', data);
+    const p=phaseSplit(rows, expected);
+    return {
+      metodologia: base.metodologia || '',
+      inicials: rowsToLines(p.inicials),
+      desenvolupament: rowsToLines(p.desenvolupament),
+      estructuracio: rowsToLines(p.estructuracio),
+      aplicacio: rowsToLines(p.aplicacio)
+    };
+  };
+  function writeField(id,v){ const el=document.getElementById(id); if(el) el.value=v; }
+  window.restructureCurrentSa = function(){
+    if(typeof prevRestructure==='function') prevRestructure();
+    const d=dataNow();
+    const seq=extractSequenceParts(d.sequence||'');
+    if(seq && (seq.inicials||seq.desenvolupament||seq.estructuracio||seq.aplicacio)){
+      writeField('sequence', cleanText([seq.metodologia&&`Metodologia: ${seq.metodologia}`,`Inicials: ${seq.inicials}`,`Desenvolupament: ${seq.desenvolupament}`,`Estructuració: ${seq.estructuracio}`,`Aplicació: ${seq.aplicacio}`].filter(Boolean).join('\n\n')));
+    }
+    try{ if(typeof renderReport==='function' && typeof getFormData==='function') renderReport(getFormData()); }catch(e){}
+    try{ if(typeof showToast==='function') showToast('Seqüència didàctica completada amb v2.4.11.'); }catch(e){}
+  };
+  function bind2411(){
+    const btn=document.getElementById('restructureSaBtn');
+    if(btn && !btn.dataset.dk2411Bound){ btn.dataset.dk2411Bound='1'; btn.addEventListener('click',()=>setTimeout(()=>window.restructureCurrentSa&&window.restructureCurrentSa(),80)); }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', bind2411); else bind2411();
+  window.docentKitSequence2411={version:DK2411, fillSessions, extractSequenceParts};
+})();

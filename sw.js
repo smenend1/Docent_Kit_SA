@@ -1,4 +1,4 @@
-const CACHE_NAME = 'docentkit-v249-field-sanitizer';
+const CACHE_NAME = 'docentkit-v2411-sequencia-completa';
 const ASSETS = [
   './',
   './index.html',
