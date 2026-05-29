@@ -213,7 +213,7 @@ Aquesta versió no substitueix DocentKit com a generador de SA: Tecnologia/Repte
 - El check de clau queda explicat com a prova curta; no garanteix que una SA llarga es pugui generar.
 
 
-## v2.4.8 · Control de quota Gemini
+## v2.4.9 · Control de quota Gemini
 
 - Afegeix pausa automàtica quan Gemini retorna error 429 de quota o límit temporal.
 - Desactiva temporalment els botons de prova i generació mentre dura la pausa.
@@ -222,10 +222,29 @@ Aquesta versió no substitueix DocentKit com a generador de SA: Tecnologia/Repte
 - Evita repetir intents que poden consumir quota o allargar el bloqueig.
 
 
-## v2.4.8 · Gemini i referer null
+## v2.4.9 · Gemini i referer null
 
 - Detecta quan DocentKit s'obre com a fitxer local, `file://`, `content://` o amb origen `null`.
 - Evita fer peticions a Gemini en aquest mode, perquè les claus amb restricció de domini poden retornar `Requests from referer null are blocked`.
 - Mostra un missatge clar: per usar Gemini cal obrir la PWA des de GitHub Pages/HTTPS o usar mode local.
 - Neteja missatges antics d'error 403/429 que podien quedar visibles només obrir l'app.
 - Manté el mode local com a alternativa segura quan no hi ha origen HTTPS.
+
+## v2.4.9 · Sanejament de camps IA
+
+Aquesta versió reforça la neteja de les SA generades amb IA abans de renderitzar, exportar o portar a Programació LOMLOE.
+
+Correccions principals:
+- elimina textos interns com "IA assistida" o "Esborrany IA complet pendent de mapatge automàtic";
+- evita que fragments de rúbrica o CE/CA apareguin dins de producte final o objectius;
+- completa les sessions que falten en el resum de desenvolupament quan la durada indica 12 sessions;
+- omple mesures específiques de TDAH, TEA, dislèxia i TDL si quedaven buides;
+- omple instruments d’avaluació quan quedaven en blanc;
+- manté la fitxa vertical de DocentKit, però amb camps més nets per exportar a Programació LOMLOE.
+
+Flux recomanat:
+1. Genera la SA amb IA.
+2. Aplica l’esborrany.
+3. Prem **Reestructura SA**.
+4. Revisa coherència pedagògica.
+5. Exporta per Programació LOMLOE.

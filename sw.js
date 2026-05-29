@@ -1,4 +1,4 @@
-const CACHE_NAME = 'docentkit-v248-gemini-origin';
+const CACHE_NAME = 'docentkit-v249-field-sanitizer';
 const ASSETS = [
   './',
   './index.html',

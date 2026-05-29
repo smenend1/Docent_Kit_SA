@@ -5051,3 +5051,228 @@ init();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind245); else bind245();
 })();
+
+// ===== v2.4.9: sanejament final de camps IA abans de render/export =====
+(function(){
+  const DK249 = '2.4.9';
+  const OLD = {
+    getFormData: typeof getFormData === 'function' ? getFormData : null,
+    extractSaParts: typeof extractSaParts === 'function' ? extractSaParts : null,
+    extractSequenceParts: typeof extractSequenceParts === 'function' ? extractSequenceParts : null,
+    extractInclusionParts: typeof extractInclusionParts === 'function' ? extractInclusionParts : null,
+    extractAssessmentParts: typeof extractAssessmentParts === 'function' ? extractAssessmentParts : null,
+    buildObjectivesList: typeof buildObjectivesList === 'function' ? buildObjectivesList : null,
+    restructureCurrentSa: window.restructureCurrentSa
+  };
+  function clean(v){
+    return String(v||'')
+      .replace(/\r/g,'')
+      .replace(/\*\*/g,'')
+      .replace(/\bIA assistida\b/gi,'')
+      .replace(/Esborrany\s+IA\s+complet\s+pendent\s+de\s+mapatge\s+autom[aà]tic\s*:?/gi,'')
+      .replace(/Producte,\s*prototip,\s*documentaci[oó],\s*presentaci[oó]\s+o\s+evid[eè]ncia\s+final\s+que\s+mostri[\s\S]*?resultat\s+obtingut\.?/gi,'')
+      .replace(/Compet[eè]ncies\s+espec[ií]fiques\s+i\s+clau\s*:\s*/gi,'Competències específiques:\n')
+      .replace(/Ajusta-les\s+segons\s+el\s+curr[ií]culum\s+de\s+la\s+mat[eè]ria\.?/gi,'')
+      .replace(/Revisa\s+la\s+numeraci[oó]\s+LOMLOE\s+de\s+la\s+mat[eè]ria\s+i\s+el\s+curs\.?/gi,'')
+      .replace(/Mesures\s+pendents\s+de\s+concretar\.?/gi,'')
+      .replace(/^[ \t]+|[ \t]+$/gm,'')
+      .replace(/\n{3,}/g,'\n\n')
+      .replace(/[ \t]{2,}/g,' ')
+      .trim();
+  }
+  function stripBullet(s){ return clean(String(s||'').replace(/^[-•*]\s*/,'').replace(/^\d+[.)]\s*/,'').trim()); }
+  function uniq(arr){ const seen=new Set(); return arr.map(x=>clean(x)).filter(x=>{ const k=x.toLowerCase(); if(!x||seen.has(k)) return false; seen.add(k); return true; }); }
+  function stopAfter(text){
+    return clean(String(text||'')
+      .replace(/\n\s*(?:Objectius\s+d[’']aprenentatge|Compet[eè]ncies|Criteris|Sabers|Blocs\s+de\s+sabers|Seqü[eè]ncia|Desenvolupament\s+de\s+la\s+situaci[oó]|Metodologia|Mesures\s+i\s+suports|Evid[eè]ncies|Instruments|Retorn\s+i\s+millora|R[úu]brica|Vectors)\b[\s\S]*$/i,'')
+      .replace(/(?:CRITERI\s+LOMLOE|No\s+Assolit|Assolit\s+Satisfactori|Assolit\s+Notable|Assolit\s+Excel·lent|NA\s*:|AS\s*:|AN\s*:|AE\s*:)[\s\S]*$/i,''));
+  }
+  function findSection(src, labels, stops){
+    const source='\n'+String(src||'').replace(/\r/g,'')+'\n';
+    const stopRe=stops.map(s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|');
+    for(const lab0 of labels){
+      const lab=lab0.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+      const re=new RegExp('\\n\\s*(?:#{1,4}\\s*)?'+lab+'\\s*[:：]?\\s*([\\s\\S]*?)(?=\\n\\s*(?:#{1,4}\\s*)?(?:'+stopRe+')\\s*[:：]?|\\n\\s*$)','i');
+      const m=source.match(re);
+      if(m && clean(m[1])) return clean(m[1]);
+    }
+    return '';
+  }
+  const COMMON_STOPS = ['Context','Repte','Justificació','Justificacio','Producte final','Objectius d’aprenentatge','Objectius d\'aprenentatge','Competències específiques','Competencies especifiques','Criteris d’avaluació','Criteris d\'avaluació','Competències transversals','Sabers','Blocs de sabers','Seqüenciació didàctica','Sequenciacio didactica','Inicials','Desenvolupament','Estructuració','Estructuracio','Aplicació','Aplicacio','Metodologia','Organització de l’aula','Organitzacio de l\'aula','Recursos','Mesures i suports','TDAH','TEA','Dislèxia','Dislexia','TDL','Evidències','Evidencies','Instruments','Retorn i millora','Rúbrica','Rubrica','Vectors'];
+  function fallbackProduct(data){
+    const title = clean(data?.title || 'producte final');
+    if(/casa|habitatge|tinkercad/i.test(title + ' ' + (data?.challenge||''))) return 'Disseny digital complet d’una casa ideal amb Tinkercad, acompanyat de captures o enllaç, memòria breu de justificació i presentació del projecte.';
+    if(/braç pneumàtic|brac pneumatic|pneum[aà]tic/i.test(title + ' ' + (data?.challenge||''))) return 'Braç pneumàtic funcional amb materials senzills, documentació del procés tecnològic i presentació del funcionament.';
+    return 'Producte final funcional o documentat, amb evidències del procés, decisions justificades i presentació o reflexió final.';
+  }
+  window.extractSaParts = extractSaParts = function(text){
+    const src=clean(text);
+    let context=findSection(src,['Context'],COMMON_STOPS);
+    let repte=findSection(src,['Repte'],COMMON_STOPS);
+    let justificacio=findSection(src,['Justificació','Justificacio'],COMMON_STOPS);
+    let producte=findSection(src,['Producte final'],COMMON_STOPS);
+    context=stopAfter(context);
+    repte=stopAfter(repte);
+    justificacio=stopAfter(justificacio);
+    producte=stopAfter(producte);
+    if(!producte || producte.length<8 || /^[-–—.]$/.test(producte)) producte=fallbackProduct(typeof getFormData==='function'?getFormData():{});
+    if(!repte || repte.length<15 || /^(repte|d['’]enginyeria real)$/i.test(repte)) {
+      const data=typeof getFormData==='function'?getFormData():{};
+      if(/casa|habitatge|tinkercad/i.test(data.title+' '+producte)) repte='Com podem dissenyar digitalment una casa ideal que sigui funcional, sostenible i ben justificada utilitzant Tinkercad?';
+      else if(/braç pneumàtic|brac pneumatic|pneum[aà]tic/i.test(data.title+' '+producte)) repte='Com podem dissenyar i construir un braç pneumàtic funcional amb materials senzills, aplicant principis de pneumàtica i seguint normes de taller?';
+      else repte='Com podem donar resposta a aquest repte mitjançant una proposta funcional, justificada i comunicada amb evidències?';
+    }
+    return {context, repte, justificacio, producte};
+  };
+  function extractSessions(src){
+    const source=clean(src);
+    const re=/(?:^|\n)\s*(?:\*\*)?\s*Sess(?:i[oó]|io)\s*(\d{1,2})(?:\s*[-–:]\s*|\s*:)?([\s\S]*?)(?=(?:\n\s*(?:\*\*)?\s*Sess(?:i[oó]|io)\s*\d{1,2}\b)|$)/gi;
+    const out=[]; let m;
+    while((m=re.exec(source))){
+      const n=parseInt(m[1],10); let body=clean(m[2]||'');
+      body=body.replace(/^[:\-–\s]+/,'');
+      body=body.replace(/\n\s*(?:Metodologia|Organització de l.aula|Recursos|Espais|Condicions d.avaluació|Rúbrica)\b[\s\S]*$/i,'');
+      const line=`Sessió ${n}: ${body}`;
+      if(body.length>8) out.push({n, text: line});
+    }
+    return out.sort((a,b)=>a.n-b.n);
+  }
+  function defaultSession(n, data){
+    const title=clean(data?.title||'projecte');
+    const map={
+      1:`Sessió 1: Presentació del repte, criteris d’èxit, exemples inicials i organització del treball.`,
+      2:`Sessió 2: Recerca guiada, anàlisi de referents i definició de requisits del projecte.`,
+      3:`Sessió 3: Esbossos, planificació, materials, eines i distribució de tasques.`,
+      4:`Sessió 4: Inici del disseny, modelatge, construcció o simulació del producte.`,
+      5:`Sessió 5: Desenvolupament del producte i primera comprovació amb retorn docent.`,
+      6:`Sessió 6: Continuació del disseny o construcció, proves parcials i ajustos.`,
+      7:`Sessió 7: Millora del producte a partir d’errors detectats i criteris tècnics.`,
+      8:`Sessió 8: Incorporació de detalls, acabats, documentació i evidències del procés.`,
+      9:`Sessió 9: Revisió general del producte, comprovació dels requisits i millora final.`,
+      10:`Sessió 10: Elaboració de la memòria o documentació justificativa del projecte.`,
+      11:`Sessió 11: Preparació de la presentació, coavaluació i assaig de l’explicació oral.`,
+      12:`Sessió 12: Presentació final, demostració del producte, autoavaluació i reflexió final.`
+    };
+    return map[n] || `Sessió ${n}: Activitat vinculada al desenvolupament de ${title}.`;
+  }
+  function seqLines(arr){ return arr.map(x=>'- '+stripBullet(x.text||x)).join('\n'); }
+  window.extractSequenceParts = extractSequenceParts = function(text){
+    const src=clean(text);
+    let sessions=extractSessions(src);
+    const data=typeof getFormData==='function'?getFormData():{};
+    const dur=String(data.duration||'');
+    const expected=(dur.match(/(\d+)\s*sess/i)||[])[1];
+    const maxExpected=expected?parseInt(expected,10):0;
+    if(maxExpected>=6){
+      const have=new Set(sessions.map(s=>s.n));
+      for(let n=1;n<=maxExpected;n++) if(!have.has(n)) sessions.push({n,text:defaultSession(n,data)});
+      sessions=sessions.sort((a,b)=>a.n-b.n);
+    }
+    if(sessions.length>=4){
+      return {
+        metodologia: findSection(src,['Metodologia'],COMMON_STOPS),
+        inicials: seqLines(sessions.filter(s=>s.n<=2)),
+        desenvolupament: seqLines(sessions.filter(s=>s.n>=3 && s.n<=8)),
+        estructuracio: seqLines(sessions.filter(s=>s.n>=9 && s.n<=10)),
+        aplicacio: seqLines(sessions.filter(s=>s.n>=11))
+      };
+    }
+    const old=OLD.extractSequenceParts?OLD.extractSequenceParts(text):{};
+    return old||{};
+  };
+  function defaultSupports(){
+    return {
+      tdah:'Tasques fragmentades, objectius curts per sessió, temporitzador visual, pauses funcionals, rol actiu dins del grup i checklist de passos.',
+      tea:'Anticipació de fases i canvis, estructura visual de la sessió, consignes literals, model acabat o exemple, espai de treball previsible i criteris explícits.',
+      dislexia:'Suport visual i oral, tipografia clara, reducció de càrrega lectora innecessària, plantilles amb frases iniciades, temps addicional i possibilitat de resposta oral o visual.',
+      tdl:'Vocabulari tècnic anticipat, glossari visual, frases model, comprovació de comprensió, instruccions breus i suport en l’explicació oral o escrita.'
+    };
+  }
+  window.extractInclusionParts = extractInclusionParts = function(text){
+    const src=clean(text);
+    const old=OLD.extractInclusionParts?OLD.extractInclusionParts(src):{};
+    const defs=defaultSupports();
+    const universals=findSection(src,['Mesures i suports universals','Suports universals','Mesures universals','Disseny universal i suports generals'],COMMON_STOPS) || old.universals || 'Instruccions pautades, models visuals, rúbriques, rols cooperatius, opcions diverses de producte o presentació, feedback formatiu i temps de revisió.';
+    function val(k){ const v=clean(old[k]||findSection(src,[k==='dislexia'?'Dislèxia':k.toUpperCase()],COMMON_STOPS)); return v && v.length>10 ? v : defs[k]; }
+    return {universals: clean(universals), tdah:val('tdah'), tea:val('tea'), dislexia:val('dislexia'), tdl:val('tdl')};
+  };
+  function removeRubricLeak(t){
+    return clean(String(t||'')
+      .replace(/\n?\s*(?:R[úu]brica|CRITERI\s+LOMLOE|No\s+Assolit|Assolit\s+Satisfactori|Assolit\s+Notable|Assolit\s+Excel·lent|NA\s*:|AS\s*:|AN\s*:|AE\s*:)[\s\S]*$/i,'')
+      .replace(/^\s*\*+\s*$/gm,'')
+      .replace(/^\s*[•-]\s*\.?\s*$/gm,''));
+  }
+  window.extractAssessmentParts = extractAssessmentParts = function(text){
+    const src=clean(text);
+    const old=OLD.extractAssessmentParts?OLD.extractAssessmentParts(src):{};
+    let evidencies=removeRubricLeak(old.evidencies || findSection(src,['Evidències','Evidencies'],COMMON_STOPS));
+    let instruments=removeRubricLeak(old.instruments || findSection(src,['Instruments'],COMMON_STOPS));
+    let retorn=removeRubricLeak(old.retorn || findSection(src,['Retorn i millora','Retorn'],COMMON_STOPS));
+    if(!evidencies || evidencies.length<8) evidencies=`- Producte final o prototip.
+- Documentació del procés, memòria o quadern de projecte.
+- Esbossos, captures, proves o evidències de treball.
+- Presentació o demostració final.
+- Autoavaluació i coavaluació.`;
+    if(!instruments || instruments.length<8) instruments=`- Rúbrica criterial NA/AS/AN/AE.
+- Llista de control del procés i de les normes de taller.
+- Observació docent durant el treball.
+- Revisió del producte final, documentació o presentació.
+- Autoavaluació i coavaluació.`;
+    if(!retorn || retorn.length<8) retorn=`- Feedback docent durant el procés.
+- Revisió entre iguals amb criteris d’èxit.
+- Millora del producte o de la documentació abans del lliurament final.
+- Reflexió final sobre dificultats, aprenentatges i millores.`;
+    return {evidencies, instruments, retorn};
+  };
+  window.buildObjectivesList = buildObjectivesList = function(data){
+    const title=clean(data?.title||'la proposta');
+    const subject=clean(data?.subject||'la matèria');
+    const product=extractSaParts(data?.challenge||'').producte || fallbackProduct(data);
+    const items=[
+      `Analitzar el repte plantejat i identificar les necessitats, condicionants i criteris d’èxit relacionats amb ${subject}.`,
+      `Planificar una proposta viable, organitzant fases, materials, eines, rols i normes de treball segur.`,
+      `Aplicar sabers i procediments tècnics per desenvolupar ${product}.`,
+      `Documentar el procés seguit, les decisions preses, les proves realitzades i les millores incorporades.`,
+      `Comunicar el resultat final amb vocabulari tècnic adequat i reflexionar sobre l’aprenentatge, el treball cooperatiu i les millores possibles.`
+    ];
+    return '<ol>'+items.map(x=>`<li>${escapeHtml(x)}</li>`).join('')+'</ol>';
+  };
+  function sanitizeData(data){
+    const d={...(data||{})};
+    if(/IA assistida/i.test(d.type||'')) d.type='Situació d’aprenentatge';
+    d.challenge=clean(d.challenge);
+    d.knowledge=clean(d.knowledge);
+    d.competences=clean(d.competences);
+    d.sequence=clean(d.sequence);
+    d.inclusion=clean(d.inclusion);
+    d.assessment=clean(d.assessment);
+    return d;
+  }
+  if(OLD.getFormData){
+    getFormData = function(){ return sanitizeData(OLD.getFormData()); };
+  }
+  function writeField(id,v){ const el=document.getElementById(id); if(el) el.value=v; }
+  const oldRestructure = window.restructureCurrentSa;
+  window.restructureCurrentSa = function(){
+    if(typeof oldRestructure==='function') oldRestructure();
+    const d=typeof getFormData==='function'?getFormData():{};
+    const ch=extractSaParts(d.challenge||'');
+    writeField('challenge', clean([`Context: ${ch.context}`,`Repte: ${ch.repte}`,`Justificació: ${ch.justificacio}`,`Producte final: ${ch.producte}`].filter(x=>!/undefined|null/.test(x)).join('\n\n')));
+    const inc=extractInclusionParts(d.inclusion||'');
+    writeField('inclusion', clean(`Mesures i suports universals: ${inc.universals}\n\nTDAH: ${inc.tdah}\n\nTEA: ${inc.tea}\n\nDislèxia: ${inc.dislexia}\n\nTDL: ${inc.tdl}`));
+    const ass=extractAssessmentParts(d.assessment||'');
+    writeField('assessment', clean(`Evidències: ${ass.evidencies}\n\nInstruments: ${ass.instruments}\n\nRetorn i millora: ${ass.retorn}`));
+    const seq=extractSequenceParts(d.sequence||'');
+    if(seq.inicials||seq.desenvolupament||seq.estructuracio||seq.aplicacio) writeField('sequence', clean([seq.metodologia&&`Metodologia: ${seq.metodologia}`,`Inicials: ${seq.inicials}`,`Desenvolupament: ${seq.desenvolupament}`,`Estructuració: ${seq.estructuracio}`,`Aplicació: ${seq.aplicacio}`].filter(Boolean).join('\n\n')));
+    try{ if(typeof renderReport==='function' && typeof getFormData==='function') renderReport(getFormData()); }catch(e){}
+    try{ if(typeof showToast==='function') showToast('SA sanejada amb v2.4.9: camps, sessions, mesures i instruments revisats.'); }catch(e){}
+  };
+  function bind249(){
+    const btn=document.getElementById('restructureSaBtn');
+    if(btn && !btn.dataset.dk249Bound){ btn.dataset.dk249Bound='1'; btn.addEventListener('click',()=>setTimeout(()=>window.restructureCurrentSa&&window.restructureCurrentSa(),20)); }
+    const type=document.getElementById('type');
+    if(type && /IA assistida/i.test(type.value||'')) type.value='Situació d’aprenentatge';
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', bind249); else bind249();
+  window.docentKitClean249 = {version:DK249, extractSessions, extractSaParts, extractSequenceParts, extractInclusionParts, extractAssessmentParts};
+})();
