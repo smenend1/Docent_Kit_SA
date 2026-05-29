@@ -5276,3 +5276,148 @@ init();
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', bind249); else bind249();
   window.docentKitClean249 = {version:DK249, extractSessions, extractSaParts, extractSequenceParts, extractInclusionParts, extractAssessmentParts};
 })();
+
+// ===== v2.4.10: frases completes i tall anti-fragment en camps IA =====
+(function(){
+  const DK2410='2.4.10';
+  const prevExtractSaParts = typeof extractSaParts === 'function' ? extractSaParts : null;
+  const prevExtractCompetenceParts = typeof extractCompetenceParts === 'function' ? extractCompetenceParts : null;
+  const prevBuildObjectivesList = typeof buildObjectivesList === 'function' ? buildObjectivesList : null;
+  const prevGetFormData = typeof getFormData === 'function' ? getFormData : null;
+  const prevRestructure = window.restructureCurrentSa;
+  function txt(v){ return String(v||'').replace(/\r/g,'').replace(/\*\*/g,'').replace(/^[ \t]+|[ \t]+$/gm,'').replace(/\n{3,}/g,'\n\n').trim(); }
+  function stripHtml(s){ return String(s||'').replace(/<[^>]*>/g,' '); }
+  function esc(s){ return typeof escapeHtml==='function' ? escapeHtml(s) : String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+  function dataNow(){ try { return prevGetFormData ? prevGetFormData() : (typeof getFormData==='function'?getFormData():{}); } catch(e){ return {}; } }
+  function combined(data){ return txt([data.title,data.level,data.subject,data.duration,data.challenge,data.knowledge,data.sequence,data.assessment,data.inclusion].join('\n')); }
+  function topic(data){ const src=combined(data); if(/tinkercad|casa|habitatge|espai ideal|disseny\s*3d/i.test(src)) return 'tinkercadCasa'; if(/braç|brac|pneum[aà]tic|xeringa|tub flexible/i.test(src)) return 'bracPneumatic'; if(/aut[oò]mat|lleva|seguidor|manovella|tija/i.test(src)) return 'automata'; if(/rube|goldberg/i.test(src)) return 'goldberg'; if(/protoboard|ohm|watt|circuit/i.test(src)) return 'electricitat'; return 'generic'; }
+  function badFragment(s){
+    const v=txt(stripHtml(s));
+    if(!v || /^[-–—.*]+$/.test(v)) return true;
+    if(/\b(IA assistida|Esborrany IA|pendent de mapatge|Ajusta-les|Revisa la numeraci[oó])\b/i.test(v)) return true;
+    if(/\b(CRITERI\s+LOMLOE|No\s+Assolit|Assolit\s+Satisfactori|Assolit\s+Notable|Assolit\s+Excel·lent|NA\s*:|AS\s*:|AN\s*:|AE\s*:)\b/i.test(v)) return true;
+    if(/(?:\bamb|\bd[’']|\bde|\bdel|\bde la|\bper|\bper a|\ba partir de|\bquan sigui|\bi|\bo|\bque|\bhaver|haur|acompanyat d[’']?|utilitzant eines de|vocabulari t[eè]cnic i)$/i.test(v)) return true;
+    return v.length < 12;
+  }
+  function completeRepte(data, current){
+    const t=topic(data);
+    if(!badFragment(current) && /\?|repte consisteix|missi[oó]|com podem|dissenyar|construir|crear/i.test(current)) return txt(current);
+    const map={
+      tinkercadCasa:'Com podem dissenyar amb Tinkercad una casa ideal completa, funcional i sostenible, justificant-ne la distribució, els elements arquitectònics i les decisions de disseny?',
+      bracPneumatic:'Com podem dissenyar i construir un braç pneumàtic funcional amb materials senzills, aplicant principis de pneumàtica, treball segur i documentació del procés tecnològic?',
+      automata:'Com podem construir un autòmat senzill que transformi un moviment circular en un moviment vertical i explicar-ne el funcionament amb vocabulari tècnic?',
+      goldberg:'Com podem dissenyar i construir una màquina de Rube Goldberg que encadeni mecanismes simples amb materials reciclables fins a aconseguir una acció final?',
+      electricitat:'Com podem muntar, simular i comprovar circuits elèctrics senzills, relacionant els resultats reals amb els obtinguts en una eina digital?',
+      generic:'Com podem resoldre aquest repte mitjançant una proposta funcional, documentada i justificada, aplicant els sabers de la matèria?'
+    };
+    return map[t]||map.generic;
+  }
+  function completeProducte(data, current){
+    const t=topic(data);
+    if(!badFragment(current) && /\b(producte|disseny|maqueta|prototip|document|mem[oò]ria|presentaci[oó]|enllaç|captures|model|casa|braç|aut[oò]mat|m[aà]quina)\b/i.test(current)) return txt(current);
+    const map={
+      tinkercadCasa:'Disseny 3D complet d’una casa ideal amb Tinkercad, amb espais interiors i exteriors, mobiliari bàsic, captures o enllaç del projecte, memòria justificativa breu i presentació final.',
+      bracPneumatic:'Braç pneumàtic funcional construït amb materials senzills, acompanyat d’esbossos o plànols, memòria del procés tecnològic, proves de funcionament i presentació final.',
+      automata:'Autòmat simple construït amb cartró o materials de taller, amb documentació del procés, anàlisi del mecanisme i demostració del moviment.',
+      goldberg:'Màquina de Rube Goldberg funcional construïda amb materials reciclables, amb documentació del procés, proves, millores i explicació oral del funcionament.',
+      electricitat:'Fitxes de pràctiques amb circuits muntats, simulacions digitals, mesures, càlculs i conclusions sobre el funcionament dels circuits.',
+      generic:'Producte final funcional o documentat, amb evidències del procés, decisions justificades, revisió de millores i presentació o reflexió final.'
+    };
+    return map[t]||map.generic;
+  }
+  function completeContext(data,current){
+    if(!badFragment(current) && current.length>45) return txt(current);
+    const t=topic(data);
+    const map={
+      tinkercadCasa:'En un món cada cop més digitalitzat, el disseny 3D permet imaginar, representar i comunicar espais funcionals. L’alumnat parteix d’un repte proper —dissenyar la seva casa ideal— per aplicar criteris de distribució, sostenibilitat, representació digital i comunicació tècnica.',
+      bracPneumatic:'La pneumàtica és present en molts sistemes industrials i mecanismes quotidians. Aquesta situació apropa l’alumnat al disseny i la construcció d’un mecanisme funcional, combinant recerca, prototipatge, treball de taller i justificació tècnica.',
+      generic:'La situació parteix d’un repte proper i significatiu que permet aplicar sabers de la matèria, prendre decisions justificades, treballar cooperativament i comunicar el procés i el resultat.'
+    };
+    return map[t]||map.generic;
+  }
+  function completeJustificacio(data,current){
+    if(!badFragment(current) && current.length>35) return txt(current);
+    return 'La situació permet treballar de manera competencial el procés tecnològic, la resolució de problemes, la comunicació del resultat, el treball cooperatiu i la millora a partir del retorn rebut.';
+  }
+  function defaultTrans(data, current){
+    if(!badFragment(current) && current.length>50) return txt(current);
+    return [
+      'Competència digital: cerca, documentació, disseny, simulació o comunicació del procés amb eines digitals.',
+      'Competència personal, social i d’aprendre a aprendre: cooperació, autoregulació, repartiment de rols i millora a partir del retorn.',
+      'Competència emprenedora: ideació, presa de decisions, planificació, perseverança i millora de la proposta.',
+      'Competència en comunicació lingüística: ús de vocabulari tècnic i comunicació oral, escrita o visual del procés i del resultat.'
+    ].join('\n');
+  }
+  function cleanObjItem(s){
+    let v=txt(stripHtml(s)).replace(/^\d+[.)]\s*/,'').replace(/^[-•*]\s*/,'');
+    if(badFragment(v)) return '';
+    v=v.replace(/\s*(?:Compet[eè]ncies espec[ií]fiques|Criteris d.avaluaci[oó]|Sabers|R[úu]brica|CRITERI\s+LOMLOE)[\s\S]*$/i,'').trim();
+    if(badFragment(v)) return '';
+    return v.replace(/[;,:\s]+$/,'.').replace(/\.\.+$/,'.');
+  }
+  function objectiveItems(data){
+    const t=topic(data), subject=txt(data.subject||'la matèria');
+    if(t==='tinkercadCasa') return [
+      'Analitzar el repte plantejat i identificar les necessitats, condicionants i criteris d’èxit d’un habitatge funcional i sostenible.',
+      'Planificar una proposta viable, organitzant fases, espais, materials, eines digitals i normes de treball segur.',
+      'Aplicar eines de modelatge 3D per crear una casa ideal amb distribució coherent, mobiliari bàsic i elements arquitectònics.',
+      'Documentar el procés seguit, les decisions de disseny, les proves realitzades i les millores incorporades.',
+      'Comunicar el resultat final amb vocabulari tècnic adequat i reflexionar sobre l’aprenentatge, el treball cooperatiu i les millores possibles.'
+    ];
+    if(t==='bracPneumatic') return [
+      'Analitzar el repte i identificar els requisits tècnics d’un braç pneumàtic funcional.',
+      'Planificar el projecte definint fases, materials, eines, rols i normes de treball segur al taller.',
+      'Construir i ajustar un braç pneumàtic aplicant principis bàsics de pneumàtica i mecanismes.',
+      'Documentar el procés de disseny, construcció, proves, errors detectats i millores incorporades.',
+      'Comunicar el funcionament del prototip amb vocabulari tècnic adequat i valorar el resultat final.'
+    ];
+    return [
+      `Analitzar el repte plantejat i identificar les necessitats, condicionants i criteris d’èxit relacionats amb ${subject}.`,
+      'Planificar una proposta viable, organitzant fases, materials, eines, rols i normes de treball segur.',
+      'Aplicar sabers i procediments tècnics per desenvolupar un producte final funcional o documentat.',
+      'Documentar el procés seguit, les decisions preses, les proves realitzades i les millores incorporades.',
+      'Comunicar el resultat final amb vocabulari tècnic adequat i reflexionar sobre l’aprenentatge, el treball cooperatiu i les millores possibles.'
+    ];
+  }
+  window.extractSaParts = extractSaParts = function(text){
+    const data=dataNow();
+    const base = prevExtractSaParts ? prevExtractSaParts(text) : {context:'',repte:'',justificacio:'',producte:''};
+    return {
+      context: completeContext(data, base.context),
+      repte: completeRepte(data, base.repte),
+      justificacio: completeJustificacio(data, base.justificacio),
+      producte: completeProducte(data, base.producte)
+    };
+  };
+  window.extractCompetenceParts = extractCompetenceParts = function(text){
+    const data=dataNow();
+    const p = prevExtractCompetenceParts ? prevExtractCompetenceParts(text) : {competencies:'',criteria:'',transversals:'',criteriaCodes:[]};
+    p.transversals = defaultTrans(data, p.transversals);
+    if(badFragment(p.competencies)) p.competencies = 'CE1. Idear i planificar solucions tecnològiques a partir d’una necessitat o repte proper, valorant-ne la viabilitat i la utilitat.\nCE2. Desenvolupar projectes aplicant el procés tecnològic: anàlisi, disseny, planificació, construcció, prova i millora.\nCE4. Comunicar processos i solucions amb vocabulari tècnic, dibuixos, documents, presentacions o demostracions.';
+    return p;
+  };
+  window.buildObjectivesList = buildObjectivesList = function(data){
+    let oldText='';
+    try { oldText = prevBuildObjectivesList ? stripHtml(prevBuildObjectivesList(data)) : ''; } catch(e) {}
+    const oldItems=oldText.split(/\n+/).map(cleanObjItem).filter(Boolean);
+    const items = oldItems.length>=4 && !oldItems.some(badFragment) ? oldItems.slice(0,6) : objectiveItems(data);
+    return '<ol>'+items.map(x=>`<li>${esc(x)}</li>`).join('')+'</ol>';
+  };
+  function writeField(id,v){ const el=document.getElementById(id); if(el) el.value=v; }
+  window.restructureCurrentSa = function(){
+    if(typeof prevRestructure==='function') prevRestructure();
+    const d=dataNow();
+    const ch=extractSaParts(d.challenge||'');
+    writeField('challenge', txt(`Context: ${ch.context}\n\nRepte: ${ch.repte}\n\nJustificació: ${ch.justificacio}\n\nProducte final: ${ch.producte}`));
+    const cp=extractCompetenceParts(d.competences||'');
+    writeField('competences', txt(`Competències específiques:\n${cp.competencies}\n\nCriteris d’avaluació:\n${cp.criteria||'1.1. Analitzar una necessitat o repte tecnològic i planificar una solució coherent.\n2.1. Aplicar les fases del procés tecnològic en el desenvolupament del projecte.\n4.1. Comunicar el procés i el resultat amb vocabulari tècnic.'}\n\nCompetències transversals:\n${cp.transversals}`));
+    try{ if(typeof renderReport==='function' && typeof getFormData==='function') renderReport(getFormData()); }catch(e){}
+    try{ if(typeof showToast==='function') showToast('SA revisada amb v2.4.10: frases tallades corregides.'); }catch(e){}
+  };
+  function bind2410(){
+    const btn=document.getElementById('restructureSaBtn');
+    if(btn && !btn.dataset.dk2410Bound){ btn.dataset.dk2410Bound='1'; btn.addEventListener('click',()=>setTimeout(()=>window.restructureCurrentSa&&window.restructureCurrentSa(),60)); }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', bind2410); else bind2410();
+  window.docentKitClean2410={version:DK2410,badFragment,topic};
+})();
