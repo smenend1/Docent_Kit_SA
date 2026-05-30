@@ -1,4 +1,4 @@
-const CACHE_NAME = 'docentkit-v2412-poliment-final-ia';
+const CACHE_NAME = 'docentkit-v2-5-3';
 const ASSETS = [
   './',
   './index.html',

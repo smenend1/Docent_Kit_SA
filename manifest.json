@@ -1,7 +1,7 @@
 {
   "name": "DocentKit · Generador de situacions i recursos",
   "short_name": "DocentKit",
-  "description": "PWA educativa en català per generar situacions d’aprenentatge, projectes, sessions, rúbriques, validació de SA i recursos docents.",
+  "description": "PWA educativa en català per generar situacions d’aprenentatge, projectes, sessions, rúbriques, validació de SA i recursos docents amb plantilles neutres per tipus de recurs.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

@@ -16,127 +16,109 @@ const MODULES = [
 ];
 
 const TEMPLATES = {
-  sa: {
-    title: 'Dissenyem una solució tecnològica per millorar el centre',
-    level: '2n ESO',
-    subject: 'Tecnologia i Digitalització',
-    duration: '8 sessions',
-    challenge: 'Context: el centre vol detectar una necessitat real d’un espai comú i proposar-hi una millora viable, segura i sostenible.\n\nRepte: com podem dissenyar, justificar i comunicar una solució tecnològica que millori un espai del centre?\n\nJustificació: l’alumnat treballa a partir d’una necessitat propera, pren decisions tècniques i valora l’impacte social i ambiental.\n\nProducte final: proposta tècnica amb esbós, maqueta o simulació, pressupost bàsic, justificació i presentació final.',
-    knowledge: 'Blocs de sabers: procés de projectes, comunicació tècnica, eines digitals, tecnologia sostenible i operadors tecnològics.\n\nSabers concrets:\n- Identificació de necessitats i formulació de problemes.\n- Recerca, selecció i contrast d’informació.\n- Disseny d’esbossos, croquis o prototips.\n- Planificació de fases, materials i recursos.\n- Comunicació oral, escrita i visual de solucions.\n- Valoració de sostenibilitat, seguretat i viabilitat.',
-    competences: 'Competències específiques: CE1, CE2, CE4.\n\nCriteris d’avaluació: 1.1, 2.1, 4.2.\n\nCompetències transversals:\n- Digital: ús d’eines digitals per documentar, dissenyar i comunicar.\n- Ciutadana: proposta de millora vinculada a la comunitat educativa.\n- Emprenedora: ideació, presa de decisions i millora iterativa.\n- Personal, social i d’aprendre a aprendre: treball cooperatiu, autoregulació i reflexió.',
-    sequence: 'Inicials: què en sabem?\n- Observació de l’espai i pluja d’idees de necessitats.\n- Conversa guiada sobre criteris de qualitat: utilitat, sostenibilitat, seguretat i cost.\n\nDesenvolupament: aprenem nous continguts\n- Recerca de solucions existents.\n- Anàlisi de materials, eines, limitacions i usuaris.\n- Esbossos, croquis o simulacions inicials.\n\nEstructuració: què hem après?\n- Organització de la proposta en una memòria breu.\n- Revisió amb llista de control i coavaluació.\n\nAplicació: apliquem el que hem après\n- Elaboració del producte final.\n- Presentació oral o multimodal.\n- Millora final a partir del retorn rebut.',
-    inclusion: 'Mesures i suports universals:\n- Instruccions fragmentades i visibles.\n- Exemple de proposta final i checklist.\n- Rols cooperatius clars.\n- Opcions de resposta: text, àudio, esquema, maqueta, presentació o vídeo.\n\nTDAH: tasques curtes, temporitzador, objectius de sessió i pauses funcionals.\nTEA: anticipació de fases, estructura visual, consignes literals i previsibilitat.\nDislèxia: menys càrrega lectora, tipografia clara, suport oral i plantilles amb frases iniciades.\nTDL: vocabulari previ, frases simples, suports visuals i temps addicional per formular respostes.',
-    assessment: 'Evidències:\n- Registre d’observació i recerca.\n- Esbossos, croquis, maqueta o simulació.\n- Memòria tècnica breu.\n- Presentació final i reflexió individual.\n\nInstruments:\n- Rúbrica del procés i del producte.\n- Llista de control de la memòria.\n- Coavaluació i autoavaluació.\n\nRetorn i millora:\n- Feedback durant el procés.\n- Revisió entre iguals.\n- Millora obligatòria abans del lliurament final.\n\nRúbrica inicial:\n1. Identificació del problema i recerca: NA / AS / AN / AE.\n2. Disseny, planificació i justificació tècnica: NA / AS / AN / AE.\n3. Construcció, simulació, prova o millora: NA / AS / AN / AE.\n4. Comunicació, documentació i reflexió final: NA / AS / AN / AE.',
-    tags: 'SA, Tecnologia ESO, plantilla, competencial, inclusió'
+  "sa": {
+    "title": "[Títol de la situació d’aprenentatge]",
+    "level": "[Curs, grup i durada aproximada]",
+    "subject": "[Matèria, àmbit o espai interdisciplinari]",
+    "duration": "[Durada aproximada]",
+    "challenge": "Context: [situació real o versemblant que dona sentit a l’aprenentatge]\n\nRepte: [pregunta, problema o encàrrec que haurà de resoldre l’alumnat]\n\nJustificació: [per què aquesta situació és significativa per al grup i el currículum]\n\nProducte final: [artefacte, presentació, servei, informe, prototip, campanya o evidència final]",
+    "knowledge": "Sabers principals:\n- [Saber 1]\n- [Saber 2]\n- [Saber 3]\n\nProcediments i estratègies:\n- [Recerca, pràctica, experimentació, construcció, comunicació...]",
+    "competences": "Competències específiques i criteris d’avaluació vinculats:\n- [CE / CA 1]\n- [CE / CA 2]\n\nCompetències transversals:\n- Digital: [ús d’eines o tractament de la informació]\n- Personal, social i d’aprendre a aprendre: [autoregulació, cooperació, revisió]\n- Ciutadana: [impacte, participació, responsabilitat]\n- Emprenedora: [ideació, presa de decisions, creativitat]",
+    "sequence": "Fase 1. Activació\n- Activitats clau: [què saben?, què els interessa?, estímul inicial]\n- Agrupament: [individual/parelles/grup classe]\n- Evidència: [mapa inicial, conversa, resposta breu]\n- Avaluació: [observació, pregunta guia]\n\nFase 2. Construcció\n- Activitats clau: [tallers, recerca, pràctica guiada]\n- Agrupament: [cooperatiu/parelles]\n- Evidència: [apunts, esborranys, proves]\n- Avaluació: [feedback formatiu]\n\nFase 3. Aplicació\n- Activitats clau: [resolució del repte o elaboració del producte]\n- Agrupament: [equips/individual]\n- Evidència: [producte en procés]\n- Avaluació: [coavaluació, llista de control]\n\nFase 4. Transferència\n- Activitats clau: [presentació, reflexió i millora]\n- Agrupament: [grup classe/equips]\n- Evidència: [producte final]\n- Avaluació: [rúbrica, autoavaluació]",
+    "inclusion": "DUA i mesures universals:\n- Opcions de representació: [models, exemples, visuals, glossari]\n- Opcions d’acció i expressió: [text, oral, esquema, maqueta, vídeo...]\n- Opcions d’implicació: [rols, elecció, objectius visibles, feedback]\n\nSuports específics si cal:\n- TDAH: [tasques fragmentades, temporitzador, objectius curts]\n- TEA: [anticipació, estructura visual, consignes literals]\n- Dislèxia: [lectura facilitada, suport oral, temps addicional]\n- TDL: [vocabulari previ, frases model, suport visual]",
+    "assessment": "Evidències:\n- [Evidència 1]\n- [Evidència 2]\n- [Producte final]\n\nInstruments:\n- Rúbrica\n- Llista de control\n- Observació docent\n- Autoavaluació i/o coavaluació\n\nRúbrica orientativa:\nCriteri / objectiu | NA | AS | AN | AE | Evidència\n[Criteri 1] | [No assolit] | [Assoliment satisfactori] | [Assoliment notable] | [Assoliment excel·lent] | [Instrument]\n[Criteri 2] | [No assolit] | [Assoliment satisfactori] | [Assoliment notable] | [Assoliment excel·lent] | [Instrument]",
+    "tags": "plantilla neutra, situació d’aprenentatge, competencial"
   },
-  projecte: {
-    title: 'Projecte competencial amb producte final', subject: 'Transversal', duration: '3-5 setmanes',
-    challenge: 'Repte real o versemblant que demana investigar, crear un producte i presentar una solució.',
-    knowledge: 'Sabers vinculats al context, procediments de recerca, planificació, prototipatge i comunicació.',
-    competences: 'Competències específiques i criteris seleccionats. Indicadors observables del procés i del producte.',
-    sequence: '1. Llançament del repte.\n2. Recerca i definició del problema.\n3. Ideació i planificació.\n4. Desenvolupament del producte.\n5. Presentació, retorn i millora.',
-    inclusion: 'Rols, bastides, exemples, opcions de producte, temps flexible i suports visuals.',
-    assessment: 'Rúbrica, diari de projecte, coavaluació i presentació final.', tags: 'projecte, competencial'
+  "fitxa": {
+    "title": "[Títol de l’activitat]",
+    "level": "[Curs i grup]",
+    "subject": "[Matèria o àmbit]",
+    "duration": "[Temps previst]",
+    "challenge": "Objectiu: [què aprendrem o practicarem?]\n\nConsigna principal: [què ha de fer exactament l’alumnat?]\n\nLliurable: [què s’ha d’entregar i en quin format?]",
+    "knowledge": "Materials i recursos:\n- [Material 1]\n- [Eina, document o enllaç]\n\nConceptes o vocabulari clau:\n- [Concepte 1]\n- [Concepte 2]",
+    "competences": "Criteris d’èxit:\n- [Criteri 1: com sabré que està bé?]\n- [Criteri 2: indicador observable]\n- [Criteri 3: qualitat esperada]",
+    "sequence": "Pas 1. [Llegir / observar / escoltar l’estímul inicial] - [__ min]\nPas 2. [Resoldre la tasca individualment o en equip] - [__ min]\nPas 3. [Revisar amb la checklist] - [__ min]\nPas 4. [Entregar o compartir el resultat] - [__ min]\n\nChecklist abans d’entregar:\n☐ He entès l’objectiu de l’activitat.\n☐ He seguit tots els passos demanats.\n☐ El meu lliurable és clar, complet i revisat.\n☐ Puc explicar què he après i què milloraria.",
+    "inclusion": "Suports: [exemple resolt, passos numerats, glossari, parella tutora, format accessible]\nOpcions de resposta: [text, oral, esquema, vídeo, maqueta, mapa visual, resposta guiada]\nAjustos d’accés: [temps, espai, lectura de consignes, reducció de càrrega no essencial]",
+    "assessment": "Avaluació:\n- Instrument: [checklist / observació / rúbrica curta]\n- Evidència: [lliurable o resposta final]\n- Retorn: [comentari docent, millora, autoavaluació]",
+    "tags": "plantilla neutra, fitxa d’activitat, alumnat"
   },
-  sessio: {
-    title: 'Sessió guiada', subject: 'Transversal', duration: '1 hora',
-    challenge: 'Objectiu de sessió clar i connectat amb una necessitat o pregunta.',
-    knowledge: 'Sabers principals i vocabulari clau.', competences: 'Criteris observables de la sessió.',
-    sequence: 'Inici: activació i objectiu.\nDesenvolupament: pràctica guiada i activitat principal.\nTancament: síntesi, evidència ràpida i deures opcionals.',
-    inclusion: 'Instruccions curtes, exemple resolt, suport visual i comprovacions de comprensió.',
-    assessment: 'Evidència breu de sortida, observació docent i feedback immediat.', tags: 'sessió'
+  "sessio": {
+    "title": "[Número i títol de la sessió]",
+    "level": "[Curs i grup]",
+    "subject": "[Matèria o àmbit]",
+    "duration": "[Durada de la sessió]",
+    "challenge": "Objectiu de la sessió: [què ha d’haver après o practicat l’alumnat?]\n\nConnexió: [relació amb la sessió anterior o amb el repte global]",
+    "knowledge": "Recursos:\n- [Materials]\n- [Eines digitals]\n- [Espais]\n\nVocabulari o saber clau:\n- [Concepte 1]\n- [Concepte 2]",
+    "competences": "Criteris observables de la sessió:\n- [Evidència de comprensió]\n- [Evidència de pràctica]\n- [Evidència de comunicació o reflexió]",
+    "sequence": "Inici ([__ min])\n- Accions del docent: [activació, objectiu visible, connexió amb sessió anterior]\n- Accions de l’alumnat: [respon, anticipa, pregunta]\n\nDesenvolupament ([__ min])\n- Accions del docent: [modelatge, guia, feedback, suport]\n- Accions de l’alumnat: [practica, investiga, crea, coopera]\n\nTancament ([__ min])\n- Accions del docent: [síntesi, metacognició, instruccions finals]\n- Accions de l’alumnat: [comparteix evidència i reflexiona]\n\nEvidència de sortida: [ticket de sortida, mini producte, resposta escrita, àudio...]",
+    "inclusion": "Agrupaments: [individual, parelles, equips, grup classe]\nSuports: [consignes visibles, exemple, guia pas a pas, comprovació de comprensió]\nObservacions per a la propera sessió: [què cal reprendre?]",
+    "assessment": "Instrument: [checklist, rúbrica curta, observació]\nRetorn: [feedback immediat, revisió oral, comentari breu]\nSeguiment: [què cal reforçar?]",
+    "tags": "plantilla neutra, sessió, classe"
   },
-  rubrica: {
-    title: 'Rúbrica per valorar un projecte competencial', subject: 'Transversal', duration: 'Una activitat o projecte',
-    challenge: 'Valorar de manera clara el procés, el producte final i la comunicació de l’aprenentatge.',
-    knowledge: 'Criteris de qualitat, evidències, argumentació, autonomia i revisió del treball.',
-    competences: 'Planificar, executar, revisar i comunicar un producte o solució amb evidències.',
-    sequence: 'Criteri 1: Comprensió del repte.\nCriteri 2: Qualitat del procés.\nCriteri 3: Producte final.\nCriteri 4: Comunicació.\nCriteri 5: Reflexió i millora.',
-    inclusion: 'Descriptors breus, llenguatge clar, exemples de cada nivell i formats diversos per evidenciar l’aprenentatge.',
-    assessment: 'Nivells: NA, AS, AN, AE. Incloure descriptors observables i espai per a retroacció formativa.', tags: 'rúbrica, avaluació'
+  "prova": {
+    "title": "[Títol de la prova competencial]",
+    "level": "[Curs i grup]",
+    "subject": "[Matèria o àmbit]",
+    "duration": "[Temps disponible]",
+    "challenge": "Títol i context: [nom de la prova i situació real o versemblant]\n\nEstímul inicial: [text, gràfic, notícia, imatge, dades, cas o problema]\n\nCondicions: [temps, materials permesos, format de resposta]",
+    "knowledge": "Sabers mobilitzats:\n- [Concepte o procediment 1]\n- [Concepte o procediment 2]\n- [Actitud o estratègia 1]",
+    "competences": "Competències / criteris:\n- [CE / CA que s’avaluarà]\n- [CE / CA que s’avaluarà]\n\nQuè avalua cada pregunta:\n1. [Criteri vinculat]\n2. [Criteri vinculat]\n3. [Criteri vinculat]",
+    "sequence": "Preguntes:\n1. [Resposta curta / anàlisi / justificació] - [__ punts]\n2. [Resolució de problema / producció] - [__ punts]\n3. [Transferència / argumentació] - [__ punts]\n\nPauta de correcció:\nPregunta 1: [resposta esperada, correcte/parcial/insuficient]\nPregunta 2: [resposta esperada, correcte/parcial/insuficient]\nPregunta 3: [resposta esperada, correcte/parcial/insuficient]",
+    "inclusion": "Mesures d’accés: lectura clara, preguntes numerades, espai per planificar, suport visual i temps addicional si cal.\nOpcions de resposta quan sigui possible: text, esquema, justificació oral o gràfica.",
+    "assessment": "Puntuació i correcció:\n- Pregunta 1: [__ punts]\n- Pregunta 2: [__ punts]\n- Pregunta 3: [__ punts]\n\nNivells: NA / AS / AN / AE segons qualitat, justificació, procediment i transferència.",
+    "tags": "plantilla neutra, prova competencial, avaluació"
   },
-  prova: {
-    title: 'Prova competencial contextualitzada', subject: 'Transversal', duration: '1-2 sessions',
-    challenge: 'Estímul inicial amb situació real, dades o document breu que l’alumnat ha d’interpretar.',
-    knowledge: 'Sabers necessaris per comprendre el context i respondre amb justificació.',
-    competences: 'Criteris d’avaluació vinculats a preguntes obertes, aplicades i justificades.',
-    sequence: 'Bloc A: comprensió de l’estímul.\nBloc B: aplicació de coneixements.\nBloc C: presa de decisions i justificació.\nBloc D: reflexió o transferència.',
-    inclusion: 'Lectura accessible, preguntes clares, temps addicional, suport visual i espai per planificar la resposta.',
-    assessment: 'Pauta de correcció amb criteris, exemples de resposta i nivells d’assoliment.', tags: 'prova, competencial'
+  "rubrica": {
+    "title": "[Títol de la rúbrica]",
+    "level": "[Curs i grup]",
+    "subject": "[Matèria o àmbit]",
+    "duration": "[Activitat o projecte que avalua]",
+    "challenge": "Finalitat: descriure nivells d’assoliment amb evidències observables.\n\nEvidència principal: [producte, observació, prova, presentació, portafolis...]",
+    "knowledge": "Ítems observables:\n- [Què observarem?]\n- [Quina evidència ho mostra?]\n- [Quina qualitat esperem?]",
+    "competences": "Criteris vinculats:\n- [Criteri 1]\n- [Criteri 2]\n- [Criteri 3]\n- [Criteri 4]",
+    "sequence": "Taula de rúbrica:\nCriteri | Ítem observable | NA | AS | AN | AE | Evidència / instrument\n[Criteri 1] | [Què observarem?] | [Encara no ho mostra] | [Ho mostra amb ajuda o de manera bàsica] | [Ho mostra de manera autònoma i adequada] | [Ho mostra amb qualitat, precisió i transferència] | [Producte, observació, prova...]\n[Criteri 2] | [Ítem] | [NA] | [AS] | [AN] | [AE] | [Evidència]",
+    "inclusion": "Llenguatge clar, descriptors observables, exemples de cada nivell, lectura accessible i ús formatiu de la rúbrica abans del lliurament.",
+    "assessment": "Llegenda orientativa:\nNA: no assolit.\nAS: assoliment satisfactori.\nAN: assoliment notable.\nAE: assoliment excel·lent.\n\nRecordatori: escriu descriptors observables, no judicis generals.",
+    "tags": "plantilla neutra, rúbrica, NA AS AN AE"
   },
-  fitxa: {
-    title: 'Fitxa d’activitats per a l’alumnat', subject: 'Transversal', duration: '1-3 sessions',
-    challenge: 'Activitat amb propòsit clar i producte o resposta final.',
-    knowledge: 'Conceptes clau, procediments i vocabulari necessari.',
-    competences: 'Objectius d’aprenentatge i criteris d’èxit escrits en llenguatge comprensible per a l’alumnat.',
-    sequence: '1. Llegeix el repte.\n2. Revisa l’exemple.\n3. Resol les tasques pas a pas.\n4. Comprova la feina amb la checklist.\n5. Escriu una reflexió final.',
-    inclusion: 'Passos numerats, frases curtes, icones o suports visuals, opcions de resposta i extensió voluntària.',
-    assessment: 'Checklist, autoavaluació i espai de feedback docent.', tags: 'fitxa, activitats'
+  "projecte": {
+    "title": "[Títol del projecte]",
+    "level": "[Curs i grup]",
+    "subject": "[Matèria o àmbit]",
+    "duration": "[Durada prevista]",
+    "challenge": "Repte: [quin problema, necessitat o encàrrec resoldrà el grup?]\n\nCondicions: [restriccions, rols, temps, normes, destinataris]\n\nProducte final: [què s’ha de crear, presentar o implementar?]",
+    "knowledge": "Materials i requisits tècnics:\n- [Material o recurs 1]\n- [Material o recurs 2]\n\nDocumentació:\n- [Diari d’aprenentatge, portafolis, memòria, evidències]",
+    "competences": "Criteris d’èxit del projecte:\n- [Procés de treball]\n- [Qualitat del producte final]\n- [Comunicació]\n- [Reflexió individual]",
+    "sequence": "Fase 1. Llançament\n- Objectiu: entendre el repte\n- Tasques: analitzar context, formar equips\n- Lliurable: contracte o mapa inicial\n- Feedback: docent\n\nFase 2. Planificació\n- Objectiu: organitzar el treball\n- Tasques: rols, calendari, criteris\n- Lliurable: pla de projecte\n- Feedback: docent + equip\n\nFase 3. Desenvolupament\n- Objectiu: crear i provar\n- Tasques: investigació, prototip, millora\n- Lliurable: versió beta\n- Feedback: coavaluació\n\nFase 4. Presentació\n- Objectiu: comunicar el resultat\n- Tasques: exposició, defensa, publicació\n- Lliurable: producte final\n- Feedback: rúbrica\n\nFase 5. Reflexió\n- Objectiu: aprendre del procés\n- Tasques: autoavaluació i millores\n- Lliurable: reflexió final\n- Feedback: metacognició",
+    "inclusion": "Rols cooperatius, bastides, exemples, opcions de producte, temps pautat, normes visibles i suports segons barreres detectades.",
+    "assessment": "Avaluació del projecte:\n- Procés de treball: [__ % / observació, diari, seguiment]\n- Producte final: [__ % / rúbrica de qualitat]\n- Comunicació: [__ % / presentació oral o escrita]\n- Reflexió individual: [__ % / autoavaluació]",
+    "tags": "plantilla neutra, projecte, fases"
   },
-  adaptacio: {
-    title: 'Adaptació inclusiva d’una activitat', subject: 'Transversal', duration: 'Segons activitat base',
-    challenge: 'Mantenir el mateix objectiu d’aprenentatge reduint barreres d’accés, expressió i participació.',
-    knowledge: 'Disseny universal per a l’aprenentatge, bastides, anticipació, llenguatge clar i regulació del temps.',
-    competences: 'Participar, comprendre instruccions, produir evidències i autoregular-se amb suports adequats.',
-    sequence: '1. Simplificar instruccions.\n2. Afegir exemple resolt.\n3. Dividir la tasca en passos.\n4. Oferir formats de resposta alternatius.\n5. Incorporar revisió guiada.',
-    inclusion: 'TDAH: passos curts, temporitzador i pauses. TEA: anticipació, estructura visual i consignes literals. Dislèxia: tipografia clara, menys càrrega lectora i suport oral. TDL: vocabulari previ, frases simples i suport visual.',
-    assessment: 'Avaluar el mateix criteri amb evidències adaptades; prioritzar qualitat de resposta i progrés, no quantitat.', tags: 'TDAH, TEA, dislèxia, TDL'
+  "adaptacio": {
+    "title": "[Adaptació o pla d’inclusió de l’activitat]",
+    "level": "[Curs i grup]",
+    "subject": "[Matèria o àmbit]",
+    "duration": "[Activitat o seqüència afectada]",
+    "challenge": "Barreres possibles: [comprensió lectora, llenguatge, atenció, accés digital, ansietat, ritme, motricitat...]\n\nObjectiu: mantenir el repte competencial ajustant accés, suport i formes de resposta.",
+    "knowledge": "Necessitats detectades:\n- [Necessitat o barrera 1]\n- [Necessitat o barrera 2]\n\nSuports disponibles:\n- [Bastides, parella tutora, glossari, exemples, tecnologia de suport...]",
+    "competences": "Criteris que es mantenen:\n- [Criteri 1]\n- [Criteri 2]\n\nAjustos que no rebaixen objectius:\n- [Temps, format, suport, accés, resposta alternativa]",
+    "sequence": "Mesures universals:\n- Objectius visibles, models, opcions de format, anticipació i temps pautat.\n\nOpcions de resposta:\n- Text, oral, esquema, vídeo, maqueta, mapa visual o resposta guiada.\n\nAjustos d’accés:\n- Temps, espai, lectura de consignes, format accessible i reducció de càrrega no essencial.\n\nSeguiment:\n- [Com sabrem si funciona?]",
+    "inclusion": "Taula de mesures:\nNecessitat detectada | Mesura prevista | Responsable | Seguiment\n[Barrera o necessitat] | [Acció concreta] | [Docent/equip/alumne] | [Indicador de funcionament]\n\nRecordatori: l’adaptació no hauria de rebaixar automàticament el repte competencial.",
+    "assessment": "Avaluació adaptada:\n- Mateix criteri, evidència accessible.\n- Prioritzar qualitat de resposta i progrés.\n- Permetre formats alternatius quan sigui possible.\n- Recollir seguiment i ajustar el suport.",
+    "tags": "plantilla neutra, inclusió, DUA, adaptació"
   }
 };
 
-const EXTRA_TEMPLATES = {
-  sa_matematiques: {
-    title: 'Investiguem dades reals per prendre decisions', level: '3r ESO', subject: 'Matemàtiques', duration: '7 sessions',
-    challenge: 'Context: l’alumnat analitza dades properes del centre o del barri per detectar patrons i prendre decisions justificades.\n\nRepte: com podem interpretar dades reals i comunicar conclusions útils amb arguments matemàtics?\n\nJustificació: la proposta connecta estadística, representació gràfica i pensament crític amb una situació significativa.\n\nProducte final: informe breu amb gràfics, conclusions, recomanacions i presentació oral o visual.',
-    knowledge: 'Blocs de sabers: sentit estocàstic, sentit numèric, representació i comunicació matemàtica.\n\nSabers concrets:\n- Recollida, organització i neteja de dades.\n- Taules de freqüències, gràfics i mesures de centralització.\n- Interpretació crítica de resultats.\n- Comunicació d’arguments matemàtics.',
-    competences: 'Competències específiques: CE1, CE2, CE5, CE6.\n\nCriteris d’avaluació: 1.1, 2.1, 5.1, 6.2.\n\nCompetències transversals:\n- Digital: ús de fulls de càlcul i gràfics.\n- Ciutadana: lectura crítica de dades.\n- Personal i social: treball cooperatiu i revisió de conclusions.',
-    sequence: 'Inicials: activació amb una pregunta sobre dades properes.\nDesenvolupament: recollida, organització i representació de dades.\nEstructuració: interpretació de gràfics, mesures i possibles biaixos.\nAplicació: informe final amb conclusions i recomanacions.',
-    inclusion: 'Mesures i suports universals: exemples resolts, plantilla de càlcul, glossari visual i rols cooperatius.\nTDAH: tasques curtes i temporitzades.\nTEA: seqüència anticipada i criteris explícits.\nDislèxia: lectura reduïda i suport gràfic.\nTDL: vocabulari matemàtic previ i frases model.',
-    assessment: 'Evidències: taula de dades, gràfics, càlculs, informe i exposició.\nInstruments: rúbrica, checklist i autoavaluació.\nRetorn i millora: revisió de gràfics i conclusions abans del lliurament.',
-    tags: 'SA, Matemàtiques ESO, dades, estadística, competencial'
-  },
-  sa_generica: {
-    title: 'Situació d’aprenentatge competencial', level: '2n ESO', subject: 'Matèria o àmbit', duration: '6-8 sessions',
-    challenge: 'Context: situació propera o repte social, científic, tecnològic o cultural.\n\nRepte: pregunta o problema que l’alumnat haurà de comprendre, respondre o transformar.\n\nJustificació: relació amb interessos de l’alumnat, currículum i context del centre.\n\nProducte final: evidència competencial transferible i comunicable.',
-    knowledge: 'Blocs de sabers: sabers curriculars seleccionats i sabers procedimentals necessaris.\n\nSabers concrets:\n- Conceptes clau.\n- Procediments.\n- Estratègies de comunicació.\n- Valors i actituds vinculats al repte.',
-    competences: 'Competències específiques: CE1, CE2, CE3.\n\nCriteris d’avaluació: 1.1, 2.1, 3.1.\n\nCompetències transversals: digital, ciutadana, emprenedora i personal, social i d’aprendre a aprendre.',
-    sequence: 'Inicials: exploració de coneixements previs i presentació del repte.\nDesenvolupament: recerca, pràctica guiada i construcció de sabers.\nEstructuració: síntesi, mapa d’idees o pauta de criteris.\nAplicació: producte final, presentació i transferència.',
-    inclusion: 'Mesures i suports universals: instruccions clares, exemples, bastides, opcions de resposta i revisió guiada.\nTDAH: fragmentació i temporització.\nTEA: estructura visual i previsibilitat.\nDislèxia: suport oral i menys càrrega lectora.\nTDL: vocabulari previ i frases model.',
-    assessment: 'Evidències: procés, producte final i reflexió.\nInstruments: rúbrica, llista de control, coavaluació i autoavaluació.\nRetorn i millora: feedback formatiu i possibilitat de revisió.',
-    tags: 'SA, plantilla general, competencial, inclusió'
-  },
-  projecte_steam: {
-    title: 'Projecte STEAM amb prototip', level: '3r ESO', subject: 'Àmbit STEAM', duration: '4 setmanes',
-    challenge: 'Dissenyar una solució a una necessitat real mitjançant recerca, càlculs, prototipatge i comunicació.',
-    knowledge: 'Procés tecnològic, dades, mesures, representació, sostenibilitat, iteració i comunicació científica.',
-    competences: 'Competències específiques de tecnologia, matemàtiques i ciències. Criteris: 1.1, 2.1, 3.2, 4.1.',
-    sequence: '1. Llançament del repte.\n2. Recerca i definició de requisits.\n3. Disseny i planificació.\n4. Construcció o simulació.\n5. Proves, millores i presentació.',
-    inclusion: 'Rols cooperatius, prototipatge amb opcions de baixa complexitat, suports visuals i rúbrica compartida.',
-    assessment: 'Rúbrica del procés, registre de proves, producte final i defensa oral.', tags: 'projecte, STEAM, prototip'
-  },
-  prova_lomloe: {
-    title: 'Prova competencial amb estímul i pauta de correcció', level: '4t ESO', subject: 'Transversal', duration: '1-2 sessions',
-    challenge: 'Una situació inicial amb dades, text o imatge que exigeix interpretar, aplicar sabers i justificar decisions.',
-    knowledge: 'Sabers vinculats a l’estímul, vocabulari clau, procediments de resolució i argumentació.',
-    competences: 'Criteris d’avaluació: 1.1, 2.1, 3.1. Relacionar cada pregunta amb un criteri i un nivell d’assoliment.',
-    sequence: 'Bloc 1: comprensió de l’estímul.\nBloc 2: aplicació de sabers.\nBloc 3: presa de decisions.\nBloc 4: justificació i transferència.',
-    inclusion: 'Lectura accessible, preguntes numerades, espai per planificar la resposta, suport visual i temps addicional quan calgui.',
-    assessment: 'Pauta de correcció amb criteris LOMLOE, descriptors NA/AS/AN/AE i exemples de resposta esperada.', tags: 'prova, LOMLOE, competencial'
-  }
-};
+const EXTRA_TEMPLATES = {};
 
 const TEMPLATE_LIBRARY = [
-  { id: 'sa_tecnologia', module: 'sa', label: 'SA · Tecnologia ESO · Millora del centre', data: TEMPLATES.sa },
-  { id: 'sa_matematiques', module: 'sa', label: 'SA · Matemàtiques ESO · Dades reals', data: EXTRA_TEMPLATES.sa_matematiques },
-  { id: 'sa_generica', module: 'sa', label: 'SA · Plantilla general competencial', data: EXTRA_TEMPLATES.sa_generica },
-  { id: 'projecte_base', module: 'projecte', label: 'Projecte · Base competencial', data: TEMPLATES.projecte },
-  { id: 'projecte_steam', module: 'projecte', label: 'Projecte · STEAM amb prototip', data: EXTRA_TEMPLATES.projecte_steam },
-  { id: 'sessio_base', module: 'sessio', label: 'Sessió · Guiada', data: TEMPLATES.sessio },
-  { id: 'rubrica_base', module: 'rubrica', label: 'Rúbrica · Quadre NA/AS/AN/AE', data: TEMPLATES.rubrica },
-  { id: 'prova_base', module: 'prova', label: 'Prova · Competencial base', data: TEMPLATES.prova },
-  { id: 'prova_lomloe', module: 'prova', label: 'Prova · LOMLOE amb estímul', data: EXTRA_TEMPLATES.prova_lomloe },
-  { id: 'fitxa_base', module: 'fitxa', label: 'Fitxa · Activitats alumnat', data: TEMPLATES.fitxa },
-  { id: 'adaptacio_base', module: 'adaptacio', label: 'Adaptació · TDAH, TEA, dislèxia i TDL', data: TEMPLATES.adaptacio }
+  { id: 'sa_neutra', module: 'sa', label: 'SA · Plantilla neutra competencial', data: TEMPLATES.sa },
+  { id: 'projecte_neutre', module: 'projecte', label: 'Projecte · Plantilla neutra', data: TEMPLATES.projecte },
+  { id: 'sessio_neutra', module: 'sessio', label: 'Sessió · Plantilla neutra', data: TEMPLATES.sessio },
+  { id: 'rubrica_neutra', module: 'rubrica', label: 'Rúbrica · Plantilla neutra NA/AS/AN/AE', data: TEMPLATES.rubrica },
+  { id: 'prova_neutra', module: 'prova', label: 'Prova · Plantilla neutra competencial', data: TEMPLATES.prova },
+  { id: 'fitxa_neutra', module: 'fitxa', label: 'Fitxa · Plantilla neutra d’activitat', data: TEMPLATES.fitxa },
+  { id: 'adaptacio_neutra', module: 'adaptacio', label: 'Adaptació / inclusió · Plantilla neutra', data: TEMPLATES.adaptacio }
 ];
 
 
@@ -5554,7 +5536,7 @@ init();
   window.docentKitSequence2411={version:DK2411, fillSessions, extractSequenceParts};
 })();
 
-// ===== v2.5.0: poliment final de camps IA, durada i frases tallades =====
+// ===== v2.5.1: poliment final de camps IA, durada i frases tallades =====
 (function(){
   const DK2412='2.4.12';
   const prevMap = typeof mapImportedTemplateText === 'function' ? mapImportedTemplateText : null;
@@ -5774,7 +5756,7 @@ init();
     if (typeof prevRestructure2412 === 'function') prevRestructure2412();
     setTimeout(()=>{
       sanitizeCurrentSa2412();
-      try{ if(typeof showToast==='function') showToast('SA sanejada amb v2.5.0: durada, repte, producte, objectius, instruments i mesures revisats.'); }catch(e){}
+      try{ if(typeof showToast==='function') showToast('SA sanejada amb v2.5.1: durada, repte, producte, objectius, instruments i mesures revisats.'); }catch(e){}
     },90);
   };
 
@@ -5789,9 +5771,9 @@ init();
   window.docentKitPoliment2412={version:DK2412, sanitizeCurrentSa:sanitizeCurrentSa2412, sanitizeMapped};
 })();
 
-/* DocentKit v2.5.0 - mòduls paral·lels i fitxes derivades de SA */
+/* DocentKit v2.5.1 - mòduls paral·lels i fitxes derivades de SA */
 (function(){
-  const DK250='v2.5.0';
+  const DK250='v2.5.1';
   function norm(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
   function cleanBullets(text){return String(text||'').split('\n').map(x=>x.trim()).filter(Boolean).map(x=>x.replace(/^[-•*]\s*/,'')).filter(Boolean);}
   function asList(items){const arr=Array.isArray(items)?items:cleanBullets(items); return arr.length?`<ul>${arr.map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul>`:'<p>—</p>';}
@@ -5897,4 +5879,343 @@ init();
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', bind250); else bind250();
   window.docentKit250={version:DK250, deriveFitxaFromSa:deriveFitxaFromSa250, deriveSessioFromSa:deriveSessioFromSa250, deriveProvaFromSa:deriveProvaFromSa250};
+})();
+
+/* DocentKit v2.5.1 - fitxes derivades de SA amb lectura robusta de camps */
+(function(){
+  const DK251='v2.5.1';
+  function val(id){const el=document.getElementById(id); return el?String(el.value||''):'';}
+  function set(id,v){const el=document.getElementById(id); if(el) el.value=Array.isArray(v)?v.join('\n'):String(v||'');}
+  function clean(s){return String(s||'').replace(/\r/g,'').replace(/\*\*/g,'').replace(/#{1,6}\s*/g,'').replace(/\bIA assistida\b/gi,'').replace(/Esborrany IA complet pendent de mapatge automàtic:?/gi,'').replace(/[ \t]+/g,' ').replace(/\n{3,}/g,'\n\n').trim();}
+  function lines(s){return clean(s).split('\n').map(x=>x.trim().replace(/^[-•*]\s*/,'')).filter(Boolean);}
+  function firstSentence(s){const t=clean(s); const m=t.match(/^(.{25,260}?[.!?])\s/); return (m?m[1]:t.split('\n')[0]||'').trim();}
+  function section(text, names){
+    const src='\n'+clean(text)+'\n';
+    for(const name of names){
+      const re=new RegExp('\\n\\s*(?:#{1,4}\\s*)?'+name+'\\s*:?\\s*\\n?([\\s\\S]*?)(?=\\n\\s*(?:#{1,4}\\s*)?(?:Context|Repte|Justificaci[oó]|Producte final|Compet[eè]ncies|Criteris|Objectius|Sabers|Seq[uü][eè]ncia|Desenvolupament|Metodologia|Recursos|Materials|Evid[eè]ncies|Instruments|Retorn|R[uú]brica|Mesures|Vectors)\\s*:?|$)','i');
+      const m=src.match(re); if(m&&clean(m[1])) return clean(m[1]);
+    }
+    return '';
+  }
+  function extractProduct(d){
+    const combined=[d.challenge,d.assessment,d.sequence].join('\n');
+    let p=section(combined,['Producte final','Producte','Lliurable','Entrega']);
+    if(!p){
+      const m=combined.match(/producte\s+final\s*:?\s*([^\n.]+(?:\.[^\n]*)?)/i); if(m) p=m[1];
+    }
+    p=clean(p).split('\n').filter(x=>!/CRITERI|NA\s*:|AS\s*:|AN\s*:|AE\s*:|R[uú]brica/i.test(x)).join('\n');
+    if(!p || /^(producte|prototip|documentaci[oó]|presentaci[oó]|evid[eè]ncia)/i.test(p) && p.length<80) p='Producte o evidència final de l’activitat, documentat amb els passos seguits i una breu reflexió de millora.';
+    return p;
+  }
+  function extractRepte(d){
+    const combined=[d.challenge,d.title].join('\n');
+    let r=section(combined,['Repte','Pregunta guia','Missi[oó]']);
+    if(!r) r=firstSentence(d.challenge);
+    r=clean(r).replace(/^Repte\s*:?\s*/i,'');
+    if(!r || r.length<20 || /^(d['’]enginyeria real|producte final|situaci[oó] d)/i.test(r)) r=`Com podem resoldre el repte plantejat a “${d.title||'aquesta activitat'}” aplicant els sabers treballats i justificant les decisions preses?`;
+    return r;
+  }
+  function extractMaterials(d){
+    const src=[d.knowledge,d.sequence,d.inclusion].join('\n');
+    let mat=section(src,['Materials i recursos','Materials','Recursos','Eines']);
+    const keyword=[];
+    const k=['Tinkercad','ordinador','tauleta','cartro','cartró','xeringues','tubs','tisores','cúter','cuter','silicona','protoboard','multímetre','multimetre','Arduino','filferro','regle','llapis','pistola de silicona','cola','fusta'];
+    k.forEach(w=>{if(new RegExp(w,'i').test(src)) keyword.push(w.replace('cartro','cartró').replace('cuter','cúter').replace('multimetre','multímetre'));});
+    const out=[mat, keyword.length?`Eines o recursos detectats: ${[...new Set(keyword)].join(', ')}.`:''].filter(Boolean).join('\n');
+    return out || 'Materials indicats pel docent, full de treball i recursos de suport necessaris per completar l’activitat.';
+  }
+  function extractSessionSteps(seq){
+    const src=clean(seq);
+    const sessions=[];
+    const re=/Sess[ií]o\s*(\d+)\s*:?\s*([\s\S]*?)(?=\n\s*[-•*]?\s*Sess[ií]o\s*\d+\s*:|$)/gi;
+    let m;
+    while((m=re.exec(src))){
+      const n=m[1]; const body=clean(m[2]).split('\n').map(x=>x.replace(/^[-•*]\s*/,'').trim()).filter(Boolean).slice(0,3).join(' ');
+      if(body) sessions.push(`Sessió ${n}: ${body}`);
+    }
+    if(sessions.length) return sessions;
+    const l=lines(src).filter(x=>!/^Metodologia|Organitzaci[oó]|Recursos|Materials|Espais\s*:/i.test(x));
+    return l.slice(0,12);
+  }
+  function extractCriteria(d){
+    const src=clean(d.competences+'\n'+d.assessment);
+    const ca=section(src,['Criteris d’avaluaci[oó]','Criteris']);
+    let arr=lines(ca||src).filter(x=>/\b\d+\.\d+\b|criteri|avaluaci/i.test(x)).slice(0,8);
+    if(!arr.length) arr=['Comprenc el repte i els criteris d’èxit.', 'Segueixo els passos de treball amb ordre.', 'Justifico les decisions preses.', 'Reviso el producte final abans de lliurar-lo.'];
+    return arr;
+  }
+  function extractInstruments(d){
+    const src=clean(d.assessment+'\n'+d.sequence);
+    const instruments=section(src,['Instruments','Instruments d’avaluaci[oó]']);
+    if(instruments && !/^[-•*]?$/.test(instruments)) return instruments;
+    const found=[];
+    [['rúbrica','Rúbrica'],['checklist|llista de control','Llista de control'],['observaci','Observació docent'],['autoavaluaci','Autoavaluació'],['coavaluaci','Coavaluació'],['mem[oò]ria|documentaci','Memòria o documentació'],['presentaci','Presentació oral o visual'],['fitxa','Fitxa de treball']].forEach(([pat,label])=>{ if(new RegExp(pat,'i').test(src)) found.push(label); });
+    return (found.length?[...new Set(found)]:['Rúbrica o checklist', 'Observació docent', 'Autoavaluació breu']).join('\n');
+  }
+  function buildFitxaSequence(d){
+    const steps=extractSessionSteps(d.sequence);
+    const repte=extractRepte(d);
+    const product=extractProduct(d);
+    const intro=[`Llegeix el repte: ${repte}`, `Identifica què has d’entregar: ${product}`];
+    const final=['Revisa el resultat amb la checklist de qualitat.', 'Escriu una reflexió final: què has après, què ha funcionat i què milloraries.'];
+    return [...intro, ...steps, ...final].map((x,i)=>`${i+1}. ${x.replace(/^\d+[.)]\s*/,'')}`).join('\n');
+  }
+  function deriveFitxaFromSa251(){
+    const d=(typeof getFormData==='function')?getFormData():{title:val('title'),level:val('level'),subject:val('subject'),duration:val('duration'),type:val('type'),challenge:val('challenge'),knowledge:val('knowledge'),competences:val('competences'),sequence:val('sequence'),inclusion:val('inclusion'),assessment:val('assessment'),tags:val('tags')};
+    const title=d.title||'activitat';
+    const repte=extractRepte(d);
+    const product=extractProduct(d);
+    const materials=extractMaterials(d);
+    const criteria=extractCriteria(d).map(x=>`- ${x.replace(/^[-•*]\s*/,'')}`).join('\n');
+    const instruments=extractInstruments(d).split('\n').map(x=>`- ${x.replace(/^[-•*]\s*/,'')}`).join('\n');
+    const fitxa={
+      ...d,
+      type:'Fitxa d’activitats',
+      title:'Fitxa · '+title,
+      challenge:`Repte de la fitxa: ${repte}\n\nQuè hauràs d’entregar: ${product}`,
+      knowledge:`Materials i recursos:\n${materials}\n\nSabers necessaris:\n${clean(d.knowledge).split('\n').slice(0,14).join('\n')}`,
+      competences:`Criteris d’èxit de la fitxa:\n${criteria}`,
+      sequence:buildFitxaSequence(d),
+      inclusion:clean(d.inclusion)||'Instruccions fragmentades, model visual, temps de revisió, opció de resposta oral o visual i suport docent puntual quan calgui.',
+      assessment:`Evidències de lliurament:\n- ${product}\n- Registre del procés o fitxa completada\n\nInstruments d’avaluació:\n${instruments}\n\nRetorn i millora:\n- Feedback docent durant el procés\n- Revisió final abans del lliurament\n- Autoavaluació breu`,
+      tags:Array.isArray(d.tags)?[...d.tags,'fitxa des de SA v2.5.1']:'fitxa des de SA v2.5.1'
+    };
+    ['title','level','subject','duration','type','challenge','knowledge','competences','sequence','inclusion','assessment','tags'].forEach(k=>set(k,fitxa[k]));
+    if(typeof setModule==='function') setModule('fitxa');
+    try{ if(typeof renderReport==='function') renderReport((typeof getFormData==='function')?getFormData():fitxa); }catch(e){}
+    try{ if(typeof scrollReportIntoView==='function') scrollReportIntoView(); }catch(e){}
+    try{ if(typeof showToast==='function') showToast('Fitxa creada des de la SA amb lectura reforçada de repte, producte, seqüència, recursos i instruments.'); }catch(e){}
+  }
+  function bind251(){
+    const old=document.getElementById('deriveFitxaBtn');
+    if(old && !old.dataset.dk251){
+      const btn=old.cloneNode(true); btn.dataset.dk251='1';
+      old.parentNode.replaceChild(btn, old);
+      btn.addEventListener('click', deriveFitxaFromSa251);
+    }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', bind251); else bind251();
+  window.docentKit251={version:DK251, deriveFitxaFromSa:deriveFitxaFromSa251};
+})();
+
+/* DocentKit v2.5.3 - derivacions completes des de SA */
+(function(){
+  const DK252 = 'v2.5.3';
+  function el(id){ return document.getElementById(id); }
+  function val(id){ const node = el(id); return node ? String(node.value || '') : ''; }
+  function setv(id, value){ const node = el(id); if(node) node.value = Array.isArray(value) ? value.join('\n') : String(value || ''); }
+  function clean(text){
+    return String(text || '')
+      .replace(/\r/g, '')
+      .replace(/\*\*/g, '')
+      .replace(/#{1,6}\s*/g, '')
+      .replace(/\bIA assistida\b/gi, '')
+      .replace(/Esborrany IA complet pendent de mapatge autom[aà]tic:?/gi, '')
+      .replace(/[ \t]+/g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  }
+  function lines(text){
+    return clean(text).split('\n').map(x => x.trim().replace(/^[-•*]\s*/, '')).filter(Boolean);
+  }
+  function firstSentence(text){
+    const t = clean(text);
+    const m = t.match(/^(.{25,260}?[.!?])\s/);
+    return (m ? m[1] : (t.split('\n')[0] || '')).trim();
+  }
+  function getData(){
+    return (typeof getFormData === 'function') ? getFormData() : {
+      type: val('type'), title: val('title'), level: val('level'), subject: val('subject'), duration: val('duration'),
+      challenge: val('challenge'), knowledge: val('knowledge'), competences: val('competences'), sequence: val('sequence'),
+      inclusion: val('inclusion'), assessment: val('assessment'), tags: val('tags')
+    };
+  }
+  function apply(data, moduleId, toast){
+    if(typeof setModule === 'function') setModule(moduleId);
+    ['type','title','level','subject','duration','challenge','knowledge','competences','sequence','inclusion','assessment','tags'].forEach(k => setv(k, data[k] || ''));
+    try { if(typeof renderReport === 'function') renderReport((typeof getFormData === 'function') ? getFormData() : data); } catch(e) {}
+    try { if(typeof scrollReportIntoView === 'function') scrollReportIntoView(); } catch(e) {}
+    try { if(typeof showToast === 'function') showToast(toast || 'Recurs creat des de la SA.'); } catch(e) {}
+  }
+  function section(text, names){
+    const src = '\n' + clean(text) + '\n';
+    const stops = 'Context|Repte|Justificaci[oó]|Producte final|Producte|Lliurable|Compet[eè]ncies|Criteris|Objectius|Sabers|Seq[uü][eè]ncia|Desenvolupament|Metodologia|Recursos|Materials|Evid[eè]ncies|Instruments|Retorn|R[uú]brica|Mesures|Vectors|Normes';
+    for(const name of names){
+      const re = new RegExp('\\n\\s*(?:#{1,4}\\s*)?' + name + '\\s*:?\\s*\\n?([\\s\\S]*?)(?=\\n\\s*(?:#{1,4}\\s*)?(?:' + stops + ')\\s*:?|$)', 'i');
+      const m = src.match(re);
+      if(m && clean(m[1])) return clean(m[1]);
+    }
+    return '';
+  }
+  function repte(d){
+    let r = section(d.challenge, ['Repte','Pregunta guia','Missi[oó]']);
+    if(!r) r = firstSentence(d.challenge);
+    r = clean(r).replace(/^Repte\s*:?\s*/i, '');
+    if(!r || r.length < 20 || /^(producte final|d['’]enginyeria real|situaci[oó])/i.test(r)) {
+      r = `Com podem resoldre el repte de “${d.title || 'aquesta activitat'}” aplicant els sabers treballats i justificant les decisions preses?`;
+    }
+    return r;
+  }
+  function producte(d){
+    let p = section(d.challenge + '\n' + d.assessment, ['Producte final','Producte','Lliurable','Entrega']);
+    if(!p){ const m = (d.challenge + '\n' + d.assessment).match(/producte\s+final\s*:?\s*([^\n.]+(?:\.[^\n]*)?)/i); if(m) p = m[1]; }
+    p = lines(p).filter(x => !/CRITERI|NA\s*:|AS\s*:|AN\s*:|AE\s*:|R[uú]brica|Compet[eè]ncies|Criteris/i.test(x)).join('\n');
+    if(!p || p.length < 30 || /^(producte final funcional|producte, prototip|acompanyat d['’]?\s*$)/i.test(p)) {
+      p = 'Producte final observable i documentat, amb evidències del procés seguit, decisions preses, resultat obtingut i una breu reflexió de millora.';
+    }
+    return p;
+  }
+  function materials(d){
+    const src = [d.knowledge, d.sequence, d.inclusion, d.challenge].join('\n');
+    let out = section(src, ['Materials i recursos','Materials','Recursos','Eines']);
+    const found = [];
+    const words = ['Tinkercad','ordinador','tauleta','cartró','xeringues','tubs','tisores','cúter','silicona','protoboard','multímetre','Arduino','filferro','regle','llapis','fusta','paper','cola','impressora 3D','trepant'];
+    words.forEach(w => { if(new RegExp(w.replace('ú','[uú]').replace('ó','[oó]'), 'i').test(src)) found.push(w); });
+    if(found.length) out += (out ? '\n' : '') + 'Materials o eines detectats: ' + [...new Set(found)].join(', ') + '.';
+    return clean(out) || 'Materials i recursos indicats pel docent, full de treball, espai de treball i recursos de suport necessaris.';
+  }
+  function criteria(d){
+    const src = clean(d.competences + '\n' + d.assessment);
+    let ca = section(src, ['Criteris d.avaluaci[oó]','Criteris']);
+    let arr = lines(ca || src).filter(x => /\b\d+\.\d+\b|criteri|avaluaci/i.test(x)).slice(0,8);
+    if(!arr.length) arr = ['Comprensió del repte i del context.', 'Aplicació dels sabers i procediments.', 'Planificació i procés de treball.', 'Qualitat del producte final.', 'Comunicació i reflexió final.'];
+    return arr;
+  }
+  function instruments(d){
+    const src = clean(d.assessment + '\n' + d.sequence);
+    const explicit = section(src, ['Instruments','Instruments d.avaluaci[oó]']);
+    if(explicit && !/^[-•*]?$/.test(explicit)) return lines(explicit);
+    const found = [];
+    [['r[uú]brica','Rúbrica'],['checklist|llista de control','Llista de control'],['observaci','Observació docent'],['autoavaluaci','Autoavaluació'],['coavaluaci','Coavaluació'],['mem[oò]ria|documentaci','Memòria o documentació'],['presentaci','Presentació oral o visual'],['fitxa','Fitxa de treball'],['prova','Prova competencial']].forEach(([pat,label]) => { if(new RegExp(pat,'i').test(src)) found.push(label); });
+    return found.length ? [...new Set(found)] : ['Rúbrica o checklist', 'Observació docent', 'Autoavaluació breu'];
+  }
+  function sessions(d){
+    const src = clean(d.sequence);
+    const out = [];
+    const re = /Sess[ií]o\s*(\d+)\s*:?\s*([\s\S]*?)(?=\n\s*[-•*]?\s*Sess[ií]o\s*\d+\s*:|$)/gi;
+    let m;
+    while((m = re.exec(src))){
+      const body = lines(m[2]).slice(0,3).join(' ');
+      if(body) out.push(`Sessió ${m[1]}: ${body}`);
+    }
+    if(out.length) return out;
+    const l = lines(src).filter(x => !/^Metodologia|Organitzaci[oó]|Recursos|Materials|Espais\s*:/i.test(x));
+    return l.length ? l.slice(0,12) : ['Presentació del repte i criteris d’èxit.', 'Desenvolupament guiat de les tasques principals.', 'Revisió, retorn i millora del producte final.'];
+  }
+  function inclusionBase(d){
+    return clean(d.inclusion) || 'Instruccions fragmentades, model visual, checklist, rols cooperatius, temps de revisió, opcions de resposta oral o visual i suport docent puntual.';
+  }
+  function buildRubricRows(d){
+    return criteria(d).slice(0,6).map((c,i) => {
+      const item = c.replace(/^[-•*]\s*/, '').replace(/^\d+\.\d+\s*\.?\s*/, '').slice(0,120) || ['Comprensió del repte','Aplicació dels sabers','Procés de treball','Producte final','Comunicació','Reflexió i millora'][i] || 'Criteri';
+      return `CRITERI ${i+1}: ${item}\nNA: Mostra dificultats importants o necessita molta ajuda per assolir aquest criteri.\nAS: Assoliment bàsic amb suport puntual i evidències suficients.\nAN: Assoliment notable, coherent i força autònom, amb justificació adequada.\nAE: Assoliment excel·lent, autònom, precís i transferible a altres situacions.`;
+    }).join('\n\n');
+  }
+  function makeProjectFromSa(){
+    const d = getData();
+    const ph = sessions(d);
+    const data = {...d,
+      type: 'Projecte',
+      title: 'Projecte · ' + (d.title || 'repte competencial'),
+      challenge: `Repte del projecte: ${repte(d)}\n\nProducte final: ${producte(d)}`,
+      knowledge: `Sabers i coneixements de base:\n${clean(d.knowledge)}\n\nMaterials i recursos:\n${materials(d)}`,
+      competences: `Criteris d’èxit i avaluació:\n${criteria(d).map(x => '- ' + x).join('\n')}`,
+      sequence: ['Fases del projecte:', ...ph.map((x,i) => `${i+1}. ${x.replace(/^Sessió\s*\d+\s*:?\s*/,'')}`), 'Presentació final, retorn i millora.'].join('\n'),
+      inclusion: inclusionBase(d),
+      assessment: `Evidències del projecte:\n- ${producte(d)}\n- Registre del procés\n- Presentació o explicació final\n\nInstruments:\n${instruments(d).map(x => '- ' + x).join('\n')}`,
+      tags: 'projecte des de SA, ' + (Array.isArray(d.tags) ? d.tags.join(', ') : (d.tags || ''))
+    };
+    apply(data, 'projecte', 'Projecte creat des de la SA.');
+  }
+  function makeSessionFromSa(){
+    const d = getData();
+    const ss = sessions(d);
+    const chosen = ss[0] || repte(d);
+    const data = {...d,
+      type: 'Sessió',
+      title: 'Sessió · ' + (d.title || 'activitat'),
+      duration: '1 sessió',
+      challenge: `Objectiu de la sessió: avançar en el repte “${repte(d)}”.\n\nActivitat central: ${chosen}`,
+      knowledge: `Sabers activats en aquesta sessió:\n${lines(d.knowledge).slice(0,8).map(x=>'- '+x).join('\n')}`,
+      competences: `Criteris observables de sessió:\n${criteria(d).slice(0,4).map(x=>'- '+x).join('\n')}`,
+      sequence: `Inici:\n- Recordatori del repte, objectiu de la sessió i criteris d’èxit.\n\nDesenvolupament:\n- ${chosen.replace(/^Sessió\s*\d+\s*:?\s*/,'')}\n- Treball individual, en parelles o en grup segons la tasca.\n\nTancament:\n- Evidència ràpida de sortida.\n- Revisió de dificultats i proper pas.`,
+      inclusion: inclusionBase(d),
+      assessment: `Evidència de sortida, observació docent i autoavaluació breu.\n\nInstruments possibles:\n${instruments(d).map(x=>'- '+x).join('\n')}`,
+      tags: 'sessió des de SA, ' + (Array.isArray(d.tags) ? d.tags.join(', ') : (d.tags || ''))
+    };
+    apply(data, 'sessio', 'Sessió creada des de la SA.');
+  }
+  function makeRubricFromSa(){
+    const d = getData();
+    const data = {...d,
+      type: 'Rúbrica',
+      title: 'Rúbrica · ' + (d.title || 'activitat'),
+      challenge: `Aquesta rúbrica avalua el repte: ${repte(d)}\n\nProducte final: ${producte(d)}`,
+      knowledge: `Sabers i evidències que es tenen en compte:\n${lines(d.knowledge).slice(0,10).map(x=>'- '+x).join('\n')}`,
+      competences: criteria(d).map(x => '- ' + x).join('\n'),
+      sequence: buildRubricRows(d),
+      inclusion: 'Compartir la rúbrica abans de començar, explicar els descriptors amb exemples i permetre autoavaluació i millora abans del lliurament final.',
+      assessment: buildRubricRows(d),
+      tags: 'rúbrica des de SA, ' + (Array.isArray(d.tags) ? d.tags.join(', ') : (d.tags || ''))
+    };
+    apply(data, 'rubrica', 'Rúbrica creada des de la SA.');
+  }
+  function makeTestFromSa(){
+    const d = getData();
+    const qs = [
+      `Identifica el problema o necessitat del repte: ${repte(d)}`,
+      'Explica quins sabers són necessaris per resoldre la situació.',
+      'Justifica una decisió tècnica, organitzativa o metodològica del procés.',
+      'Interpreta una evidència, resultat o error i proposa una millora.',
+      'Relaciona el producte final amb els criteris d’èxit i l’impacte de la proposta.'
+    ];
+    const data = {...d,
+      type: 'Prova competencial',
+      title: 'Prova competencial · ' + (d.title || 'repte'),
+      duration: '1 sessió',
+      challenge: `Estímul: ${repte(d)}\n\nProducte o situació de referència: ${producte(d)}`,
+      knowledge: `Sabers que entren a la prova:\n${lines(d.knowledge).slice(0,12).map(x=>'- '+x).join('\n')}`,
+      competences: `Criteris vinculats:\n${criteria(d).map(x=>'- '+x).join('\n')}`,
+      sequence: qs.map((q,i)=>`${i+1}. ${q}`).join('\n'),
+      inclusion: 'Lectura accessible de l’estímul, temps de planificació, preguntes numerades, espai per justificar respostes i suport visual si cal.',
+      assessment: `Pauta de correcció:\n${criteria(d).slice(0,5).map((x,i)=>`${i+1}. ${x}: resposta completa, justificada i amb vocabulari adequat.`).join('\n')}`,
+      tags: 'prova competencial des de SA, ' + (Array.isArray(d.tags) ? d.tags.join(', ') : (d.tags || ''))
+    };
+    apply(data, 'prova', 'Prova competencial creada des de la SA.');
+  }
+  function makeAdaptationFromSa(){
+    const d = getData();
+    const data = {...d,
+      type: 'Adaptació inclusiva',
+      title: 'Adaptació · ' + (d.title || 'activitat'),
+      challenge: `Activitat o repte a adaptar:\n${repte(d)}\n\nProducte final que es manté:\n${producte(d)}`,
+      knowledge: `Barreres possibles:\n- Comprensió de consignes llargues o abstractes.\n- Planificació i gestió del temps.\n- Càrrega lectora o d’escriptura.\n- Organització del material i del grup.\n- Vocabulari tècnic o específic.`,
+      competences: `Objectius i criteris que no es rebaixen:\n${criteria(d).map(x=>'- '+x).join('\n')}`,
+      sequence: `Abans de començar:\n- Anticipar fases, producte final i criteris d’èxit.\n- Donar model o exemple parcial.\n\nDurant l’activitat:\n- Fragmentar tasques, assignar rols i revisar punts intermedis.\n- Oferir suport visual i comprovacions de comprensió.\n\nAl final:\n- Permetre explicar oralment part del procés.\n- Fer autoavaluació guiada i proposta de millora.`,
+      inclusion: `Mesures generals:\n${inclusionBase(d)}\n\nTDAH:\n- Tasques curtes, temporitzador, rol actiu i objectius parcials.\n\nTEA:\n- Anticipació, estructura visual, consignes literals i exemple acabat.\n\nDislèxia:\n- Tipografia clara, reducció de còpia, suport oral i temps addicional.\n\nTDL:\n- Vocabulari anticipat, frases model, suport visual i comprovació de comprensió.`,
+      assessment: `Avaluació adaptada sense rebaixar objectius:\n- Mateixos criteris essencials.\n- Diversitat d’evidències: oral, visual, escrita, prototip, enregistrament o esquema.\n- Feedback formatiu i oportunitat de millora.\n- Instruments: ${instruments(d).join(', ')}.`,
+      tags: 'adaptació des de SA, ' + (Array.isArray(d.tags) ? d.tags.join(', ') : (d.tags || ''))
+    };
+    apply(data, 'adaptacio', 'Adaptació inclusiva creada des de la SA.');
+  }
+  function bind(){
+    const mapping = [
+      ['deriveSessioBtn', makeSessionFromSa],
+      ['deriveProjecteBtn', makeProjectFromSa],
+      ['deriveRubricaBtn', makeRubricFromSa],
+      ['deriveProvaBtn', makeTestFromSa],
+      ['deriveAdaptacioBtn', makeAdaptationFromSa]
+    ];
+    mapping.forEach(([id, fn]) => {
+      const old = el(id);
+      if(old && !old.dataset.dk252){
+        const btn = old.cloneNode(true);
+        btn.dataset.dk252 = '1';
+        old.parentNode.replaceChild(btn, old);
+        btn.addEventListener('click', fn);
+      }
+    });
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind); else bind();
+  window.docentKit252 = { version: DK252, makeProjectFromSa, makeSessionFromSa, makeRubricFromSa, makeTestFromSa, makeAdaptationFromSa };
 })();

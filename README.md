@@ -1,3 +1,28 @@
+# DocentKit v2.5.3 · Plantilles neutres per tipus de recurs
+
+Aquesta versió integra plantilles neutres per a cada mòdul: situació d’aprenentatge, fitxa d’activitat, sessió, prova competencial, rúbrica, projecte i adaptació/inclusió.
+
+## Canvis principals
+
+- La plantilla general ja no força cap curs, matèria ni nivell concret.
+- Cada tipus de recurs té una estructura pròpia, inspirada en plantilles docents competencials editables.
+- Les fitxes d’activitat se centren en objectiu, consigna, materials, lliurable, passos, checklist i criteris d’èxit.
+- Les sessions separen inici, desenvolupament, tancament, accions del docent, accions de l’alumnat, temps i evidència de sortida.
+- Les proves competencials inclouen context, estímul, sabers mobilitzats, preguntes, puntuació i pauta de correcció.
+- Les rúbriques mantenen criteri, ítem observable, NA, AS, AN, AE i evidència/instrument.
+- Els projectes inclouen repte, condicions, materials, producte final, documentació, fases i avaluació.
+- Les adaptacions/inclusió separen barreres, mesures universals, suports, opcions de resposta, ajustos d’accés i seguiment.
+- Cache actualitzada a `docentkit-v2-5-3`.
+
+## Ús recomanat
+
+1. Tria el mòdul que necessites.
+2. Selecciona la plantilla neutra corresponent.
+3. Substitueix els camps entre claudàtors o genera amb IA a partir d’aquest esquelet.
+4. Revisa el recurs abans d’exportar-lo.
+
+---
+
 # DocentKit · Generador de situacions i recursos
 
 Versió 1.9 de la PWA educativa en català per a docents.
@@ -250,7 +275,7 @@ Flux recomanat:
 5. Exporta per Programació LOMLOE.
 
 
-## v2.5.0 · Poliment final de camps IA
+## v2.5.2 · Poliment final de camps IA
 
 - Sanejament més estricte de camps generats amb IA.
 - Evita que fragments llargs o descripcions completes acabin dins del camp de durada.
@@ -260,9 +285,31 @@ Flux recomanat:
 - Reestructura SA aplica també aquest sanejament final.
 
 
-## v2.5.0 · Mòduls en paral·lel i fitxes des de SA
+## v2.5.2 · Mòduls en paral·lel i fitxes des de SA
 
 - Les opcions del menú lateral generen documents diferenciats: SA, projecte, sessió, rúbrica, prova competencial, fitxa d’activitats i adaptació inclusiva.
 - S’afegeixen botons per crear una fitxa, una sessió o una prova a partir de la SA actual.
 - Les fitxes d’activitat aprofiten repte, producte final, sabers, seqüència, instruments, mesures i rúbrica de la SA.
 - Aquesta versió separa millor el format de cada recurs i evita que tots els recursos surtin com una SA.
+
+
+## v2.5.2 · Fitxes des de SA millorades
+
+- Millora el botó **Crea fitxa des de la SA**.
+- Llegeix millor repte, producte final, materials, seqüència, criteris, instruments i mesures.
+- Evita que la fitxa agafi només fragments genèrics o camps equivocats de la SA.
+- Genera una fitxa amb passos per a l’alumnat, checklist, evidències i instruments d’avaluació.
+
+
+## v2.5.2 · Derivacions completes des de SA
+
+Aquesta versió activa i reforça totes les derivacions principals a partir d'una SA revisada:
+
+- Crea fitxa des de la SA.
+- Crea sessió des de la SA.
+- Crea projecte des de la SA.
+- Crea rúbrica des de la SA.
+- Crea prova competencial des de la SA.
+- Crea adaptació inclusiva des de la SA.
+
+Cada derivació intenta llegir repte, producte final, sabers, seqüència, criteris, instruments i mesures, i genera un recurs amb estructura pròpia.
