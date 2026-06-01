@@ -1,6 +1,6 @@
-# DocentKit v2.5.7 · Fitxes coherents des de SA
+# DocentKit v2.5.8 · Derivacions actives des de SA
 
-## Correcció v2.5.7
+## Correcció v2.5.8
 
 - El botó **Crea fitxa des de la SA** ja no arrossega metodologia, organització, seguretat, CE/CA o objectius com si fossin passos de l’alumnat.
 - Les fitxes es construeixen amb una estructura pròpia: objectiu, consigna, lliurable, materials, passos, checklist, suports i avaluació.
@@ -8,9 +8,9 @@
 - El bloc **Checklist de qualitat** mostra ítems breus i observables, no llistes llargues de competències.
 - Cache actualitzada a `docentkit-v2-5-7`.
 
-# DocentKit v2.5.7 · Derivacions netes i exportació sense manteniment
+# DocentKit v2.5.8 · Derivacions netes i exportació sense manteniment
 
-## Correcció v2.5.7
+## Correcció v2.5.8
 
 - Les derivacions des d’una SA cap a fitxa, sessió, projecte, rúbrica, prova i adaptació netegen placeholders de plantilla abans de generar el nou recurs.
 - Les fitxes i la resta de recursos ja no haurien d’arrossegar textos genèrics entre claudàtors, com `[exemple resolt...]`, `[lliurable...]` o `[instrument...]`.
@@ -18,12 +18,12 @@
 - El document exportat passa per un sanejament de sortida per evitar textos interns, placeholders i camps buits disfressats de contingut.
 - Cache actualitzada a `docentkit-v2-5-7`.
 
-# DocentKit v2.5.7 · Plantilles actives, derivacions netes i exportació sense manteniment
+# DocentKit v2.5.8 · Plantilles actives, derivacions netes i exportació sense manteniment
 
 Aquesta versió integra plantilles neutres per a cada mòdul: situació d’aprenentatge, fitxa d’activitat, sessió, prova competencial, rúbrica, projecte i adaptació/inclusió.
 
 
-## Correcció v2.5.7
+## Correcció v2.5.8
 
 - Quan es tria una opció del menú lateral (SA, projecte, sessió, rúbrica, prova, fitxa o adaptació), ara es carrega automàticament la plantilla neutra corresponent.
 - El selector de plantilla també aplica la plantilla en canviar d'opció, no només quan es prem el botó.
@@ -342,9 +342,13 @@ Aquesta versió activa i reforça totes les derivacions principals a partir d'un
 Cada derivació intenta llegir repte, producte final, sabers, seqüència, criteris, instruments i mesures, i genera un recurs amb estructura pròpia.
 
 
-## Correcció v2.5.7
+## Correcció v2.5.8
 
 - El selector **Tipus** ara canvia de mòdul i aplica la plantilla corresponent.
 - Els camps del formulari ja no mantenen sempre els mateixos noms genèrics: canvien segons si el recurs és SA, projecte, sessió, rúbrica, prova, fitxa o adaptació.
 - Els menús laterals continuen aplicant plantilles, però ara també actualitzen les etiquetes i placeholders dels camps.
 - Això evita que una sessió, fitxa o prova sembli una SA amb suggeriments diferents.
+
+## v2.5.8 · Derivacions actives des de SA
+
+Corregeix els botons de derivació perquè generin recursos diferenciats a partir de la SA actual o de l'última SA completa detectada: fitxa, sessió, projecte, rúbrica, prova competencial i adaptació. També afegeix informes específics per tipus de recurs i evita informes buits o amb placeholders.
