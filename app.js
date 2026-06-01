@@ -6387,3 +6387,168 @@ init();
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
   window.docentKit255 = {version: DK255, applyFieldConfig, moduleFromType};
 })();
+
+
+/* DocentKit v2.5.6 - derivacions netes i exportació sense manteniment */
+(function(){
+  const DK256 = 'v2.5.6';
+  const $ = id => document.getElementById(id);
+
+  function norm(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+  function clean(v){return String(v||'').replace(/\r/g,'').replace(/[ \t]+/g,' ').replace(/\n[ \t]+/g,'\n').trim();}
+  function isPlaceholderLine(line){
+    const raw = String(line||'').trim();
+    if(!raw) return true;
+    const withoutBrackets = raw.replace(/\[[^\]]*\]/g,'').replace(/[•\-*☐:\s,.;/|]+/g,'').trim();
+    if(!withoutBrackets) return true;
+    if(/^\[.*\]$/.test(raw)) return true;
+    if(/\b(pendent de concretar|ajusta-les segons|exemple resolt|__ min|__ punts)\b/i.test(raw) && raw.replace(/\[[^\]]*\]/g,'').trim().length < 28) return true;
+    return false;
+  }
+  function scrubText(value, fallback=''){
+    let text = String(value||'')
+      .replace(/IA assistida/gi,'')
+      .replace(/Esborrany IA complet pendent de mapatge autom[aà]tic:?/gi,'')
+      .replace(/Producte, prototip, documentaci[oó], presentaci[oó] o evid[eè]ncia final[^\n.]*/gi,'')
+      .replace(/Ajusta-les segons el curr[ií]culum[^\n.]*/gi,'')
+      .replace(/\[[^\]]+\]/g,'')
+      .replace(/\bActivitats pendents de concretar\.?/gi,'')
+      .replace(/\bMesures pendents de concretar\.?/gi,'')
+      .replace(/\bCriteris pendents de concretar\.?/gi,'')
+      .replace(/\n{3,}/g,'\n\n');
+    const lines = text.split('\n').map(l => l.trim()).filter(l => !isPlaceholderLine(l));
+    text = lines.join('\n').replace(/\n{3,}/g,'\n\n').trim();
+    return text || fallback;
+  }
+  function arrLines(value){
+    return scrubText(value).split('\n').map(x=>x.trim().replace(/^[-•*]\s*/,'')).filter(Boolean);
+  }
+  function firstUseful(value){
+    const t = scrubText(value);
+    const line = t.split('\n').find(x=>x.trim().length>8) || '';
+    return line.replace(/^(Context|Repte|Objectiu|Consigna|Producte final|Lliurable)\s*:?\s*/i,'').trim();
+  }
+  function labeled(text, labels){
+    const src='\n'+String(text||'')+'\n';
+    const all=['Context','Repte','Justificació','Justificacio','Producte final','Objectiu','Consigna principal','Lliurable','Materials','Recursos','Sabers','Criteris','Competències','Competencies','Seqüència','Sequencia','Inici','Desenvolupament','Tancament','Evidències','Evidencies','Instruments','Retorn','DUA','TDAH','TEA','Dislèxia','Dislexia','TDL','Suports','Opcions','Ajustos'];
+    for(const label of labels){
+      const re=new RegExp('\\n\\s*(?:[-•*]\\s*)?'+label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\s*:?\\s*([\\s\\S]*?)(?=\\n\\s*(?:[-•*]\\s*)?(?:'+all.map(x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')+')\\s*:?|$)','i');
+      const m=src.match(re);
+      if(m && scrubText(m[1])) return scrubText(m[1]);
+    }
+    return '';
+  }
+  function moduleFromType(type){
+    const t=norm(type);
+    if(t.includes('projecte')) return 'projecte';
+    if(t.includes('sessio')) return 'sessio';
+    if(t.includes('rubrica')) return 'rubrica';
+    if(t.includes('prova')) return 'prova';
+    if(t.includes('fitxa')) return 'fitxa';
+    if(t.includes('adapt')) return 'adaptacio';
+    return 'sa';
+  }
+  function sanitizeResource(data){
+    const d={...(data||{})};
+    ['title','level','subject','duration','type','challenge','knowledge','competences','sequence','inclusion','assessment'].forEach(k=>{d[k]=scrubText(d[k]||'');});
+    if(Array.isArray(d.tags)) d.tags=d.tags.map(x=>scrubText(x)).filter(Boolean);
+    else d.tags=scrubText(d.tags).split(',').map(x=>x.trim()).filter(Boolean);
+    d.duration = cleanDuration(d.duration);
+    if(!d.type) d.type = data?.type || 'Recurs docent';
+    return d;
+  }
+  function cleanDuration(v){
+    const t=String(v||'').trim();
+    const m=t.match(/\b\d+\s*(sessions?|hores?|h|setmanes?|trimestres?|dies?)\b/i);
+    if(m) return m[0].replace(/\s+/g,' ');
+    return t.length > 60 ? '' : t;
+  }
+  function producte(d){
+    return labeled(d.challenge,['Producte final','Lliurable']) || labeled(d.assessment,['Evidències','Evidencies']) || firstUseful(d.assessment) || 'Lliurable final de l’activitat.';
+  }
+  function repte(d){
+    return labeled(d.challenge,['Repte','Objectiu','Consigna principal']) || firstUseful(d.challenge) || 'Repte pendent de concretar.';
+  }
+  function materials(d){
+    const explicit = labeled(d.knowledge,['Materials','Recursos']) || labeled(d.sequence,['Materials','Recursos']);
+    if(explicit) return explicit;
+    const terms=[]; const src=norm([d.challenge,d.knowledge,d.sequence].join(' '));
+    [['tinkercad','Tinkercad'],['cartro','cartró'],['xering','xeringues'],['tub','tubs'],['tisores','tisores'],['cuter','cúter'],['silicona','pistola de silicona'],['ordinador','ordinador'],['multimetre','multímetre'],['protoboard','protoboard']].forEach(([pat,label])=>{if(src.includes(pat)) terms.push(label);});
+    return terms.length ? terms.map(x=>'- '+x).join('\n') : '- Materials indicats pel docent\n- Full de treball o suport digital\n- Eines necessàries per a la tasca';
+  }
+  function instruments(d){
+    const explicit=labeled(d.assessment,['Instruments']);
+    const src=norm([d.assessment,d.sequence,d.competences].join(' '));
+    const out=[];
+    if(explicit) out.push(...arrLines(explicit));
+    [['rubrica','Rúbrica'],['checklist|llista','Checklist o llista de control'],['observaci','Observació docent'],['autoavaluaci','Autoavaluació'],['coavaluaci','Coavaluació'],['presentaci','Presentació oral o visual'],['memoria|documentaci','Memòria o documentació'],['prova','Prova competencial']].forEach(([pat,label])=>{if(new RegExp(pat).test(src)) out.push(label);});
+    return [...new Set(out)].filter(Boolean).slice(0,6).join('\n- ').replace(/^/,'- ') || '- Checklist de qualitat\n- Observació docent\n- Autoavaluació breu';
+  }
+  function sequenceItems(d, max=8){
+    let items=[];
+    const src=scrubText(d.sequence);
+    const re=/Sess[ií]o\s*(\d+)\s*:?[ \t]*([^\n]+(?:\n(?!\s*Sess[ií]o\s*\d+).*)*)/gi;
+    let m; while((m=re.exec(src))) items.push(`Sessió ${m[1]}: ${scrubText(m[2]).split('\n').slice(0,2).join(' ')}`);
+    if(!items.length) items=arrLines(src).filter(x=>!/^Metodologia|Organitzaci[oó]|Recursos|Materials|Espais/i.test(x));
+    return items.slice(0,max);
+  }
+  function sourceSa(){return sanitizeResource(typeof getFormData==='function'?getFormData():{});}
+  function applyClean(data,moduleId,toast){
+    const cleanData=sanitizeResource(data);
+    if(typeof setModule==='function') setModule(moduleId,{loadTemplate:false});
+    ['type','title','level','subject','duration','challenge','knowledge','competences','sequence','inclusion','assessment'].forEach(k=>{const n=$(k); if(n) n.value=cleanData[k]||'';});
+    const tags=$('tags'); if(tags) tags.value=Array.isArray(cleanData.tags)?cleanData.tags.join(', '):(cleanData.tags||'');
+    try{ if(typeof renderReport==='function') renderReport(cleanData); }catch(e){}
+    try{ if(typeof scrollReportIntoView==='function') scrollReportIntoView(); }catch(e){}
+    try{ if(typeof showToast==='function') showToast(toast||'Recurs generat i sanejat.'); }catch(e){}
+  }
+  function makeFitxa(){
+    const d=sourceSa(); const seq=sequenceItems(d,6); const crit=arrLines(d.competences).slice(0,4);
+    applyClean({...d,type:'Fitxa d’activitats',title:'Fitxa · '+(d.title||'activitat'),duration:cleanDuration(d.duration)||'1 sessió',challenge:`Objectiu: ${repte(d)}\n\nConsigna principal: Realitza l’activitat seguint els passos indicats i pren decisions justificades.\n\nLliurable: ${producte(d)}`,knowledge:`Materials i recursos:\n${materials(d)}\n\nVocabulari o sabers clau:\n${arrLines(d.knowledge).slice(0,6).map(x=>'- '+x).join('\n')}`,competences:`Criteris d’èxit:\n${(crit.length?crit:['El lliurable és complet, clar i revisat.','S’han seguit els passos de treball.','Es pot explicar què s’ha après i què es milloraria.']).map(x=>'- '+x).join('\n')}`,sequence:`Passos:\n${(seq.length?seq:['Llegir el repte i identificar què cal fer.','Preparar materials i organitzar el treball.','Fer la tasca o producte demanat.','Revisar amb la checklist.','Entregar i escriure una millora possible.']).map((x,i)=>`${i+1}. ${x.replace(/^Sessió\s*\d+\s*:?\s*/,'')}`).join('\n')}\n\nChecklist abans d’entregar:\n☐ He entès l’objectiu.\n☐ He seguit els passos.\n☐ He revisat el lliurable.\n☐ Puc explicar què he après.`,inclusion:`Suports:\n${scrubText(d.inclusion)||'- Exemple resolt o model visual\n- Passos numerats\n- Glossari o suport oral\n- Temps de revisió'}\n\nOpcions de resposta:\n- Text, esquema, maqueta, imatge, àudio o vídeo, segons la tasca.`,assessment:`Instrument:\n${instruments(d)}\n\nEvidència:\n- ${producte(d)}\n\nRetorn:\n- Comentari docent, autoavaluació i proposta de millora.`,tags:[...(d.tags||[]),'fitxa des de SA']},'fitxa','Fitxa sanejada creada des de la SA.');
+  }
+  function makeSessio(){
+    const d=sourceSa(); const seq=sequenceItems(d,4); const central=(seq[0]||repte(d)).replace(/^Sessió\s*\d+\s*:?\s*/,'');
+    applyClean({...d,type:'Sessió',title:'Sessió · '+(d.title||'activitat'),duration:'1 sessió',challenge:`Objectiu de la sessió: avançar en el repte “${repte(d)}”.\n\nConnexió: aquesta sessió forma part de la situació ${d.title||'d’aprenentatge'}.`,knowledge:`Recursos:\n${materials(d)}\n\nSaber clau:\n${arrLines(d.knowledge).slice(0,4).map(x=>'- '+x).join('\n')}`,competences:`Criteris observables de la sessió:\n${arrLines(d.competences).slice(0,4).map(x=>'- '+x).join('\n')||'- Participa i avança en la tasca.\n- Aplica els sabers treballats.\n- Genera una evidència de sortida.'}`,sequence:`Inici:\n- Presentació de l’objectiu i criteris d’èxit.\n- Activació de coneixements previs.\n\nDesenvolupament:\n- ${central}\n- Treball guiat amb feedback docent.\n\nTancament:\n- Evidència de sortida.\n- Revisió de dificultats i proper pas.`,inclusion:scrubText(d.inclusion)||'Consignes visibles, model o exemple, comprovació de comprensió i flexibilitat en la resposta.',assessment:`Evidència de sortida:\n- Mini producte, resposta breu o registre del procés.\n\nInstrument:\n${instruments(d)}`,tags:[...(d.tags||[]),'sessió des de SA']},'sessio','Sessió sanejada creada des de la SA.');
+  }
+  function makeProjecte(){
+    const d=sourceSa(); const seq=sequenceItems(d,8);
+    applyClean({...d,type:'Projecte',title:'Projecte · '+(d.title||'repte'),challenge:`Repte: ${repte(d)}\n\nCondicions: treballar amb criteris de qualitat, seguretat, organització i revisió.\n\nProducte final: ${producte(d)}`,knowledge:`Materials:\n${materials(d)}\n\nRequisits tècnics i sabers:\n${arrLines(d.knowledge).slice(0,8).map(x=>'- '+x).join('\n')}`,competences:`Criteris del projecte:\n${arrLines(d.competences).slice(0,6).map(x=>'- '+x).join('\n')||'- Procés de treball\n- Qualitat del producte final\n- Comunicació\n- Reflexió individual'}`,sequence:`Fases del projecte:\n${(seq.length?seq:['Llançament del repte.','Planificació.','Desenvolupament i proves.','Presentació.','Reflexió final.']).map((x,i)=>`${i+1}. ${x.replace(/^Sessió\s*\d+\s*:?\s*/,'')}`).join('\n')}`,inclusion:scrubText(d.inclusion)||'Rols cooperatius, models visuals, passos intermedis i opcions diverses de documentació.',assessment:`Evidències:\n- ${producte(d)}\n- Registre del procés\n- Presentació o explicació final\n\nInstruments:\n${instruments(d)}`,tags:[...(d.tags||[]),'projecte des de SA']},'projecte','Projecte sanejat creat des de la SA.');
+  }
+  function makeRubrica(){
+    const d=sourceSa();
+    const crit=arrLines(d.competences).slice(0,6);
+    const rows=(crit.length?crit:['Comprensió del repte','Aplicació dels sabers','Procés de treball','Qualitat del producte final','Comunicació','Reflexió i millora']).map((c,i)=>`Criteri ${i+1}: ${c}\nÍtem observable: ${c.replace(/^\d+\.\d+\s*/,'')}\nNA: Mostra dificultats importants o necessita molta ajuda.\nAS: Ho mostra de manera bàsica amb suport puntual.\nAN: Ho mostra de manera autònoma, adequada i coherent.\nAE: Ho mostra amb qualitat, precisió i capacitat de transferència.`).join('\n\n');
+    applyClean({...d,type:'Rúbrica',title:'Rúbrica · '+(d.title||'activitat'),challenge:`Objecte de la rúbrica: ${producte(d)}`,knowledge:`Evidències o instruments:\n${instruments(d)}`,competences:`Criteris i ítems observables:\n${crit.map(x=>'- '+x).join('\n')}`,sequence:rows,inclusion:'La rúbrica es comparteix abans de començar, s’explica amb exemples i es pot utilitzar per autoavaluació i millora.',assessment:rows,tags:[...(d.tags||[]),'rúbrica des de SA']},'rubrica','Rúbrica sanejada creada des de la SA.');
+  }
+  function makeProva(){
+    const d=sourceSa();
+    applyClean({...d,type:'Prova competencial',title:'Prova competencial · '+(d.title||'repte'),duration:'1 sessió',challenge:`Context i estímul inicial: ${repte(d)}\n\nCondicions: respon de manera raonada, usa vocabulari adequat i justifica les decisions.`,knowledge:`Sabers mobilitzats:\n${arrLines(d.knowledge).slice(0,10).map(x=>'- '+x).join('\n')}`,competences:`Competències i criteris:\n${arrLines(d.competences).slice(0,6).map(x=>'- '+x).join('\n')}`,sequence:`Preguntes:\n1. Identifica el problema o necessitat de la situació.\n2. Aplica els sabers treballats per resoldre una part del repte.\n3. Justifica una decisió o resposta amb arguments.\n4. Interpreta una evidència o error i proposa una millora.\n5. Relaciona el producte final amb els criteris d’èxit.`,inclusion:'Lectura clara, preguntes numerades, espai per planificar, suport visual i temps addicional si cal.',assessment:`Pauta de correcció:\n- Resposta completa, justificada i amb vocabulari adequat.\n- S’accepten respostes equivalents si mobilitzen els sabers i criteris.\n\nInstruments:\n${instruments(d)}`,tags:[...(d.tags||[]),'prova des de SA']},'prova','Prova sanejada creada des de la SA.');
+  }
+  function makeAdaptacio(){
+    const d=sourceSa();
+    applyClean({...d,type:'Adaptació inclusiva',title:'Adaptació · '+(d.title||'activitat'),challenge:`Activitat o repte a adaptar: ${repte(d)}\n\nProducte final que es manté: ${producte(d)}`,knowledge:'Barreres possibles:\n- Comprensió de consignes llargues.\n- Planificació i gestió del temps.\n- Càrrega lectora o d’escriptura.\n- Organització del material i del grup.\n- Vocabulari específic.',competences:`Objectius i criteris que es mantenen:\n${arrLines(d.competences).slice(0,5).map(x=>'- '+x).join('\n')}`,sequence:'Abans: anticipar fases, producte final i criteris d’èxit.\nDurant: fragmentar tasques, assignar rols, revisar punts intermedis i comprovar comprensió.\nDesprés: autoavaluació guiada i proposta de millora.',inclusion:`Mesures universals:\n${scrubText(d.inclusion)||'- Objectius visibles\n- Models i exemples\n- Opcions de resposta\n- Temps pautat'}\n\nTDAH: tasques curtes, temporitzador, rol actiu i objectius parcials.\nTEA: anticipació, estructura visual, consignes literals i exemple acabat.\nDislèxia: tipografia clara, reducció de còpia, suport oral i temps addicional.\nTDL: vocabulari anticipat, frases model, suport visual i comprovació de comprensió.`,assessment:`Avaluació adaptada sense rebaixar objectius:\n- Mateixos criteris essencials.\n- Evidències equivalents: oral, visual, escrita, maqueta, enregistrament o esquema.\n- Feedback formatiu i oportunitat de millora.`,tags:[...(d.tags||[]),'adaptació des de SA']},'adaptacio','Adaptació sanejada creada des de la SA.');
+  }
+
+  const previousRenderReport = typeof renderReport === 'function' ? renderReport : null;
+  if(previousRenderReport && !previousRenderReport.__dk256){
+    renderReport = function(data){ previousRenderReport(sanitizeResource(data)); };
+    renderReport.__dk256 = true;
+  }
+  const previousBuild = typeof buildReportHtml === 'function' ? buildReportHtml : null;
+  if(previousBuild && !previousBuild.__dk256){
+    buildReportHtml = function(data, mode){ return previousBuild(sanitizeResource(data), mode); };
+    buildReportHtml.__dk256 = true;
+  }
+  function bindDerivations(){
+    const map=[['deriveFitxaBtn',makeFitxa],['deriveSessioBtn',makeSessio],['deriveProjecteBtn',makeProjecte],['deriveRubricaBtn',makeRubrica],['deriveProvaBtn',makeProva],['deriveAdaptacioBtn',makeAdaptacio]];
+    map.forEach(([id,fn])=>{const old=$(id); if(old){const btn=old.cloneNode(true); btn.dataset.dk256='1'; old.parentNode.replaceChild(btn,old); btn.addEventListener('click',fn);}});
+  }
+  function addPrintGuard(){
+    const style=document.createElement('style');
+    style.textContent='body.export-mode .maintenance-card{display:none!important}@media print{.maintenance-card{display:none!important}.report-preview [data-internal],.report-preview .diagnostic,.report-preview .maintenance-output{display:none!important}}';
+    document.head.appendChild(style);
+  }
+  function boot(){bindDerivations(); addPrintGuard(); try{ if(typeof showToast==='function') showToast('v2.5.6: derivacions sanejades i exportació sense manteniment.'); }catch(e){}}
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+  window.docentKit256={version:DK256, sanitizeResource, scrubText, makeFitxa, makeSessio, makeProjecte, makeRubrica, makeProva, makeAdaptacio};
+})();

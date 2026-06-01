@@ -104,6 +104,7 @@ body.export-mode .hero-card,
 body.export-mode .generator-card,
 body.export-mode .import-card,
 body.export-mode .library-card,
+body.export-mode .maintenance-card,
 body.export-mode .output-card .card-title-row { display: none !important; }
 body.export-mode .layout { display: block; padding: 0; }
 body.export-mode .workspace { display: block; }
@@ -142,7 +143,7 @@ body.export-mode .export-mode-shell {
 @media print {
   body { background: white; font-family: Verdana, Geneva, Arial, sans-serif; }
   h1, h2, h3, strong, b { font-weight: 700; letter-spacing: normal; }
-  .app-header, .sidebar, .toolbar, .generator-card, .library-card, .import-card, .export-mode-shell, .card-title-row, .report-actions { display: none !important; }
+  .app-header, .sidebar, .toolbar, .generator-card, .library-card, .maintenance-card, .import-card, .export-mode-shell, .card-title-row, .report-actions { display: none !important; }
   .layout { display: block; padding: 0; }
   .output-card { box-shadow: none; border: 0; padding: 0; display: block !important; }
   .report-preview { border: 0; padding: 0; }
