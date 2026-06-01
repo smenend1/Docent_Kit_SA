@@ -159,6 +159,7 @@ function init() {
 function bindEvents() {
   document.getElementById('newResourceBtn').addEventListener('click', clearForm);
   document.getElementById('loadTemplateBtn').addEventListener('click', loadTemplate);
+  if (els.templateSelect) els.templateSelect.addEventListener('change', loadTemplate);
   document.getElementById('generateBtn').addEventListener('click', () => { renderReport(getFormData()); scrollReportIntoView(); });
   document.getElementById('saveBtn').addEventListener('click', saveCurrentResource);
   document.getElementById('exportPdfBtn').addEventListener('click', openExportMode);
@@ -273,7 +274,7 @@ function renderNav() {
 
 function renderTypeOptions() { els.type.innerHTML = MODULES.map(m => `<option>${escapeHtml(m.type)}</option>`).join(''); }
 
-function setModule(id) {
+function setModule(id, options = {}) {
   currentModule = MODULES.find(m => m.id === id) || MODULES[0];
   document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.id === id));
   els.formTitle.textContent = currentModule.label;
@@ -281,6 +282,10 @@ function setModule(id) {
   const templateHint = currentModule.id === 'sa' ? "Inclou una sortida d'informe segons pauta de programació de SA, amb rúbrica LOMLOE completa." : 'Inclou una plantilla inicial editable.';
   els.intro.innerHTML = `<p class="eyebrow">${escapeHtml(currentModule.type)}</p><h2>${escapeHtml(currentModule.label)}</h2><p>${escapeHtml(currentModule.intro)}</p><p class="hint">${escapeHtml(templateHint)}</p>`;
   renderTemplateOptions();
+  const generatorModules = ['sa','projecte','sessio','rubrica','prova','fitxa','adaptacio'];
+  if (generatorModules.includes(currentModule.id) && options.loadTemplate !== false) {
+    loadTemplate({ silent: true });
+  }
   if (id === 'biblioteca') document.querySelector('.library-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
   if (id === 'modeia') document.querySelector('.ai-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -6000,7 +6005,7 @@ init();
 
 /* DocentKit v2.5.3 - derivacions completes des de SA */
 (function(){
-  const DK252 = 'v2.5.3';
+  const DK252 = 'v2.5.4';
   function el(id){ return document.getElementById(id); }
   function val(id){ const node = el(id); return node ? String(node.value || '') : ''; }
   function setv(id, value){ const node = el(id); if(node) node.value = Array.isArray(value) ? value.join('\n') : String(value || ''); }
@@ -6217,5 +6222,5 @@ init();
     });
   }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind); else bind();
-  window.docentKit252 = { version: DK252, makeProjectFromSa, makeSessionFromSa, makeRubricFromSa, makeTestFromSa, makeAdaptationFromSa };
+  window.docentKit254 = { version: DK252, makeProjectFromSa, makeSessionFromSa, makeRubricFromSa, makeTestFromSa, makeAdaptationFromSa };
 })();
