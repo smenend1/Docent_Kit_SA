@@ -6224,3 +6224,166 @@ init();
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind); else bind();
   window.docentKit254 = { version: DK252, makeProjectFromSa, makeSessionFromSa, makeRubricFromSa, makeTestFromSa, makeAdaptationFromSa };
 })();
+
+/* DocentKit v2.5.5 - camps actius per tipus de recurs */
+(function(){
+  const DK255 = 'v2.5.5';
+  const MODULE_FIELD_CONFIG = {
+    sa: {
+      title:['Títol de la situació d’aprenentatge','Ex. Dissenyem una casa sostenible en 3D'],
+      level:['Nivell i grup','Ex. 2n ESO A'],
+      subject:['Matèria / àmbit','Ex. Tecnologia i Digitalització'],
+      duration:['Durada','Ex. 12 sessions'],
+      challenge:['Context, repte i producte final','Escriu o genera el context, el repte, la justificació i el producte final de la SA.'],
+      knowledge:['Sabers','Sabers principals, procediments i vocabulari que es mobilitzen.'],
+      competences:['Competències específiques i criteris d’avaluació','CE desenvolupades, CA vinculats i competències transversals.'],
+      sequence:['Seqüència didàctica','Fases o sessions: activació, construcció, aplicació i transferència.'],
+      inclusion:['DUA, mesures i suports','Mesures universals, TDAH, TEA, dislèxia, TDL i suports d’accés.'],
+      assessment:['Evidències, instruments, retorn i rúbrica','Evidències, instruments, retorn formatiu i rúbrica NA/AS/AN/AE.'],
+      tags:['Etiquetes','SA, competencial, ABP, taller, digital...']
+    },
+    fitxa: {
+      title:['Títol de l’activitat','Ex. Dibuixa el plànol inicial de la casa'],
+      level:['Nivell i grup','Ex. 2n ESO'],
+      subject:['Matèria / àmbit','Ex. Tecnologia i Digitalització'],
+      duration:['Temps previst','Ex. 50 min'],
+      challenge:['Objectiu, consigna i lliurable','Què aprendrem? Què ha de fer l’alumnat? Què ha d’entregar?'],
+      knowledge:['Materials i vocabulari clau','Eines, recursos, documents, enllaços i conceptes necessaris.'],
+      competences:["Criteris d’èxit",'Indicadors observables perquè l’alumnat sàpiga si ho ha fet bé.'],
+      sequence:['Passos de la fitxa','Passos numerats, temps orientatiu i checklist abans d’entregar.'],
+      inclusion:['Suports i opcions de resposta','Bastides, exemple, glossari, opcions oral/visual/textual i ajustos d’accés.'],
+      assessment:['Avaluació de l’activitat','Instrument, evidència, retorn i millora de la fitxa.'],
+      tags:['Etiquetes','fitxa, alumnat, activitat, checklist...']
+    },
+    sessio: {
+      title:['Número i títol de la sessió','Ex. Sessió 3 · Primer esbós del projecte'],
+      level:['Nivell i grup','Ex. 2n ESO B'],
+      subject:['Matèria / àmbit','Ex. Tecnologia i Digitalització'],
+      duration:['Durada de la sessió','Ex. 1 hora'],
+      challenge:['Objectiu i connexió de la sessió','Què ha d’haver après o practicat l’alumnat? Amb què connecta?'],
+      knowledge:['Recursos i saber clau','Materials, eines, espais, vocabulari i conceptes necessaris.'],
+      competences:['Criteris observables de la sessió','Evidències de comprensió, pràctica, cooperació o comunicació.'],
+      sequence:['Inici, desenvolupament i tancament','Accions del docent, accions de l’alumnat, temps i evidència de sortida.'],
+      inclusion:['Agrupaments, suports i observacions','Agrupaments, bastides, comprovació de comprensió i què cal reprendre.'],
+      assessment:['Instrument i seguiment','Checklist, observació, rúbrica curta, retorn immediat i reforç.'],
+      tags:['Etiquetes','sessió, classe, tancament, evidència...']
+    },
+    projecte: {
+      title:['Títol del projecte','Ex. Construïm un pont resistent amb materials senzills'],
+      level:['Nivell i grup','Ex. 3r ESO'],
+      subject:['Matèria / àmbit','Ex. Tecnologia'],
+      duration:['Durada del projecte','Ex. 6 sessions / 3 setmanes'],
+      challenge:['Repte, condicions i producte final','Problema o encàrrec, restriccions, destinataris i què s’ha de crear.'],
+      knowledge:['Materials, recursos i requisits tècnics','Materials disponibles, eines, normes, requisits i coneixements necessaris.'],
+      competences:['Criteris i avaluació del projecte','Procés, producte, comunicació, reflexió i criteris d’èxit.'],
+      sequence:['Fases del projecte','Llançament, planificació, desenvolupament, presentació i reflexió.'],
+      inclusion:['Organització, rols i suports','Rols, agrupaments, suports, normes de taller i opcions de resposta.'],
+      assessment:['Seguiment, feedback i evidències','Diari, portafolis, rúbrica, observació, presentació i autoavaluació.'],
+      tags:['Etiquetes','projecte, ABP, taller, prototip...']
+    },
+    prova: {
+      title:['Títol de la prova competencial','Ex. Disseny d’un habitatge eficient'],
+      level:['Nivell i grup','Ex. 2n ESO'],
+      subject:['Matèria / àmbit','Ex. Tecnologia i Digitalització'],
+      duration:['Temps de prova','Ex. 55 min'],
+      challenge:['Context, estímul i condicions','Situació real, text/gràfic/dades inicials i condicions de resposta.'],
+      knowledge:['Sabers mobilitzats','Conceptes, procediments i actituds que l’alumnat ha d’activar.'],
+      competences:['Competències, criteris i què avalua','CE/CA vinculats i què avalua cada pregunta.'],
+      sequence:['Preguntes i puntuació','Preguntes, tipus, criteri vinculat i punts.'],
+      inclusion:['Mesures d’accés a la prova','Lectura clara, temps, suport visual, espai per planificar i format accessible.'],
+      assessment:['Pauta de correcció','Resposta esperada, criteris de correcció, parcialitats i punts.'],
+      tags:['Etiquetes','prova, competencial, estímul, correcció...']
+    },
+    rubrica: {
+      title:['Títol de la rúbrica','Ex. Rúbrica del projecte final'],
+      level:['Nivell i grup','Ex. 4t ESO'],
+      subject:['Matèria / àmbit','Ex. Tecnologia'],
+      duration:['Ús o moment d’aplicació','Ex. Durant el projecte i presentació final'],
+      challenge:['Objecte de la rúbrica','Quin producte, procés o evidència s’avaluarà?'],
+      knowledge:['Evidències i instruments','Producte, observació, prova, presentació, portafolis...'],
+      competences:['Criteris i ítems observables','Criteris LOMLOE o objectius i què observarem en cada ítem.'],
+      sequence:['Taula NA / AS / AN / AE','Descriptors observables per a cada nivell, diferenciats i concrets.'],
+      inclusion:['Ús formatiu de la rúbrica','Com compartir-la, exemplificar-la i usar-la per autoavaluació i millora.'],
+      assessment:['Aplicació i retorn','Quan s’aplica, qui avalua, com es dona feedback i com es pot millorar.'],
+      tags:['Etiquetes','rúbrica, NA, AS, AN, AE...']
+    },
+    adaptacio: {
+      title:['Títol de l’adaptació','Ex. Adaptació de la fitxa de disseny 3D'],
+      level:['Nivell i grup','Ex. 2n ESO'],
+      subject:['Matèria / àmbit','Ex. Tecnologia i Digitalització'],
+      duration:['Durada o moment','Ex. Durant tota l’activitat'],
+      challenge:['Activitat o repte a adaptar','Quina tasca es manté i quines barreres poden aparèixer?'],
+      knowledge:['Barreres possibles','Comprensió, llenguatge, atenció, accés digital, ansietat, ritme, motricitat...'],
+      competences:['Objectius i criteris que es mantenen','Què no es rebaixa i què es vol garantir?'],
+      sequence:['Mesures, suports i seguiment','Abans, durant i després de l’activitat; responsable i seguiment.'],
+      inclusion:['DUA i ajustos d’accés','Mesures universals, suports, opcions de resposta i ajustos concrets.'],
+      assessment:['Avaluació adaptada','Evidències equivalents, instruments, feedback i oportunitat de millora.'],
+      tags:['Etiquetes','adaptació, inclusió, DUA, suport...']
+    }
+  };
+  function moduleFromType(type){
+    const t = String(type || '').toLowerCase();
+    if(t.includes('projecte')) return 'projecte';
+    if(t.includes('sessió') || t.includes('sessio')) return 'sessio';
+    if(t.includes('rúbrica') || t.includes('rubrica')) return 'rubrica';
+    if(t.includes('prova')) return 'prova';
+    if(t.includes('fitxa')) return 'fitxa';
+    if(t.includes('adapt')) return 'adaptacio';
+    return 'sa';
+  }
+  function updateLabel(id, label, placeholder){
+    const node = document.getElementById(id);
+    if(!node) return;
+    const field = node.closest('label');
+    const span = field ? field.querySelector('span') : null;
+    if(span && label) span.textContent = label;
+    if(placeholder !== undefined && ('placeholder' in node)) node.placeholder = placeholder;
+  }
+  function applyFieldConfig(moduleId){
+    const id = moduleId || (window.currentModule && window.currentModule.id) || moduleFromType(document.getElementById('type')?.value || '');
+    const cfg = MODULE_FIELD_CONFIG[id] || MODULE_FIELD_CONFIG.sa;
+    Object.entries(cfg).forEach(([field, pair]) => updateLabel(field, pair[0], pair[1]));
+    const hint = document.getElementById('formTitle');
+    if(hint) hint.setAttribute('data-module-fields', id);
+  }
+  function installTypeSwitcher(){
+    const type = document.getElementById('type');
+    if(type && !type.dataset.dk255Type){
+      type.dataset.dk255Type = '1';
+      type.addEventListener('change', () => {
+        const moduleId = moduleFromType(type.value);
+        if(typeof setModule === 'function') setModule(moduleId);
+        setTimeout(() => applyFieldConfig(moduleId), 0);
+      });
+    }
+  }
+  function patchGlobals(){
+    if(typeof setModule === 'function' && !setModule.__dk255){
+      const prevSetModule = setModule;
+      setModule = function(id, options){
+        const result = prevSetModule.call(this, id, options || {});
+        setTimeout(() => applyFieldConfig(id), 0);
+        return result;
+      };
+      setModule.__dk255 = true;
+    }
+    if(typeof loadTemplate === 'function' && !loadTemplate.__dk255){
+      const prevLoadTemplate = loadTemplate;
+      loadTemplate = function(){
+        const result = prevLoadTemplate.apply(this, arguments);
+        const type = document.getElementById('type')?.value || '';
+        setTimeout(() => applyFieldConfig(moduleFromType(type)), 0);
+        return result;
+      };
+      loadTemplate.__dk255 = true;
+    }
+  }
+  function boot(){
+    patchGlobals();
+    installTypeSwitcher();
+    applyFieldConfig(moduleFromType(document.getElementById('type')?.value || ''));
+    try { if(typeof showToast === 'function') showToast('v2.5.5: els camps canvien segons el tipus de recurs.'); } catch(e) {}
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+  window.docentKit255 = {version: DK255, applyFieldConfig, moduleFromType};
+})();

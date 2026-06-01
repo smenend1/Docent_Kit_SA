@@ -1,9 +1,9 @@
-# DocentKit v2.5.4 · Plantilles neutres actives per mòdul
+# DocentKit v2.5.5 · Plantilles neutres actives per mòdul
 
 Aquesta versió integra plantilles neutres per a cada mòdul: situació d’aprenentatge, fitxa d’activitat, sessió, prova competencial, rúbrica, projecte i adaptació/inclusió.
 
 
-## Correcció v2.5.4
+## Correcció v2.5.5
 
 - Quan es tria una opció del menú lateral (SA, projecte, sessió, rúbrica, prova, fitxa o adaptació), ara es carrega automàticament la plantilla neutra corresponent.
 - El selector de plantilla també aplica la plantilla en canviar d'opció, no només quan es prem el botó.
@@ -19,7 +19,7 @@ Aquesta versió integra plantilles neutres per a cada mòdul: situació d’apre
 - Les rúbriques mantenen criteri, ítem observable, NA, AS, AN, AE i evidència/instrument.
 - Els projectes inclouen repte, condicions, materials, producte final, documentació, fases i avaluació.
 - Les adaptacions/inclusió separen barreres, mesures universals, suports, opcions de resposta, ajustos d’accés i seguiment.
-- Cache actualitzada a `docentkit-v2-5-4`.
+- Cache actualitzada a `docentkit-v2-5-5`.
 
 ## Ús recomanat
 
@@ -320,3 +320,11 @@ Aquesta versió activa i reforça totes les derivacions principals a partir d'un
 - Crea adaptació inclusiva des de la SA.
 
 Cada derivació intenta llegir repte, producte final, sabers, seqüència, criteris, instruments i mesures, i genera un recurs amb estructura pròpia.
+
+
+## Correcció v2.5.5
+
+- El selector **Tipus** ara canvia de mòdul i aplica la plantilla corresponent.
+- Els camps del formulari ja no mantenen sempre els mateixos noms genèrics: canvien segons si el recurs és SA, projecte, sessió, rúbrica, prova, fitxa o adaptació.
+- Els menús laterals continuen aplicant plantilles, però ara també actualitzen les etiquetes i placeholders dels camps.
+- Això evita que una sessió, fitxa o prova sembli una SA amb suggeriments diferents.
