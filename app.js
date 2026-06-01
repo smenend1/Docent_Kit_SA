@@ -6552,3 +6552,231 @@ init();
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
   window.docentKit256={version:DK256, sanitizeResource, scrubText, makeFitxa, makeSessio, makeProjecte, makeRubrica, makeProva, makeAdaptacio};
 })();
+
+/* DocentKit v2.5.7 - fitxes coherents des de SA */
+(function(){
+  const DK257 = 'v2.5.7';
+  const $ = id => document.getElementById(id);
+  const FIELD_IDS = ['title','level','subject','duration','type','challenge','knowledge','competences','sequence','inclusion','assessment','tags'];
+
+  function raw(id){ const el=$(id); return el ? String(el.value || '') : ''; }
+  function set(id, value){ const el=$(id); if(el) el.value = Array.isArray(value) ? value.join(', ') : String(value || ''); }
+  function esc(s){ return String(s||'').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+  function clean(text){
+    return String(text||'')
+      .replace(/\r/g,'')
+      .replace(/\*\*/g,'')
+      .replace(/#{1,6}\s*/g,'')
+      .replace(/IA assistida/gi,'')
+      .replace(/Esborrany IA complet pendent de mapatge autom[aà]tic:?/gi,'')
+      .replace(/Producte, prototip, documentaci[oó], presentaci[oó] o evid[eè]ncia final[^\n.]*/gi,'')
+      .replace(/Ajusta-les segons el curr[ií]culum[^\n.]*/gi,'')
+      .replace(/\[[^\]]+\]/g,'')
+      .replace(/\bActivitats pendents de concretar\.?/gi,'')
+      .replace(/\bMesures pendents de concretar\.?/gi,'')
+      .replace(/[ \t]+/g,' ')
+      .replace(/\n[ \t]+/g,'\n')
+      .replace(/\n{3,}/g,'\n\n')
+      .trim();
+  }
+  function lineClean(s){ return clean(s).replace(/^[-•*☐\d.)\s]+/,'').trim(); }
+  function lines(text){
+    return clean(text).split('\n').map(lineClean).filter(Boolean).filter(l => !isBadLine(l));
+  }
+  function isBadLine(l){
+    const t=String(l||'').trim();
+    if(!t) return true;
+    if(/^[-•*☐]+$/.test(t)) return true;
+    if(/^(metodologia|organitzaci[oó] de l.aula|recursos|materials|espais|normes de taller|seguretat|compet[eè]ncies espec[ií]fiques|criteris d.avaluaci[oó]|compet[eè]ncies transversals|objectius d.aprenentatge)\s*:?$/i.test(t)) return true;
+    if(/^(metodologia|organitzaci[oó] de l.aula|recursos|materials|espais|normes de taller)\s*:/i.test(t)) return true;
+    if(/^(CE\d|\d+\.\d+\.?\s*Criteri|Compet[eè]ncia|Criteris d.avaluaci[oó])/i.test(t)) return true;
+    if(/revisa(?:'|’)n la redacci[oó] exacta segons el curr[ií]culum/i.test(t)) return true;
+    return false;
+  }
+  function data(){ try { return typeof getFormData === 'function' ? getFormData() : {}; } catch(e){ return {}; } }
+  function section(text, labels){
+    const src='\n'+clean(text)+'\n';
+    const all=['Context','Repte','Justificació','Justificacio','Producte final','Objectiu','Objectiu de la sessió','Consigna principal','Què hauràs d’entregar','Que hauras d.entregar','Lliurable','Materials','Recursos','Sabers','Criteris','Criteris d’èxit','Criteris d.exit','Competències','Competencies','Seqüència','Sequencia','Inici','Desenvolupament','Tancament','Evidències','Evidencies','Instruments','Retorn','DUA','TDAH','TEA','Dislèxia','Dislexia','TDL','Suports','Opcions','Ajustos','Passos','Checklist'];
+    for(const label of labels){
+      const safe = label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+      const stopper = all.map(x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|');
+      const re = new RegExp('\\n\\s*(?:[-•*]\\s*)?'+safe+'\\s*:?\\s*([\\s\\S]*?)(?=\\n\\s*(?:[-•*]\\s*)?(?:'+stopper+')\\s*:?|$)','i');
+      const m=src.match(re);
+      if(m && clean(m[1])) return clean(m[1]);
+    }
+    return '';
+  }
+  function firstSentence(text){
+    const l = lines(text).find(x => x.length > 12 && !/^(context|justificaci[oó]|producte final|evid[eè]ncies|instruments)/i.test(x));
+    if(!l) return '';
+    const parts = l.match(/[^.!?]+[.!?]?/g) || [l];
+    return clean(parts[0]).replace(/^(Repte|Objectiu|Consigna principal)\s*:?\s*/i,'');
+  }
+  function extractRepte(d){
+    return section(d.challenge, ['Repte','Objectiu','Consigna principal']) || firstSentence(d.challenge) || 'Segueix el repte proposat i resol-lo amb una evidència final clara.';
+  }
+  function extractProducte(d){
+    const p = section(d.challenge, ['Producte final','Lliurable','Què hauràs d’entregar','Que hauras d.entregar']) || section(d.assessment, ['Evidències','Evidencies','Lliurable']) || '';
+    if(p && p.length < 180) return p.replace(/[,:;]\s*$/,'');
+    const src = clean([d.challenge,d.assessment,d.title].join('\n'));
+    if(/tinkercad|casa ideal|disseny 3d/i.test(src)) return 'Disseny 3D complet de la casa, captures o enllaç del projecte i breu justificació del disseny.';
+    if(/bra[cç] pneum[aà]tic|xeringues|pneum[aà]tic/i.test(src)) return 'Braç pneumàtic funcional, registre del procés i explicació breu del funcionament.';
+    if(/prototip|construcci[oó]|taller/i.test(src)) return 'Prototip o producte final, registre del procés i breu reflexió de millora.';
+    return 'Fitxa completada i evidència final revisada abans del lliurament.';
+  }
+  function extractMaterials(d){
+    const fromSections = section(d.knowledge,['Materials','Recursos']) || section(d.sequence,['Materials','Recursos']) || section(d.assessment,['Materials','Recursos']);
+    if(fromSections) return lines(fromSections).slice(0,8);
+    const src = clean([d.challenge,d.knowledge,d.sequence,d.assessment].join(' ')).toLowerCase();
+    const out=[];
+    const map=[['tinkercad','Tinkercad'],['ordinador','ordinador o tauleta'],['casa','plànol o esbós de l’habitatge'],['cartro','cartró'],['cartró','cartró'],['xering','xeringues'],['tub','tubs flexibles'],['silicona','pistola de silicona'],['cuter','cúter'],['cúter','cúter'],['tisores','tisores'],['multimetre','multímetre'],['multímetre','multímetre'],['protoboard','protoboard'],['arduino','Arduino']];
+    map.forEach(([pat,label])=>{ if(src.includes(pat) && !out.includes(label)) out.push(label); });
+    if(!out.length) out.push('materials indicats pel docent','full de treball o suport digital','eines necessàries per completar la tasca');
+    return out.slice(0,8);
+  }
+  function extractRelevantSteps(d){
+    const src=clean(d.sequence);
+    const steps=[];
+    const re=/Sess[ií]o\s*(\d+)\s*:?\s*([^\n]+)/gi;
+    let m;
+    while((m=re.exec(src))){
+      const n=m[1]; let body=lineClean(m[2]);
+      if(body && !isBadLine(body) && body.length > 8) steps.push(`Sessió ${n}: ${body}`);
+    }
+    if(steps.length >= 3) return steps.slice(0,10);
+    const candidates=lines(src).filter(l => !/^(Inicials|Desenvolupament|Estructuraci[oó]|Aplicaci[oó]|Qu[eè] en sabem|Aprenem nous continguts|Qu[eè] hem apr[eè]s|Apliquem)/i.test(l));
+    return candidates.slice(0,8);
+  }
+  function buildStudentSteps(d){
+    const specific = extractRelevantSteps(d);
+    const src = clean([d.title,d.challenge,d.knowledge,d.sequence].join(' ')).toLowerCase();
+    const genericStart = ['Llegeix el repte i comprova què has d’entregar.'];
+    const genericEnd = ['Revisa el resultat amb la checklist de qualitat.', 'Entrega el lliurable i escriu una millora possible.'];
+    if(specific.length >= 4){
+      return [...genericStart, ...specific.map(x=>x.replace(/^Sessió\s*\d+\s*:?\s*/,'')).slice(0,8), ...genericEnd];
+    }
+    if(/tinkercad|casa ideal|disseny 3d/.test(src)) return [
+      'Llegeix el repte i defineix quins espais ha de tenir la casa ideal.',
+      'Fes un esbós inicial en paper amb la distribució dels espais.',
+      'Obre Tinkercad i crea l’estructura bàsica del disseny.',
+      'Afegeix parets, obertures, mobiliari o elements principals segons el projecte.',
+      'Comprova proporcions, funcionalitat i coherència del disseny.',
+      'Desa captures o l’enllaç del projecte i prepara una breu explicació.',
+      'Revisa la checklist i millora el disseny abans d’entregar.'
+    ];
+    if(/bra[cç] pneum[aà]tic|xeringues|pneum[aà]tic/.test(src)) return [
+      'Llegeix el repte i identifica els moviments que ha de fer el braç pneumàtic.',
+      'Dibuixa un esbós del braç i marca on aniran les xeringues i els tubs.',
+      'Prepara els materials i reparteix les tasques dins del grup.',
+      'Construeix l’estructura del braç seguint les normes de taller.',
+      'Connecta xeringues i tubs i comprova si el moviment funciona.',
+      'Anota problemes, ajustos i millores realitzades durant les proves.',
+      'Entrega el prototip o evidència i explica com funciona.'
+    ];
+    return [
+      'Llegeix el repte i subratlla les paraules clau.',
+      'Planifica els passos de treball i prepara els materials.',
+      'Realitza la tasca o producte demanat seguint les indicacions.',
+      'Comprova el resultat i corregeix errors detectats.',
+      'Entrega el lliurable i explica breument què has après.'
+    ];
+  }
+  function buildChecklist(d){
+    const product = extractProducte(d);
+    const src=clean([d.title,d.challenge,d.knowledge].join(' ')).toLowerCase();
+    const items = [
+      'He entès el repte i puc explicar què he de fer.',
+      'He seguit els passos de la fitxa amb ordre.',
+      'He utilitzat correctament els materials i recursos indicats.',
+      `El meu lliurable és complet: ${product}`,
+      'He revisat el resultat abans d’entregar-lo.',
+      'Puc explicar què he après i què milloraria.'
+    ];
+    if(/taller|construcci[oó]|prototip|xeringues|cuter|cúter|silicona/.test(src)) items.splice(3,0,'He respectat les normes de seguretat i organització del taller.');
+    if(/tinkercad|disseny 3d/.test(src)) items.splice(3,0,'He comprovat proporcions, distribució i coherència del disseny 3D.');
+    return [...new Set(items)].slice(0,7);
+  }
+  function buildCriteriaText(d){
+    return buildChecklist(d).map(x=>'- '+x).join('\n');
+  }
+  function buildInstruments(d){
+    const src=clean([d.assessment,d.sequence,d.competences].join(' ')).toLowerCase();
+    const list=[];
+    if(/rúbrica|rubrica/.test(src)) list.push('rúbrica breu');
+    if(/observaci/.test(src)) list.push('observació docent');
+    if(/autoavaluaci/.test(src)) list.push('autoavaluació');
+    if(/coavaluaci/.test(src)) list.push('coavaluació');
+    if(/fitxa/.test(src)) list.push('fitxa completada');
+    if(!list.length) list.push('checklist de qualitat','observació docent','autoavaluació breu');
+    return [...new Set(list)];
+  }
+  function apply(data, moduleId, toast){
+    if(typeof setModule === 'function') setModule(moduleId, {loadTemplate:false});
+    FIELD_IDS.forEach(k => set(k, data[k] || ''));
+    try { if(typeof applyFieldConfig === 'function') applyFieldConfig(moduleId); } catch(e) {}
+    try { if(typeof renderReport === 'function') renderReport(typeof getFormData === 'function' ? getFormData() : data); } catch(e) {}
+    try { if(typeof scrollReportIntoView === 'function') scrollReportIntoView(); } catch(e) {}
+    try { if(typeof showToast === 'function') showToast(toast || 'Recurs generat.'); } catch(e) {}
+  }
+  function makeFitxa257(){
+    const d=data();
+    const repte=extractRepte(d);
+    const product=extractProducte(d);
+    const materials=extractMaterials(d).map(x=>'- '+lineClean(x)).join('\n');
+    const steps=buildStudentSteps(d).map((x,i)=>`${i+1}. ${lineClean(x)}`).join('\n');
+    const checklist=buildChecklist(d).map(x=>'☐ '+lineClean(x)).join('\n');
+    const instruments=buildInstruments(d).map(x=>'- '+x).join('\n');
+    const sabers=lines(d.knowledge).filter(l=>!isBadLine(l)).slice(0,6).map(x=>'- '+x).join('\n');
+    const fitxa={
+      ...d,
+      type:'Fitxa d’activitats',
+      title: d.title && !/^Fitxa\s*·/i.test(d.title) ? 'Fitxa · '+d.title.replace(/^SA\s*·\s*/i,'') : (d.title || 'Fitxa d’activitat'),
+      duration: d.duration || '1 sessió',
+      challenge:`Objectiu: ${repte}\n\nConsigna principal: Completa l’activitat seguint els passos indicats i pren decisions justificades.\n\nLliurable: ${product}`,
+      knowledge:`Materials i recursos:\n${materials}\n\nSabers o vocabulari que necessitaràs:\n${sabers || '- Vocabulari i procediments treballats a classe.'}`,
+      competences:`Checklist de qualitat:\n${checklist}`,
+      sequence:`Activitats pas a pas:\n${steps}`,
+      inclusion:`Suports i opcions:\n- Instruccions fragmentades i visibles.\n- Exemple o model de referència si cal.\n- Temps de revisió abans d’entregar.\n- Opció de resposta escrita, oral, visual o amb imatges si és adequat.`,
+      assessment:`Avaluació:\n- Instruments:\n${instruments}\n- Evidència principal: ${product}\n- Retorn: comentari docent, revisió del resultat i millora abans del lliurament.`,
+      tags: Array.isArray(d.tags) ? [...d.tags.filter(Boolean),'fitxa des de SA v2.5.7'] : ['fitxa des de SA v2.5.7']
+    };
+    apply(fitxa,'fitxa','Fitxa coherent creada des de la SA. Revisa consigna, passos i checklist.');
+  }
+  function buildFitxaReport257(data){
+    const d = data || {};
+    const blocks = {
+      start: section(d.challenge,['Objectiu']) || firstSentence(d.challenge) || extractRepte(d),
+      consigna: section(d.challenge,['Consigna principal']) || 'Completa l’activitat seguint els passos indicats.',
+      lliurable: section(d.challenge,['Lliurable','Què hauràs d’entregar','Que hauras d.entregar']) || extractProducte(d),
+      materials: section(d.knowledge,['Materials i recursos','Materials','Recursos']) || d.knowledge,
+      sabers: section(d.knowledge,['Sabers o vocabulari que necessitaràs','Sabers','Vocabulari']) || '',
+      passos: section(d.sequence,['Activitats pas a pas','Passos']) || d.sequence,
+      checklist: section(d.competences,['Checklist de qualitat','Criteris d’èxit','Criteris']) || d.competences,
+      suports: section(d.inclusion,['Suports i opcions','Suports']) || d.inclusion,
+      avaluacio: section(d.assessment,['Avaluació']) || d.assessment
+    };
+    const li = txt => `<ul>${lines(txt).map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`;
+    const ol = txt => `<ol>${lines(txt).map(x=>`<li>${esc(x.replace(/^\d+[.)]\s*/,''))}</li>`).join('')}</ol>`;
+    return `<article class="sa-report"><header class="sa-cover"><p class="sa-kicker">Fitxa d’activitat</p><h1>${esc(d.title||'Fitxa d’activitat')}</h1><p class="sa-question">${esc(blocks.start)}</p></header><section class="sa-meta-grid">${typeof metaBox==='function'?metaBox('Curs',d.level||'—')+metaBox('Àrea / matèria / àmbit',d.subject||'—')+metaBox('Temps',d.duration||'—')+metaBox('Tipus',d.type||'Fitxa d’activitats'):''}</section><section class="sa-block"><h2>Què has de fer?</h2><div class="definition"><h3>Consigna</h3><p>${esc(blocks.consigna)}</p></div><div class="definition"><h3>Lliurable</h3><p>${esc(blocks.lliurable)}</p></div></section><section class="sa-block"><h2>Materials i recursos</h2>${li(blocks.materials)}</section><section class="sa-block"><h2>Activitats pas a pas</h2>${ol(blocks.passos)}</section><section class="sa-block"><h2>Checklist de qualitat</h2>${li(blocks.checklist)}</section><section class="sa-block"><h2>Suports i opcions</h2>${li(blocks.suports)}</section><section class="sa-block"><h2>Avaluació</h2>${li(blocks.avaluacio)}</section></article>`;
+  }
+  function bind(){
+    const old=$('deriveFitxaBtn');
+    if(old){
+      const btn=old.cloneNode(true);
+      old.parentNode.replaceChild(btn,old);
+      btn.addEventListener('click', makeFitxa257);
+    }
+  }
+  const prevBuild = typeof buildReportHtml === 'function' ? buildReportHtml : null;
+  if(prevBuild && !prevBuild.__dk257){
+    buildReportHtml = function(data, mode){
+      const type = String(data?.type || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+      if(type.includes('fitxa')) return buildFitxaReport257(data);
+      return prevBuild(data, mode);
+    };
+    buildReportHtml.__dk257 = true;
+  }
+  function boot(){ bind(); try{ if(typeof showToast==='function') showToast('v2.5.7: fitxes derivades més coherents i sense blocs de SA.'); }catch(e){} }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+  window.docentKit257 = {version:DK257, makeFitxa:makeFitxa257};
+})();
